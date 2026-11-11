@@ -379,6 +379,7 @@ function vCierre(){
       </div>
       <label for="c-obs">Observaciones<textarea id="c-obs" rows="2">${esc(c.obs||"")}</textarea></label>
       <div class="row-btns"><button class="btn" data-act="cerrar">${S.cierreDia?"Actualizar cierre":"Guardar cierre"}</button></div>
+      ${S.cierreDia&&S.cierreDia.gcFirma!=null&&S.cierreDia.gcFirma!==gcFirma()?`<div class="note warn"><b>Cambiaron las gift cards de este día</b><span>Después de guardar el cierre se anuló o se modificó una gift card vendida este día. Revisa y toca "Actualizar cierre".</span></div>`:""}
       ${S.cierreDia?`<p class="status">Cierre guardado ${esc(new Date(c.ts).toLocaleString("es-CL"))}. Estado: ${c.estado==="cuadra"?"cuadra":"con diferencias"}.</p>`:""}
     </div>
     <div class="step">
@@ -391,6 +392,7 @@ function vCierre(){
       </tbody></table></div>
       <div class="note info"><b>Cómo leer las diferencias</b><span>"Cobro sin registro": la máquina cobró algo que nadie anotó aquí. "Registro sin cobro": alguien registró un servicio que no pasó por la máquina, o se anotó con otro medio de pago. Revisa los números de operación en la pestaña Día.</span></div>
       ${t.porMedio.transferencia.n?`<div class="note warn">Hay ${t.porMedio.transferencia.n} servicio(s) pagados por transferencia (${clp(t.porMedio.transferencia.v+t.porMedio.transferencia.p)}). Revisa que hayan llegado a la cuenta de la sociedad y no a una cuenta personal.</div>`:""}
+      ${(()=>{const gv=gcPseudo(),cj=S.regsDia.filter(r=>r.estado!=="anulado"&&r.medio==="giftcard");return gv.length||cj.length?`<div class="note info"><b>Gift cards del día</b><span>Vendidas: ${gv.length} por ${clp(gv.reduce((a,g)=>a+g.venta,0))} (ya están sumadas arriba según su medio de pago). Canjeadas: ${cj.length} servicio(s) por ${clp(cj.reduce((a,r)=>a+(+r.venta||0),0))}: no pasan por la máquina ni por la caja porque se cobraron el día de la venta.</span></div>`:""})()}
     </div>
   </div>
   ${vMP()}`;
@@ -838,7 +840,16 @@ document.addEventListener("click",async ev=>{
     S.sel={pro:r.profId,items:Object.fromEntries((r.servicios||[]).map(s=>[s.id,s.cantidad||1])),cobrado:r.venta,manual:r.venta!==r.precioLista,propina:r.propina?String(r.propina):"",medio:r.medio||"tarjeta",op:r.operacion||"",nota:r.nota||"",fecha:r.fecha,hora:r.hora,editId:r.id,orig:r,citaId:r.citaId||"",clientaId:r.clientaId||"",clientaNombre:r.clientaNombre||""};
     S.tab="registrar";render();window.scrollTo(0,0);toast("Editando el servicio de "+r.profNombre+" de las "+r.hora);return}
   if(a==="cancelar-edicion"){S.sel={pro:null,items:{},cobrado:null,manual:false,propina:"",medio:"tarjeta",op:"",nota:""};S.tab="hoy";render();return}
-  if(a==="anular"||a==="restaurar"){await S.db.doc("registros/"+id).update({estado:a==="anular"?"anulado":"ok",modificado:new Date().toISOString()});toast(a==="anular"?"Servicio anulado":"Servicio restaurado");return}
+  if(a==="anular"||a==="restaurar"){const rr=S.regsDia.find(x=>x.id===id)||{};
+    if(rr.giftcard){if(!S.admin){toast("Este servicio se pagó con la gift card "+rr.giftcard+": pide a la administradora que lo "+(a==="anular"?"anule":"restaure"));return}
+      const gref=S.db.doc("giftcards/"+rr.giftcard),rref=S.db.doc("registros/"+id),v=+rr.venta||0,hoy=ymd(new Date());
+      try{await S.db.runTransaction(async tx=>{const g=(await tx.get(gref)).data()||{};const sal=+g.saldo||0;let upd;
+        if(a==="anular"){const ns=Math.min(+g.valor||sal+v,sal+v);upd={saldo:ns,estado:g.estado==="anulada"?"anulada":"vigente",canjes:(g.canjes||[]).concat([{fecha:hoy,registroId:id,prof:rr.profNombre||"",monto:-v,nota:"Servicio anulado: saldo devuelto"}])}}
+        else{if(g.estado!=="vigente"||sal<v)throw new Error("gc-saldo:"+sal);const ns=sal-v;upd={saldo:ns,estado:ns===0?"canjeada":"vigente",canjes:(g.canjes||[]).concat([{fecha:hoy,registroId:id,prof:rr.profNombre||"",monto:v,nota:"Servicio restaurado"}])}}
+        tx.update(gref,upd);tx.update(rref,{estado:a==="anular"?"anulado":"ok",modificado:new Date().toISOString()})});
+        toast(a==="anular"?"Servicio anulado: el saldo volvió a la gift card "+rr.giftcard:"Servicio restaurado: se descontó de nuevo de la gift card")}
+      catch(e){toast(String(e&&e.message||"").startsWith("gc-saldo:")?"La gift card ya no tiene saldo para restaurar este servicio":"No se pudo actualizar")}return}
+    await S.db.doc("registros/"+id).update({estado:a==="anular"?"anulado":"ok",modificado:new Date().toISOString()});toast(a==="anular"?"Servicio anulado":"Servicio restaurado");return}
   if(a==="cerrar")return cerrar();
   if(a==="mp-guardar")return mpGuardar();
   if(a==="mp-cancelar"){S.mpImp=null;render();return}
@@ -928,6 +939,7 @@ async function guardar(){
   if(dupOp&&!sel.okOp){sel.okOp=true;toast("Ese voucher ya tiene un servicio de "+pro.nombre+". Si es otro servicio suyo con el mismo voucher, toca Guardar de nuevo");return}
   const now=new Date();
   if(sel.editId&&(sel.medio==="giftcard"||(sel.orig&&sel.orig.medio==="giftcard"))&&sel.medio!==(sel.orig||{}).medio){toast("Un pago con gift card no se puede cambiar editando: anula el servicio, ajusta el saldo en Gift cards y regístralo de nuevo");return}
+  if(sel.editId&&sel.orig&&sel.orig.medio==="giftcard"&&venta!==(+sel.orig.venta||0)){toast("El monto de un servicio pagado con gift card no se cambia editando: anúlalo (el saldo vuelve a la gift card) y regístralo de nuevo");return}
   if(sel.editId){const o=sel.orig||{};
     const upd={servicios:items,precioLista:lista,venta,propina:int(sel.propina),medio:sel.medio,operacion:sel.medio==="tarjeta"?sel.op.trim():"",nota:sel.nota.trim(),
       profId:pro.id,profNombre:pro.nombre,fecha:(S.admin&&sel.fecha&&sel.fecha<=ymd(now))?sel.fecha:o.fecha,hora:sel.hora||o.hora,
@@ -946,21 +958,27 @@ async function guardar(){
     servicios:items,precioLista:lista,venta,propina:int(sel.propina),medio:sel.medio,operacion:sel.medio==="tarjeta"?sel.op.trim():"",nota:sel.nota.trim(),estado:"ok",
     citaId:sel.citaId||"",clientaId:sel.clientaId||"",clientaNombre:sel.clientaNombre||"",giftcard:gc?gc.id:""};
   S.saving=true;refreshPreview();
-  try{const ref=await S.db.collection("registros").add(doc);
-    if(gc){try{const ns=(+gc.saldo||0)-venta;await S.db.doc("giftcards/"+gc.id).update({saldo:ns,estado:ns===0?"canjeada":"vigente",canjes:(gc.canjes||[]).concat([{fecha:doc.fecha,registroId:ref.id,prof:pro.nombre,monto:venta}])})}catch(e){console.warn(e);toast("Servicio guardado, pero no se pudo descontar la gift card. Avisa a la administradora.")}}
+  try{let ref;
+    if(gc){ref=S.db.collection("registros").doc();const gref=S.db.doc("giftcards/"+gc.id);
+      await S.db.runTransaction(async tx=>{const g=(await tx.get(gref)).data()||{};if(g.estado!=="vigente")throw new Error("gc-estado:"+(g.estado||"no existe"));const sal=+g.saldo||0;if(sal<venta)throw new Error("gc-saldo:"+sal);const ns=sal-venta;
+        tx.set(ref,doc);tx.update(gref,{saldo:ns,estado:ns===0?"canjeada":"vigente",canjes:(g.canjes||[]).concat([{fecha:doc.fecha,registroId:ref.id,prof:pro.nombre,monto:venta}])})})}
+    else ref=await S.db.collection("registros").add(doc);
     if(sel.citaId){try{await S.db.doc("citas/"+sel.citaId).update({estado:"atendida",registroId:ref.id,venta,modificado:now.toISOString()})}catch(e){console.warn(e)}}
     if(sel.clientaId){try{await S.db.doc("clientas/"+sel.clientaId).update({ultimaVisita:doc.fecha})}catch(e){console.warn(e)}}
     const c=calc(venta,doc.comisionPct,doc.base);
     toast(`Guardado: ${pro.nombre}, comisión ${clp(c.com)}${doc.propina?" + propina "+clp(doc.propina):""}`);
     const fk=S.sel.fecha;S.sel={pro:null,items:{},cobrado:null,manual:false,propina:"",medio:"tarjeta",op:"",nota:"",fecha:fk};
-  }catch(e){fail(e)}
+  }catch(e){const m=String(e&&e.message||"");if(m.startsWith("gc-saldo:"))toast("Saldo insuficiente: a la gift card le quedan "+clp(+m.split(":")[1])+". No se guardó el servicio.");else if(m.startsWith("gc-estado:"))toast("La gift card está "+m.split(":")[1]+". No se guardó el servicio.");else fail(e)}
   S.saving=false;render();
 }
+function gcFirma(){return gcPseudo().map(g=>g.id+":"+g.venta+":"+g.medio).sort().join("|")}
 async function cerrar(){
-  const t=resumen(S.regsDia), tj=t.porMedio.tarjeta;
+  const t=resumen(S.regsDia.concat(gcPseudo())), tj=t.porMedio.tarjeta;
+  const vivos=S.regsDia.filter(r=>r.estado!=="anulado"),cj=vivos.filter(r=>r.medio==="giftcard"),gv=gcPseudo();
   const g=id=>{const v=$(id).value.trim();return v===""?null:int(v)};
   const d={fecha:S.dia,totalPoint:g("#c-total"),ventasPoint:g("#c-ventas"),cantPoint:g("#c-cant"),propinasPoint:g("#c-prop"),efectivoContado:g("#c-ef"),obs:$("#c-obs").value.trim(),
-    registrado:{ventasTarjeta:tj.v,cantTarjeta:tj.n,propinasTarjeta:tj.p,efectivo:t.porMedio.efectivo.v+t.porMedio.efectivo.p,transferencia:t.porMedio.transferencia.v+t.porMedio.transferencia.p,servicios:t.n},
+    registrado:{ventasTarjeta:tj.v,cantTarjeta:tj.n,propinasTarjeta:tj.p,efectivo:t.porMedio.efectivo.v+t.porMedio.efectivo.p,transferencia:t.porMedio.transferencia.v+t.porMedio.transferencia.p,servicios:vivos.length,
+      giftcardsVendidas:gv.length,montoGiftcardsVendidas:gv.reduce((a,g)=>a+g.venta,0),giftcardsCanjeadas:cj.length,montoGiftcardsCanjeadas:cj.reduce((a,r)=>a+(+r.venta||0),0)},gcFirma:gcFirma(),
     ts:new Date().toISOString()};
   const cuadra=(d.totalPoint==null||d.totalPoint===tj.v+tj.p)&&d.ventasPoint===tj.v&&d.propinasPoint===tj.p&&(d.cantPoint==null||d.cantPoint===tj.n)&&(d.efectivoContado==null||d.efectivoContado===d.registrado.efectivo);
   d.estado=cuadra?"cuadra":"diferencia";
