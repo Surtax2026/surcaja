@@ -31,8 +31,11 @@
     if(/email-already-in-use/.test(c)) return "Ese correo ya tiene cuenta: usa Ingresar.";
     if(/weak-password/.test(c)) return "La clave debe tener al menos 6 caracteres.";
     if(/invalid-email/.test(c)) return "Revisa el correo.";
+    if(/missing-password/.test(c)) return "Escribe una clave (mínimo 6 caracteres).";
+    if(/missing-email/.test(c)) return "Escribe tu correo.";
+    if(/too-many-requests/.test(c)) return "Demasiados intentos. Espera unos minutos y vuelve a intentar.";
     if(/network/.test(c)) return "Sin conexión a internet.";
-    return "No se pudo completar. Intenta de nuevo.";
+    return "No se pudo completar ("+(c||"error")+"). Intenta de nuevo.";
   }
   function login(){
     var d = pantalla('<h1>SurCaja</h1><p>Ingresa con tu correo y tu clave.</p>'+
@@ -44,7 +47,7 @@
     d.querySelector("#sx-in").onclick = function(){ msg(""); auth.signInWithEmailAndPassword(mail(), pass()).catch(function(e){ msg(errTxt(e)); }); };
     d.querySelector("#sx-new").onclick = function(){ msg(""); auth.createUserWithEmailAndPassword(mail(), pass()).catch(function(e){ msg(errTxt(e)); }); };
     d.querySelector("#sx-olv").onclick = function(){ if(!mail()){ msg("Escribe tu correo primero."); return; }
-      auth.sendPasswordResetEmail(mail()).then(function(){ msg("Te enviamos un correo para cambiar la clave."); }).catch(function(e){ msg(errTxt(e)); }); };
+      auth.sendPasswordResetEmail(mail()).then(function(){ msg("Si ese correo tiene cuenta en SurCaja, te llegará un correo para cambiar la clave (revisa también no deseado). Si aún no tienes cuenta, usa Crear mi cuenta."); }).catch(function(e){ msg(errTxt(e)); }); };
     d.querySelector("#sx-pass").onkeydown = function(ev){ if(ev.key === "Enter") d.querySelector("#sx-in").click(); };
   }
   function pendiente(email){
