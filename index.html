@@ -209,14 +209,15 @@ async function init(){
   S.rol=user&&user.rol?user.rol():(S.admin?"admin":"caja");S.myPro=user&&user.profId?user.profId():null;
   if(S.myPro){S.tab="registrar";S.sel.pro=S.myPro}
   if(S.admin)db.collection("usuarios").onSnapshot(q=>{S.usuarios=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.email).localeCompare(String(b.email)));render()},err);
+  if(S.myPro)db.doc("profesionales/"+S.myPro).onSnapshot(s=>{S.pros=s.exists?[{id:s.id,...s.data()}]:[];S.ready=true;render()},err);else
   db.collection("profesionales").onSnapshot(q=>{S.pros=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre),"es"));S.ready=true;render()},err);
   db.collection("servicios").onSnapshot(q=>{S.servs=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>catOrd(a.categoria)-catOrd(b.categoria)||String(a.categoria||"").localeCompare(String(b.categoria||""),"es")||String(a.nombre).localeCompare(String(b.nombre),"es"));render()},err);
   db.doc("config/general").onSnapshot(s=>{S.cfg=Object.assign({base:"neto"},s.exists?s.data():{});render()},err);
-  db.collection("clientas").onSnapshot(q=>{S.clientas=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre),"es"));render()},err);
+  if(!S.myPro)db.collection("clientas").onSnapshot(q=>{S.clientas=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre),"es"));render()},err);
   subDia();subAgenda();
 }
 function subAgenda(){
-  if(!S.db)return;
+  if(!S.db||S.myPro)return;
   if(S.unsubSem)S.unsubSem();if(S.unsubMan)S.unsubMan();
   const a=lunesDe(S.agDia),b=masDias(a,6);
   S.unsubSem=S.db.collection("citas").where("fecha",">=",a).where("fecha","<=",b).onSnapshot(q=>{S.citasSem=q.docs.map(d=>({id:d.id,...d.data()}));render()},err);
@@ -226,9 +227,9 @@ function err(e){console.warn(e);if(e&&e.code==="revoked"){S.offline=true;render(
 function subDia(){
   if(!S.db)return;
   if(S.unsubDia)S.unsubDia();if(S.unsubCierre)S.unsubCierre();if(S.unsubMp)S.unsubMp();
-  S.unsubMp=S.db.doc("mp/"+S.dia).onSnapshot(s=>{S.mpDia=s.exists?s.data():null;render()},err);
+  if(!S.myPro)S.unsubMp=S.db.doc("mp/"+S.dia).onSnapshot(s=>{S.mpDia=s.exists?s.data():null;render()},err);
   S.unsubDia=(S.myPro?S.db.collection("registros").where("fecha","==",S.dia).where("profId","==",S.myPro):S.db.collection("registros").where("fecha","==",S.dia)).onSnapshot(q=>{S.regsDia=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.creado).localeCompare(String(b.creado)));render()},err);
-  S.unsubCierre=S.db.doc("cierres/"+S.dia).onSnapshot(s=>{S.cierreDia=s.exists?s.data():null;render()},err);
+  if(!S.myPro)S.unsubCierre=S.db.doc("cierres/"+S.dia).onSnapshot(s=>{S.cierreDia=s.exists?s.data():null;render()},err);
 }
 
 /* ---------- Render ---------- */
