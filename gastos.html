@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gastos SurCaja</title>
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#5b2a6e">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="config.js"></script>
+<script src="adapter.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#eef2f5;--surface:#fff;--ink:#132338;--muted:#5b6b7d;--line:#d9e1e8;--navy:#16325c;--navy-soft:#e6ecf5;--sage:#0d7a77;--sage-soft:#e2f2f1;--amber:#b26b12;--amber-soft:#fbefdc;--red:#a3312f;--red-soft:#f8e3e2}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+.top{background:var(--surface);border-bottom:2px solid var(--navy);padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.top b{font-size:20px;color:var(--navy);margin-right:auto}.top a{color:var(--navy);font-weight:600}
+main{max-width:1040px;margin:0 auto;padding:20px 16px 64px;display:grid;gap:18px}
+h1{margin:0;font-size:24px}h2{margin:0;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.muted{color:var(--muted)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:12px;min-width:0}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+label{display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--muted)}
+input,select,textarea{font:16px inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%}
+.m{font-family:ui-monospace,Menlo,monospace}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:600 14px inherit;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:8px 14px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#fff}
+.btn{font:700 16px inherit;border:0;border-radius:10px;padding:12px 18px;cursor:pointer;background:var(--navy);color:#fff}
+.btn.sec{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
+.mini{font:600 13px inherit;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:4px 10px;cursor:pointer}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:2px}
+.kpi span{font-size:12px;color:var(--muted);font-weight:600}.kpi b{font-family:ui-monospace,Menlo,monospace;font-size:20px}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:760px}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--bg)}
+td.n,th.n{text-align:right;font-family:ui-monospace,Menlo,monospace;white-space:nowrap}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:2px 9px;border-radius:99px;white-space:nowrap}
+.g{background:var(--sage-soft);color:var(--sage)}.a{background:var(--amber-soft);color:var(--amber)}.r{background:var(--red-soft);color:var(--red)}.n{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.note{border-radius:10px;padding:12px 14px;font-size:14px}.warn{background:var(--amber-soft)}.info{background:var(--navy-soft)}
+.thumb{width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--line);cursor:pointer}
+.prev{max-width:180px;max-height:180px;border-radius:8px;border:1px solid var(--line)}
+.empty{border:1.5px dashed var(--line);border-radius:12px;padding:24px;text-align:center;color:var(--muted)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;font-weight:600;max-width:calc(100% - 32px);z-index:9}
+.zoom{position:fixed;inset:0;background:rgba(10,20,35,.8);display:grid;place-items:center;z-index:8;padding:16px}.zoom img{max-width:100%;max-height:90vh;border-radius:8px}
+</style></head><body>
+<div class="top"><b>Gastos · SurCaja</b><a href="./">← Volver a SurCaja</a></div>
+<main id="app"><div class="empty">Cargando…</div></main>
+<div id="toast" class="toast" hidden></div>
+<script>
+(function(){"use strict";
+const CATS=["Insumos y materiales","Arriendo y gastos comunes","Servicios básicos (luz, agua, internet)","Equipos y mobiliario","Publicidad y redes","Asesorías y trámites","Comisiones y bancos","Aseo y mantención","Remuneraciones y honorarios","Otros"];
+const DOCS=[["factura","Factura a nombre de LUZIA"],["boleta","Boleta"],["sin","Sin documento"]];
+const PAG=[["empresa","Cuenta de la empresa"],["francisca","Francisca (personal)"]];
+const hoy=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const $=s=>document.querySelector(s);
+const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const clp=n=>"$"+Math.round(Number(n)||0).toLocaleString("es-CL");
+const int=v=>{const n=Math.round(Number(String(v).replace(/[^\d-]/g,"")));return isFinite(n)?n:0};
+const vacio=()=>({id:null,fecha:hoy(),proveedor:"",rut:"",detalle:"",categoria:CATS[0],total:"",doc:"factura",numDoc:"",pagadoPor:"empresa",foto:"",nota:""});
+const S={db:null,email:"",mes:hoy().slice(0,7),list:[],F:vacio(),saving:false,filtro:"",zoom:null,unsub:null};
+function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,3200)}
+const ivaDe=g=>g.doc==="factura"?Math.round(int(g.total)*19/119):0;
+async function init(){const c=window.claude;S.db=await c.use("db");const u=await c.use("user");
+  if(!u||u.rol()!=="admin"){$("#app").innerHTML=`<div class="empty">Solo la administradora puede ver los gastos. <a href="./">Volver</a></div>`;return}
+  S.email=(window.__sxAuth.currentUser||{}).email||"";sub();}
+function sub(){if(S.unsub)S.unsub();const a=S.mes+"-01",b=S.mes+"-31";
+  S.unsub=S.db.collection("gastos").where("fecha",">=",a).where("fecha","<=",b).onSnapshot(q=>{S.list=q.docs.map(d=>({id:d.id,...d.data()})).sort((x,y)=>String(y.fecha).localeCompare(String(x.fecha))||String(y.creado).localeCompare(String(x.creado)));render()},e=>{console.warn(e);$("#app").innerHTML=`<div class="empty">No se pudieron leer los gastos.</div>`})}
+function keep(){const a=document.activeElement;return a&&a.id?{id:a.id,s:a.selectionStart,e:a.selectionEnd}:null}
+function back(k){if(!k)return;const el=document.getElementById(k.id);if(el){el.focus();try{if(k.s!=null)el.setSelectionRange(k.s,k.e)}catch(e){}}}
+function render(){const k=keep();$("#app").innerHTML=vForm()+vResumen()+vLista()+(S.zoom?`<div class="zoom" data-act="zoom-off"><img src="${S.zoom}" alt="Documento"></div>`:"");back(k)}
+function vForm(){const F=S.F;const iva=ivaDe(F);
+  return`<div><h1>Gastos del salón</h1><p class="muted">Registra cada gasto el mismo día, con la foto del documento. Así no hace falta mandar planillas.</p></div>
+  <div class="panel"><h2>${F.id?"Editar gasto":"Nuevo gasto"}</h2>
+  <div class="fields">
+    <label for="g-fecha">Fecha<input id="g-fecha" type="date" max="${hoy()}" data-f="fecha" value="${esc(F.fecha)}"></label>
+    <label for="g-prov">Proveedor<input id="g-prov" data-f="proveedor" value="${esc(F.proveedor)}" placeholder="Ej. Esmaltes Mis Manos"></label>
+    <label for="g-det" style="grid-column:span 2">Qué se compró<input id="g-det" data-f="detalle" value="${esc(F.detalle)}" placeholder="Ej. 12 esmaltes semipermanentes"></label>
+    <label for="g-cat">Categoría<select id="g-cat" data-f="categoria">${CATS.map(c=>`<option ${F.categoria===c?"selected":""}>${esc(c)}</option>`).join("")}</select></label>
+    <label for="g-total">Monto total pagado<input id="g-total" class="m" inputmode="numeric" data-f="total" value="${esc(F.total)}" placeholder="0"></label>
+  </div>
+  <div class="row"><span class="muted" style="font-size:13px;font-weight:600">Documento:</span><div class="chips">${DOCS.map(([k,l])=>`<button class="chip" data-act="doc" data-k="${k}" aria-pressed="${F.doc===k}">${l}</button>`).join("")}</div></div>
+  ${F.doc!=="sin"?`<div class="fields"><label for="g-num">N° de ${F.doc==="factura"?"factura":"boleta"}<input id="g-num" class="m" data-f="numDoc" value="${esc(F.numDoc)}"></label>${F.doc==="factura"?`<label for="g-rut">RUT del proveedor<input id="g-rut" class="m" data-f="rut" value="${esc(F.rut)}" placeholder="76.123.456-7"></label>`:""}</div>`:""}
+  ${F.doc==="factura"&&int(F.total)?`<p class="muted" style="margin:0;font-size:14px">Neto ${clp(int(F.total)-iva)} · IVA ${clp(iva)} (crédito fiscal si la factura está a nombre de LUZIA SpA y aparece en el Registro de Compras).</p>`:""}
+  ${F.doc==="boleta"?`<div class="note warn">Las boletas no dan crédito de IVA. Si el proveedor puede, pide factura a nombre de LUZIA SpA, RUT 78.520.581-2.</div>`:""}
+  ${F.doc==="sin"?`<div class="note warn">Sin documento el gasto puede ser rechazado por el Servicio de Impuestos Internos. Anota en la nota qué es y a quién se pagó.</div>`:""}
+  <div class="row"><span class="muted" style="font-size:13px;font-weight:600">¿Quién pagó?</span><div class="chips">${PAG.map(([k,l])=>`<button class="chip" data-act="pag" data-k="${k}" aria-pressed="${F.pagadoPor===k}">${l}</button>`).join("")}</div></div>
+  ${F.pagadoPor==="francisca"?`<p class="muted" style="margin:0;font-size:14px">Queda como deuda de la sociedad contigo, hasta que se te devuelva.</p>`:""}
+  <div class="fields"><label for="g-foto">Foto del documento<input id="g-foto" type="file" accept="image/*" capture="environment"></label><label for="g-nota">Nota (opcional)<input id="g-nota" data-f="nota" value="${esc(F.nota)}"></label></div>
+  ${F.foto?`<div class="row"><img class="prev" src="${F.foto}" alt="Documento"><button class="mini" data-act="quitar-foto">Quitar foto</button></div>`:""}
+  <div class="row"><button class="btn" data-act="guardar" ${S.saving?"disabled":""}>${S.saving?"Guardando…":F.id?"Guardar cambios":"Guardar gasto"}</button>${F.id?`<button class="btn sec" data-act="cancelar">Cancelar</button>`:""}</div></div>`}
+function vResumen(){const L=S.list,t=L.reduce((a,g)=>a+int(g.total),0),iva=L.reduce((a,g)=>a+ivaDe(g),0);
+  const fr=L.filter(g=>g.pagadoPor==="francisca"&&!g.reembolsado).reduce((a,g)=>a+int(g.total),0);
+  const sinDoc=L.filter(g=>g.doc==="sin").reduce((a,g)=>a+int(g.total),0),sinFoto=L.filter(g=>!g.foto).length;
+  const cat={};L.forEach(g=>{cat[g.categoria]=(cat[g.categoria]||0)+int(g.total)});
+  const [y,m]=S.mes.split("-").map(Number);const nom=new Date(y,m-1,1).toLocaleDateString("es-CL",{month:"long",year:"numeric"});
+  return`<div class="row" style="justify-content:space-between"><h1 style="font-size:20px">Resumen de ${esc(nom)}</h1><div class="row"><label for="g-mes" style="min-width:170px"><input id="g-mes" type="month" value="${S.mes}"></label><button class="btn sec" data-act="excel">Descargar Excel</button></div></div>
+  <div class="kpis"><div class="kpi"><span>Gastos del mes</span><b>${clp(t)}</b></div><div class="kpi"><span>IVA en facturas</span><b>${clp(iva)}</b></div>
+  <div class="kpi"><span>Pagado por Francisca, por devolver</span><b>${clp(fr)}</b></div><div class="kpi"><span>Sin documento</span><b>${clp(sinDoc)}</b></div></div>
+  ${sinFoto?`<div class="note warn">${sinFoto} gasto(s) del mes no tienen foto del documento.</div>`:""}
+  ${Object.keys(cat).length?`<div class="tbl"><table style="min-width:420px"><thead><tr><th>Categoría</th><th class="n">Monto</th><th class="n">%</th></tr></thead><tbody>${Object.entries(cat).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`<tr><td>${esc(c)}</td><td class="n">${clp(v)}</td><td class="n">${t?Math.round(v*100/t):0}%</td></tr>`).join("")}</tbody></table></div>`:""}`}
+function vLista(){const L=S.list.filter(g=>!S.filtro||(g.proveedor+" "+g.detalle+" "+g.categoria).toLowerCase().includes(S.filtro.toLowerCase()));
+  return`<div class="panel"><div class="row" style="justify-content:space-between"><h2>Detalle</h2><label for="g-buscar" style="min-width:220px"><input id="g-buscar" value="${esc(S.filtro)}" placeholder="Buscar proveedor o detalle"></label></div>
+  ${L.length?`<div class="tbl"><table><thead><tr><th>Fecha</th><th>Proveedor y detalle</th><th>Categoría</th><th>Documento</th><th>Pagó</th><th class="n">Total</th><th>Foto</th><th></th></tr></thead><tbody>
+  ${L.map(g=>`<tr><td class="m">${esc(g.fecha)}</td><td><b>${esc(g.proveedor||"—")}</b><br><span class="muted" style="font-size:13px">${esc(g.detalle)}${g.nota?" · "+esc(g.nota):""}</span></td><td>${esc(g.categoria)}</td>
+  <td>${g.doc==="factura"?`<span class="pill g">Factura ${esc(g.numDoc||"")}</span>`:g.doc==="boleta"?`<span class="pill n">Boleta ${esc(g.numDoc||"")}</span>`:`<span class="pill r">Sin documento</span>`}</td>
+  <td>${g.pagadoPor==="francisca"?(g.reembolsado?`<span class="pill g">Francisca · devuelto</span>`:`<span class="pill a">Francisca · por devolver</span> <button class="mini" data-act="reemb" data-id="${esc(g.id)}">Marcar devuelto</button>`):`<span class="pill n">Empresa</span>`}</td>
+  <td class="n">${clp(g.total)}</td><td>${g.foto?`<img class="thumb" src="${g.foto}" alt="Foto" data-act="zoom" data-id="${esc(g.id)}">`:"—"}</td>
+  <td><button class="mini" data-act="editar" data-id="${esc(g.id)}">Editar</button> <button class="mini" data-act="borrar" data-id="${esc(g.id)}">Eliminar</button></td></tr>`).join("")}</tbody></table></div>`:`<div class="empty">No hay gastos registrados en este mes.</div>`}</div>`}
+function comprimir(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{let w=img.width,h=img.height;const M=1400;if(w>M||h>M){const k=M/Math.max(w,h);w=Math.round(w*k);h=Math.round(h*k)}
+  const cv=document.createElement("canvas");cv.width=w;cv.height=h;cv.getContext("2d").drawImage(img,0,0,w,h);let q=.7,u=cv.toDataURL("image/jpeg",q);while(u.length>280000&&q>.3){q-=.1;u=cv.toDataURL("image/jpeg",q)}res(u)};img.onerror=rej;img.src=r.result};r.onerror=rej;r.readAsDataURL(file)})}
+async function guardar(){const F=S.F;if(!F.fecha){toast("Indica la fecha");return}if(!int(F.total)){toast("Indica el monto");return}if(!F.proveedor.trim()&&!F.detalle.trim()){toast("Indica el proveedor o qué se compró");return}
+  S.saving=true;render();const now=new Date().toISOString();
+  const d={fecha:F.fecha,proveedor:F.proveedor.trim(),rut:F.doc==="factura"?F.rut.trim():"",detalle:F.detalle.trim(),categoria:F.categoria,total:int(F.total),neto:int(F.total)-ivaDe(F),iva:ivaDe(F),doc:F.doc,numDoc:F.doc==="sin"?"":F.numDoc.trim(),pagadoPor:F.pagadoPor,foto:F.foto||"",nota:F.nota.trim(),modificado:now,por:S.email};
+  try{if(F.id)await S.db.doc("gastos/"+F.id).update(d);else{d.creado=now;d.reembolsado=false;await S.db.collection("gastos").add(d)}
+    toast(F.id?"Gasto actualizado":"Gasto guardado");const keepFecha=F.fecha;S.F=vacio();S.F.fecha=keepFecha;if(keepFecha.slice(0,7)!==S.mes){S.mes=keepFecha.slice(0,7);sub()}}
+  catch(e){console.warn(e);toast("No se pudo guardar")}S.saving=false;render()}
+function excel(){if(!window.XLSX){toast("No se pudo cargar el lector de planillas");return}
+  const rows=S.list.slice().reverse().map(g=>({Fecha:g.fecha,Proveedor:g.proveedor,"RUT proveedor":g.rut||"",Detalle:g.detalle,"Categoría":g.categoria,Documento:(DOCS.find(x=>x[0]===g.doc)||["",""])[1],"N° documento":g.numDoc||"",Neto:g.neto,IVA:g.iva,Total:g.total,"Pagó":g.pagadoPor==="francisca"?"Francisca":"Empresa","Devuelto":g.pagadoPor==="francisca"?(g.reembolsado?"Sí":"No"):"","Con foto":g.foto?"Sí":"No",Nota:g.nota||""}));
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),"Gastos "+S.mes);XLSX.writeFile(wb,`Gastos NÚASPA ${S.mes}.xlsx`)}
+document.addEventListener("input",ev=>{const t=ev.target;if(t.dataset.f){S.F[t.dataset.f]=t.value;if(t.dataset.f==="total"&&S.F.doc==="factura"){const k=keep();render();back(k)}return}
+  if(t.id==="g-buscar"){S.filtro=t.value;render();return}});
+document.addEventListener("change",async ev=>{const t=ev.target;if(t.id==="g-mes"&&t.value){S.mes=t.value;sub();return}
+  if(t.id==="g-foto"&&t.files&&t.files[0]){try{S.F.foto=await comprimir(t.files[0]);render()}catch(e){toast("No se pudo leer la foto")}}
+  if(t.dataset.f){S.F[t.dataset.f]=t.value}});
+document.addEventListener("click",async ev=>{const a=ev.target.closest("[data-act]");if(!a)return;const k=a.dataset.act,id=a.dataset.id;
+  if(k==="doc"){S.F.doc=a.dataset.k;render();return}if(k==="pag"){S.F.pagadoPor=a.dataset.k;render();return}
+  if(k==="quitar-foto"){S.F.foto="";render();return}if(k==="guardar"){guardar();return}if(k==="cancelar"){S.F=vacio();render();return}
+  if(k==="excel"){excel();return}if(k==="zoom"){const g=S.list.find(x=>x.id===id);S.zoom=g&&g.foto;render();return}if(k==="zoom-off"){S.zoom=null;render();return}
+  if(k==="editar"){const g=S.list.find(x=>x.id===id);if(g){S.F=Object.assign(vacio(),g,{total:String(g.total),id:g.id});render();window.scrollTo(0,0)}return}
+  if(k==="borrar"){if(a.dataset.ok!=="1"){a.dataset.ok="1";a.textContent="¿Seguro?";setTimeout(()=>{a.dataset.ok="";a.textContent="Eliminar"},3000);return}try{await S.db.doc("gastos/"+id).delete();toast("Gasto eliminado")}catch(e){toast("No se pudo eliminar")}return}
+  if(k==="reemb"){try{await S.db.doc("gastos/"+id).update({reembolsado:true,reembolsadoEl:new Date().toISOString()});toast("Marcado como devuelto")}catch(e){toast("No se pudo actualizar")}}});
+init();
+})();
+</script></body></html>

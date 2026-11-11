@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Estadísticas SurCaja</title>
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#5b2a6e">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="config.js"></script>
+<script src="adapter.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#eef2f5;--surface:#fff;--ink:#132338;--muted:#5b6b7d;--line:#d9e1e8;--navy:#16325c;--navy-soft:#e6ecf5;--sage:#0d7a77;--sage-soft:#e2f2f1;--amber:#b26b12;--amber-soft:#fbefdc;--red:#a3312f;--red-soft:#f8e3e2;--bar:#5b2a6e}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+.top{background:var(--surface);border-bottom:2px solid var(--navy);padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.top b{font-size:20px;color:var(--navy);margin-right:auto}.top a{color:var(--navy);font-weight:600}
+main{max-width:1100px;margin:0 auto;padding:20px 16px 64px;display:grid;gap:18px}
+h1{margin:0;font-size:24px}h2{margin:0;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.muted{color:var(--muted)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+label{display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--muted)}
+input,select{font:16px inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 11px}
+.chip{font:600 14px inherit;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:8px 14px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#fff}
+.btn{font:700 15px inherit;border:0;border-radius:10px;padding:10px 16px;cursor:pointer;background:var(--navy);color:#fff}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:2px}
+.kpi span{font-size:12px;color:var(--muted);font-weight:600}.kpi b{font-family:ui-monospace,Menlo,monospace;font-size:21px}
+.kpi i{font-style:normal;font-size:12px;font-weight:700}.up{color:var(--sage)}.dn{color:var(--red)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:16px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:10px;min-width:0}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:7px 8px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+td.n,th.n{text-align:right;font-family:ui-monospace,Menlo,monospace;white-space:nowrap}
+.barc{display:flex;align-items:center;gap:8px}.bar{height:10px;border-radius:5px;background:var(--bar);min-width:2px}
+.heat td{text-align:center;font-size:12px;font-family:ui-monospace,Menlo,monospace;border:1px solid var(--surface);padding:6px 4px}
+.note{border-radius:10px;padding:12px 14px;font-size:14px}.info{background:var(--navy-soft)}.warn{background:var(--amber-soft)}
+.wsp{font:600 13px inherit;color:#fff;background:#1f8a4c;border-radius:8px;padding:4px 10px;text-decoration:none;white-space:nowrap}
+.empty{border:1.5px dashed var(--line);border-radius:12px;padding:20px;text-align:center;color:var(--muted)}
+</style></head><body>
+<div class="top"><b>Estadísticas · SurCaja</b><a href="./">← Volver a SurCaja</a></div>
+<main id="app"><div class="empty">Cargando…</div></main>
+<script>
+(function(){"use strict";
+const $=s=>document.querySelector(s);
+const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const clp=n=>"$"+Math.round(Number(n)||0).toLocaleString("es-CL");
+const pct=(a,b)=>b?Math.round(a*1000/b)/10:0;
+const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const hoy=()=>ymd(new Date());
+const add=(s,n)=>{const [y,m,d]=s.split("-").map(Number);return ymd(new Date(y,m-1,d+n))};
+const dias=(a,b)=>{const p=s=>{const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)};return Math.round((p(b)-p(a))/864e5)+1};
+const DOW=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+const dow=s=>{const [y,m,d]=s.split("-").map(Number);return (new Date(y,m-1,d).getDay()+6)%7};
+const S={db:null,cfg:{},pros:[],clientas:[],regs:[],citas:[],regsAll:null,desde:hoy().slice(0,8)+"01",hasta:hoy(),pro:""};
+function wsp(tel,txt){let d=String(tel||"").replace(/\D/g,"");if(!d)return"";if(d.length===8)d="569"+d;else if(d.length===9)d="56"+d;return"https://wa.me/"+d+"?text="+encodeURIComponent(txt)}
+async function init(){const c=window.claude;S.db=await c.use("db");const u=await c.use("user");
+  if(!u||u.rol()!=="admin"){$("#app").innerHTML=`<div class="empty">Solo la administradora puede ver las estadísticas. <a href="./">Volver</a></div>`;return}
+  const [cf,pr,cl]=await Promise.all([S.db.doc("config/general").get(),S.db.collection("profesionales").get(),S.db.collection("clientas").get()]);
+  S.cfg=cf.exists?cf.data():{};S.pros=pr.docs.map(d=>({id:d.id,...d.data()}));S.clientas=cl.docs.map(d=>({id:d.id,...d.data()}));
+  await cargar()}
+async function cargar(){$("#app").innerHTML=`<div class="empty">Calculando…</div>`;
+  const n=dias(S.desde,S.hasta),pd=add(S.desde,-n),ph=add(S.desde,-1);
+  const [r,c,rAll]=await Promise.all([S.db.collection("registros").where("fecha",">=",pd).where("fecha","<=",S.hasta).get(),
+    S.db.collection("citas").where("fecha",">=",S.desde).where("fecha","<=",S.hasta).get(),
+    S.regsAll?Promise.resolve(null):S.db.collection("registros").get()]);
+  const all=r.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.estado!=="anulado");
+  if(rAll)S.regsAll=rAll.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.estado!=="anulado");
+  S.regs=all.filter(x=>x.fecha>=S.desde);S.prev=all.filter(x=>x.fecha>=pd&&x.fecha<=ph);S.prevPocos=new Set(S.prev.map(x=>x.fecha)).size<Math.ceil(n/3);S.prevRango=[pd,ph];
+  S.citas=c.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.tipo!=="bloqueo");render()}
+function filtra(L){return S.pro?L.filter(x=>x.profId===S.pro):L}
+function tot(L){const ops=new Set();let tickets=0;L.forEach(r=>{const op=String(r.operacion||"").trim();if(r.medio==="tarjeta"&&op){if(!ops.has(op)){ops.add(op);tickets++}}else tickets++});
+  const venta=L.reduce((a,r)=>a+(+r.venta||0),0),prop=L.reduce((a,r)=>a+(+r.propina||0),0);
+  const com=L.reduce((a,r)=>{const b=r.base==="bruto"?r.venta:Math.round(r.venta/1.19);return a+Math.round(b*(r.comisionPct||0)/100)},0);
+  const svc=L.reduce((a,r)=>a+((r.servicios||[]).reduce((s,x)=>s+(x.cantidad||1),0)||1),0);
+  return{venta,prop,com,tickets,svc,ticket:tickets?venta/tickets:0}}
+function delta(a,b){if(!b||S.prevPocos)return"";const d=Math.round((a-b)*100/b);return`<i class="${d>=0?"up":"dn"}">${d>=0?"▲":"▼"} ${Math.abs(d)}% vs período anterior</i>`}
+function barras(rows,max,fmt){return rows.map(([lbl,v,extra])=>`<tr><td>${esc(lbl)}</td><td style="width:45%"><div class="barc"><div class="bar" style="width:${max?Math.max(2,v*100/max):0}%"></div></div></td><td class="n">${fmt(v)}</td>${extra!=null?`<td class="n">${extra}</td>`:""}</tr>`).join("")}
+function render(){const R=filtra(S.regs),P=filtra(S.prev),T=tot(R),TP=tot(P),C=filtra(S.citas);
+  // profesionales
+  const porPro={};S.regs.forEach(r=>{const k=r.profId;const o=porPro[k]||(porPro[k]={n:r.profNombre||k,L:[]});o.L.push(r)});
+  const proRows=Object.values(porPro).map(o=>{const t=tot(o.L);return{n:o.n,...t}}).sort((a,b)=>b.venta-a.venta);
+  // servicios
+  const sv={};R.forEach(r=>{const it=r.servicios||[];const lista=it.reduce((a,s)=>a+(s.precioLista||s.precio||0)*(s.cantidad||1),0);it.forEach(s=>{const k=s.nombre||s.id;const o=sv[k]||(sv[k]={q:0,v:0});const pl=(s.precioLista||s.precio||0)*(s.cantidad||1);o.q+=s.cantidad||1;o.v+=lista?(+r.venta||0)*pl/lista:(+r.venta||0)/it.length})});
+  const svRows=Object.entries(sv).sort((a,b)=>b[1].q-a[1].q).slice(0,12);
+  // heat dia x hora
+  const H={};let hmax=0;R.forEach(r=>{const h=parseInt(String(r.hora||"").slice(0,2),10);if(isNaN(h))return;const k=dow(r.fecha)+"-"+h;H[k]=(H[k]||0)+1;hmax=Math.max(hmax,H[k])});
+  const abre=parseInt(String(S.cfg.abre||"10:00").slice(0,2),10),cierra=parseInt(String(S.cfg.cierra||"20:00").slice(0,2),10);
+  const horas=[];for(let h=abre;h<cierra;h++)horas.push(h);
+  // agenda
+  const est=k=>C.filter(c=>c.estado===k).length;const tc=C.length,noas=est("noasistio"),canc=est("cancelada"),aten=est("atendida");
+  const minAg=C.filter(c=>c.estado!=="cancelada").reduce((a,c)=>a+(+c.dur||60),0);
+  const prosAct=S.pro?1:S.pros.filter(p=>p.activo!==false).length;const diasAb=new Set(S.regs.map(r=>r.fecha).concat(S.citas.map(c=>c.fecha))).size||1;
+  const minDisp=prosAct*diasAb*(cierra-abre)*60;
+  // clientas
+  const vis={};(S.regsAll||[]).concat(S.citas.filter(c=>c.estado==="atendida"||c.estado==="llego")).forEach(x=>{if(!x.clientaId)return;const v=vis[x.clientaId]||(vis[x.clientaId]={primera:x.fecha,ultima:x.fecha,n:0,fechas:new Set()});if(!v.fechas.has(x.fecha)){v.fechas.add(x.fecha);v.n++}if(x.fecha<v.primera)v.primera=x.fecha;if(x.fecha>v.ultima)v.ultima=x.fecha});
+  const enPer=Object.entries(vis).filter(([k,v])=>[...v.fechas].some(f=>f>=S.desde&&f<=S.hasta));
+  const nuevas=enPer.filter(([k,v])=>v.primera>=S.desde).length,recur=enPer.length-nuevas;
+  const lim=add(hoy(),-60);const inact=S.clientas.map(c=>({c,v:vis[c.id]})).filter(x=>x.v&&x.v.ultima<lim).sort((a,b)=>a.v.ultima.localeCompare(b.v.ultima)).slice(0,30);
+  const mesH=hoy().slice(5,7);const cumple=S.clientas.filter(c=>{const m=String(c.cumple||"").match(/(\d{1,2})\D+(\d{1,2})/);return m&&String(m[2]).padStart(2,"0")===mesH}).sort((a,b)=>parseInt(a.cumple)-parseInt(b.cumple));
+  const local=S.cfg.local||"NÚASPA";
+  $("#app").innerHTML=`<div><h1>Estadísticas del salón</h1><p class="muted">Ventas, profesionales, servicios, agenda y clientas. Se calcula con lo registrado en SurCaja.</p></div>
+  <div class="row"><label for="e-d">Desde<input id="e-d" type="date" value="${S.desde}"></label><label for="e-h">Hasta<input id="e-h" type="date" value="${S.hasta}"></label>
+    <div class="row" style="align-items:center"><button class="chip" data-r="mes">Este mes</button><button class="chip" data-r="mesant">Mes anterior</button><button class="chip" data-r="30">Últimos 30 días</button></div>
+    <label for="e-p">Profesional<select id="e-p"><option value="">Todas</option>${S.pros.map(p=>`<option value="${esc(p.id)}" ${S.pro===p.id?"selected":""}>${esc(p.nombre)}</option>`).join("")}</select></label>
+    <button class="btn" data-act="excel">Descargar Excel</button></div>
+  <div class="kpis">
+    <div class="kpi"><span>Ventas con IVA</span><b>${clp(T.venta)}</b>${delta(T.venta,TP.venta)}</div>
+    <div class="kpi"><span>Tickets (clientas atendidas)</span><b>${T.tickets}</b>${delta(T.tickets,TP.tickets)}</div>
+    <div class="kpi"><span>Ticket promedio</span><b>${clp(T.ticket)}</b>${delta(T.ticket,TP.ticket)}</div>
+    <div class="kpi"><span>Servicios realizados</span><b>${T.svc}</b>${delta(T.svc,TP.svc)}</div>
+    <div class="kpi"><span>Propinas</span><b>${clp(T.prop)}</b></div>
+    <div class="kpi"><span>Comisiones</span><b>${clp(T.com)}</b></div>
+  </div>
+  <p class="muted" style="font-size:13px;margin:-6px 0 0">${S.prevPocos?`No hay suficientes registros en el período anterior (${esc(S.prevRango[0])} a ${esc(S.prevRango[1])}) para comparar.`:`Comparado con ${esc(S.prevRango[0])} a ${esc(S.prevRango[1])}.`}</p>
+  <div class="grid2">
+    <div class="panel"><h2>Ventas por profesional</h2>${proRows.length?`<div class="tbl"><table><thead><tr><th>Profesional</th><th></th><th class="n">Ventas</th><th class="n">Ticket prom.</th></tr></thead><tbody>${barras(proRows.map(p=>[p.n,p.venta,clp(p.ticket)]),proRows[0].venta,clp)}</tbody></table></div>`:`<div class="empty">Sin ventas en el período.</div>`}</div>
+    <div class="panel"><h2>Servicios más pedidos</h2>${svRows.length?`<div class="tbl"><table><thead><tr><th>Servicio</th><th></th><th class="n">Cantidad</th><th class="n">Ventas</th></tr></thead><tbody>${barras(svRows.map(([k,o])=>[k,o.q,clp(o.v)]),svRows[0][1].q,v=>v)}</tbody></table></div>`:`<div class="empty">Sin servicios en el período.</div>`}</div>
+  </div>
+  <div class="panel"><h2>Días y horas con más atenciones</h2>${hmax?`<div class="tbl"><table class="heat"><thead><tr><th></th>${horas.map(h=>`<th style="text-align:center">${h}h</th>`).join("")}</tr></thead><tbody>${DOW.map((d,i)=>`<tr><th>${d}</th>${horas.map(h=>{const v=H[i+"-"+h]||0;const a=v/hmax;return`<td style="background:rgba(91,42,110,${(a*0.85).toFixed(2)});color:${a>.5?"#fff":"var(--ink)"}">${v||""}</td>`}).join("")}</tr>`).join("")}</tbody></table></div><p class="muted" style="font-size:13px;margin:0">Úsalo para decidir horarios, turnos de cada profesional y cuándo ofrecer promociones (las horas claras son las con menos clientas).</p>`:`<div class="empty">Sin datos de horario en el período.</div>`}</div>
+  <div class="grid2">
+    <div class="panel"><h2>Agenda</h2><div class="kpis">
+      <div class="kpi"><span>Citas agendadas</span><b>${tc}</b></div>
+      <div class="kpi"><span>Atendidas</span><b>${aten}</b></div>
+      <div class="kpi"><span>No asistió</span><b>${pct(noas,tc)}%</b><i class="muted">${noas} cita(s)</i></div>
+      <div class="kpi"><span>Canceladas</span><b>${pct(canc,tc)}%</b><i class="muted">${canc} cita(s)</i></div>
+      <div class="kpi"><span>Ocupación de la agenda</span><b>${tc?pct(minAg,minDisp)+"%":"—"}</b><i class="muted">horas agendadas / horas disponibles</i></div></div>
+      ${tc?"":`<p class="muted" style="font-size:13px;margin:0">Cuando la agenda se use para todas las citas, aquí verás inasistencias y ocupación.</p>`}</div>
+    <div class="panel"><h2>Clientas</h2><div class="kpis">
+      <div class="kpi"><span>Atendidas con ficha</span><b>${enPer.length}</b></div>
+      <div class="kpi"><span>Nuevas</span><b>${nuevas}</b></div>
+      <div class="kpi"><span>Volvieron</span><b>${recur}</b><i class="muted">${pct(recur,enPer.length)}% recurrencia</i></div></div>
+      <p class="muted" style="font-size:13px;margin:0">Solo cuentan las clientas registradas con ficha (agendadas en SurCaja). Mientras más citas pasen por la agenda, más completo es este dato.</p></div>
+  </div>
+  <div class="grid2">
+    <div class="panel"><h2>Cumpleaños de este mes</h2>${cumple.length?`<div class="tbl"><table><tbody>${cumple.map(c=>`<tr><td><b>${esc(c.nombre)}</b></td><td>${esc(c.cumple)}</td><td>${c.telefono?`<a class="wsp" target="_blank" rel="noopener" href="${esc(wsp(c.telefono,`¡Hola ${String(c.nombre).split(" ")[0]}! 🎉 En ${local} queremos saludarte por tu cumpleaños. Tienes un regalito esperándote este mes: agenda tu hora y te lo hacemos válido 💅`))}">Saludar por WhatsApp</a>`:"sin teléfono"}</td></tr>`).join("")}</tbody></table></div>`:`<div class="empty">No hay cumpleaños registrados este mes. Pide la fecha al crear la ficha de cada clienta.</div>`}</div>
+    <div class="panel"><h2>Clientas que no vuelven hace +60 días</h2>${inact.length?`<div class="tbl"><table><tbody>${inact.map(x=>`<tr><td><b>${esc(x.c.nombre)}</b><br><span class="muted" style="font-size:12px">Última visita ${esc(x.v.ultima)} · ${x.v.n} visita(s)</span></td><td>${x.c.telefono?`<a class="wsp" target="_blank" rel="noopener" href="${esc(wsp(x.c.telefono,`¡Hola ${String(x.c.nombre).split(" ")[0]}! Te extrañamos en ${local} 💜 ¿Agendamos tu próxima hora? Esta semana tenemos horarios disponibles.`))}">Invitar a volver</a>`:"sin teléfono"}</td></tr>`).join("")}</tbody></table></div>`:`<div class="empty">No hay clientas inactivas por ahora.</div>`}</div>
+  </div>`;
+  document.querySelectorAll("[data-r]").forEach(b=>b.setAttribute("aria-pressed","false"))}
+function excel(){if(!window.XLSX)return;const R=filtra(S.regs);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(R.map(r=>({Fecha:r.fecha,Hora:r.hora,Profesional:r.profNombre,Servicios:(r.servicios||[]).map(s=>(s.cantidad>1?s.cantidad+"x ":"")+s.nombre).join(", "),Venta:r.venta,Propina:r.propina||0,Medio:r.medio,"N° operación":r.operacion||"",Clienta:r.clientaNombre||""}))),"Servicios");
+  const porPro={};R.forEach(r=>{(porPro[r.profNombre]=porPro[r.profNombre]||[]).push(r)});
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(Object.entries(porPro).map(([n,L])=>{const t=tot(L);return{Profesional:n,Ventas:t.venta,Tickets:t.tickets,"Ticket promedio":Math.round(t.ticket),Servicios:t.svc,Propinas:t.prop,Comisiones:t.com}})),"Por profesional");
+  XLSX.writeFile(wb,`Estadísticas NÚASPA ${S.desde} a ${S.hasta}.xlsx`)}
+document.addEventListener("change",ev=>{const t=ev.target;if(t.id==="e-d"&&t.value){S.desde=t.value;cargar()}if(t.id==="e-h"&&t.value){S.hasta=t.value;cargar()}if(t.id==="e-p"){S.pro=t.value;render()}});
+document.addEventListener("click",ev=>{const b=ev.target.closest("[data-r]");if(b){const r=b.dataset.r,h=hoy();
+  if(r==="mes"){S.desde=h.slice(0,8)+"01";S.hasta=h}else if(r==="mesant"){const [y,m]=h.split("-").map(Number);const d=new Date(y,m-2,1),e=new Date(y,m-1,0);S.desde=ymd(d);S.hasta=ymd(e)}else{S.desde=add(h,-29);S.hasta=h}cargar();return}
+  if(ev.target.closest('[data-act="excel"]'))excel()});
+init();
+})();
+</script></body></html>
