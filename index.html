@@ -151,6 +151,7 @@ tr:last-child td{border-bottom:0}
     <button data-tab="clientas">Clientas</button>
     <button data-tab="ajustes" id="tab-ajustes">Ajustes</button>
     <a class="navlink" href="https://claude.ai/artifact/BdRKSSHS6oe1g8Rx8g3n3C" target="_blank" rel="noopener">¿Cómo emito mi boleta? ↗</a>
+    <a class="navlink" id="nav-contratos" href="https://claude.ai/artifact/CeBpukXojvrrUNNxX8rxPG" target="_blank" rel="noopener" hidden>Contratos ↗</a>
   </nav>
 </div></div>
 <main><div class="page" id="app">
@@ -238,6 +239,7 @@ function render(){
   document.querySelectorAll("#nav button").forEach(b=>{b.setAttribute("aria-current",b.dataset.tab===S.tab?"page":"false")});
   $("#tab-ajustes").hidden=!S.admin&&!S.offline;$("#tab-reportes").hidden=!S.admin&&!S.offline;
   ["cierre","clientas"].forEach(k=>{const b=document.querySelector('#nav button[data-tab="'+k+'"]');if(b)b.hidden=!!S.myPro});
+  {const nc=document.getElementById("nav-contratos");if(nc)nc.hidden=!S.admin;}
   const app=$("#app");
   if(S.offline){app.innerHTML=`<div class="empty"><strong>La caja no está conectada en esta vista</strong><span>Ábrela desde claude.ai con tu sesión iniciada para registrar y ver los servicios.</span></div>`;return}
   if(!S.ready){return}
