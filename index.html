@@ -152,6 +152,7 @@ tr:last-child td{border-bottom:0}
     <button data-tab="ajustes" id="tab-ajustes">Ajustes</button>
     <a class="navlink" href="https://claude.ai/artifact/BdRKSSHS6oe1g8Rx8g3n3C" target="_blank" rel="noopener">¿Cómo emito mi boleta? ↗</a>
     <a class="navlink" id="nav-contratos" href="contratos.html" hidden>Contratos</a>
+    <a class="navlink" href="firmar.html">Firmas</a>
   </nav>
 </div></div>
 <main><div class="page" id="app">
@@ -215,6 +216,7 @@ async function init(){
   db.collection("servicios").onSnapshot(q=>{S.servs=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>catOrd(a.categoria)-catOrd(b.categoria)||String(a.categoria||"").localeCompare(String(b.categoria||""),"es")||String(a.nombre).localeCompare(String(b.nombre),"es"));render()},err);
   db.doc("config/general").onSnapshot(s=>{S.cfg=Object.assign({base:"neto"},s.exists?s.data():{});render()},err);
   if(!S.myPro)db.collection("clientas").onSnapshot(q=>{S.clientas=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre),"es"));render()},err);
+  try{(S.myPro?db.collection("firmas").where("profId","==",S.myPro).where("estado","==","enviado"):S.admin?db.collection("firmas").where("estado","==","firmado_pro"):null)?.onSnapshot(q=>{S.firmasPend=q.docs.length;render()},()=>{})}catch(e){}
   subDia();subAgenda();
 }
 function subAgenda(){
@@ -247,7 +249,7 @@ function render(){
   const keep=captureFocus();
   const gw=document.querySelector(".grid-wrap"),sh=document.querySelector(".sheet");
   const sc={gt:gw?gw.scrollTop:null,gl:gw?gw.scrollLeft:0,st:sh?sh.scrollTop:0};
-  app.innerHTML=f()+vSheet();
+  app.innerHTML=(S.firmasPend?`<div class="note warn"><b>${S.myPro?"Tienes un contrato para firmar":"Hay "+S.firmasPend+" contrato(s) firmados por la profesional esperando tu firma"}</b><span><a href="firmar.html">Revisar y firmar →</a></span></div>`:"")+f()+vSheet();
   restoreFocus(keep);
   const gw2=document.querySelector(".grid-wrap"),sh2=document.querySelector(".sheet");
   if(gw2){if(sc.gt!=null){gw2.scrollTop=sc.gt;gw2.scrollLeft=sc.gl}else if(!S._agScrolled){const n=document.querySelector(".ag .now");if(n){gw2.scrollTop=Math.max(0,n.offsetTop-80)}S._agScrolled=true}}
