@@ -152,6 +152,7 @@ tr:last-child td{border-bottom:0}
     <button data-tab="ajustes" id="tab-ajustes">Ajustes</button>
     <a class="navlink" href="https://claude.ai/artifact/BdRKSSHS6oe1g8Rx8g3n3C" target="_blank" rel="noopener">¿Cómo emito mi boleta? ↗</a>
     <a class="navlink" id="nav-estad" href="estadisticas.html" hidden>Estadísticas</a>
+    <a class="navlink" id="nav-gc" href="giftcards.html" hidden>Gift cards</a>
     <a class="navlink" id="nav-gastos" href="gastos.html" hidden>Gastos</a>
     <a class="navlink" id="nav-contratos" href="contratos.html" hidden>Contratos</a>
     <a class="navlink" href="firmar.html">Firmas</a>
@@ -175,7 +176,8 @@ tr:last-child td{border-bottom:0}
 const IVA=0.19;
 const CAT_ORDEN=["manicure","pedicure","pestañas","depilación"];
 function catOrd(c){const i=CAT_ORDEN.indexOf(String(c||"").trim().toLowerCase());return i<0?CAT_ORDEN.length:i}
-const MEDIOS=[["tarjeta","Tarjeta (Mercado Pago)"],["efectivo","Efectivo"],["transferencia","Transferencia"]];
+const MEDIOS=[["tarjeta","Tarjeta (Mercado Pago)"],["efectivo","Efectivo"],["transferencia","Transferencia"],["giftcard","Gift card"]];
+function gcPseudo(){return(S.gcDia||[]).filter(g=>g.estado!=="anulada").map(g=>({id:"gc-"+g.id,venta:+g.valorVenta||0,propina:0,medio:g.medioVenta,operacion:g.opVenta||"",profNombre:"Venta gift card "+g.id,hora:g.horaVenta||"",estado:"ok",comisionPct:0,base:"bruto"}))}
 const MODELOS={contrato:"Contrato de trabajo",honorarios:"Honorarios",arriendo:"Arriendo de sillón",transicion:"En transición (sin documento)"};
 function diasHasta(f){if(!f)return null;const [y,m,d]=String(f).split("-").map(Number);const t=new Date(y,m-1,d),h=new Date();h.setHours(0,0,0,0);return Math.round((t-h)/864e5)}
 const S={db:null,user:null,dl:null,admin:false,ready:false,offline:false,
@@ -235,6 +237,7 @@ function subDia(){
   if(S.unsubDia)S.unsubDia();if(S.unsubCierre)S.unsubCierre();if(S.unsubMp)S.unsubMp();
   if(!S.myPro)S.unsubMp=S.db.doc("mp/"+S.dia).onSnapshot(s=>{S.mpDia=s.exists?s.data():null;render()},err);
   S.unsubDia=(S.myPro?S.db.collection("registros").where("fecha","==",S.dia).where("profId","==",S.myPro):S.db.collection("registros").where("fecha","==",S.dia)).onSnapshot(q=>{S.regsDia=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.creado).localeCompare(String(b.creado)));render()},err);
+  if(S.unsubGc)S.unsubGc();if(!S.myPro)S.unsubGc=S.db.collection("giftcards").where("fechaVenta","==",S.dia).onSnapshot(q=>{S.gcDia=q.docs.map(d=>({id:d.id,...d.data()}));render()},()=>{});
   if(!S.myPro)S.unsubCierre=S.db.doc("cierres/"+S.dia).onSnapshot(s=>{S.cierreDia=s.exists?s.data():null;render()},err);
 }
 
@@ -243,7 +246,7 @@ function render(){
   document.querySelectorAll("#nav button").forEach(b=>{b.setAttribute("aria-current",b.dataset.tab===S.tab?"page":"false")});
   $("#tab-ajustes").hidden=!S.admin&&!S.offline;$("#tab-reportes").hidden=!S.admin&&!S.offline;
   ["cierre","clientas"].forEach(k=>{const b=document.querySelector('#nav button[data-tab="'+k+'"]');if(b)b.hidden=!!S.myPro});
-  {const nc=document.getElementById("nav-contratos");if(nc)nc.hidden=!S.admin;const ng=document.getElementById("nav-gastos");if(ng)ng.hidden=!S.admin;const ne=document.getElementById("nav-estad");if(ne)ne.hidden=!S.admin;}
+  {const nc=document.getElementById("nav-contratos");if(nc)nc.hidden=!S.admin;const ng=document.getElementById("nav-gastos");if(ng)ng.hidden=!S.admin;const ne=document.getElementById("nav-estad");if(ne)ne.hidden=!S.admin;const nq=document.getElementById("nav-gc");if(nq)nq.hidden=!S.admin;}
   const app=$("#app");
   if(S.offline){app.innerHTML=`<div class="empty"><strong>La caja no está conectada en esta vista</strong><span>Ábrela desde claude.ai con tu sesión iniciada para registrar y ver los servicios.</span></div>`;return}
   if(!S.ready){return}
@@ -301,7 +304,7 @@ function vRegistrar(){
       ${sel.manual&&cobrado!==lista&&lista>0?`<div class="note warn">Cobrado distinto a la lista de precios (${clp(lista)}). Diferencia ${clp(cobrado-lista)}. <button class="mini" data-act="reset-cobrado">Volver al precio de lista</button></div>`:""}
       <div class="step" style="gap:8px"><span class="muted" style="font-size:13px;font-weight:600">Medio de pago</span>
         <div class="chips">${MEDIOS.map(([k,l])=>`<button class="chip" style="font-size:14px;padding:10px 14px;min-height:44px" data-act="medio" data-k="${k}" aria-pressed="${sel.medio===k}">${l}</button>`).join("")}</div></div>
-      ${sel.medio==="tarjeta"?`<label for="f-op">N° de operación o de boleta<input id="f-op" class="m" inputmode="numeric" value="${esc(sel.op)}" placeholder="Ej. 186263056396"></label><p class="muted" style="font-size:12px">Si dos profesionales atendieron a la misma clienta con un solo voucher, cada una registra solo sus servicios y su parte de la propina, con el mismo número de operación.</p>`:""}
+      ${sel.medio==="giftcard"?`<label for="f-gc">Código de la gift card<input id="f-gc" class="m" value="${esc(sel.gc||"")}" placeholder="Ej. NUA-7K2P" style="text-transform:uppercase"></label><p class="muted" style="font-size:12px">El monto se descuenta del saldo de la gift card. Tu comisión se calcula igual que siempre.</p>`:""}${sel.medio==="tarjeta"?`<label for="f-op">N° de operación o de boleta<input id="f-op" class="m" inputmode="numeric" value="${esc(sel.op)}" placeholder="Ej. 186263056396"></label><p class="muted" style="font-size:12px">Si dos profesionales atendieron a la misma clienta con un solo voucher, cada una registra solo sus servicios y su parte de la propina, con el mismo número de operación.</p>`:""}
       ${S.admin?`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px"><label for="f-fecha">Fecha del servicio<input id="f-fecha" type="date" max="${hoy()}" value="${esc(sel.fecha||hoy())}"></label>${sel.fecha&&sel.fecha!==hoy()?`<label for="f-hora">Hora del cobro<input id="f-hora" type="time" value="${esc(sel.hora||"")}"></label>`:""}</div>${sel.fecha&&sel.fecha!==hoy()?`<p class="muted" style="font-size:12px">Estás registrando un servicio de otro día. Usa la hora del voucher para que cuadre con Mercado Pago.</p>`:""}`:""}
       <label for="f-nota">Nota (opcional)<input id="f-nota" value="${esc(sel.nota)}" placeholder="Ej. descuento clienta frecuente"></label>
       <div id="preview" class="step" style="gap:6px;border-top:1px solid var(--line);padding-top:12px">${preview(cobrado,pro,r)}</div>
@@ -357,7 +360,7 @@ function vDia(){
 const medioTxt=k=>(MEDIOS.find(m=>m[0]===k)||[k,k])[1];
 
 function vCierre(){
-  const t=resumen(S.regsDia), c=S.cierreDia||{}, tj=t.porMedio.tarjeta;
+  const t=resumen(S.regsDia.concat(gcPseudo())), c=S.cierreDia||{}, tj=t.porMedio.tarjeta;
   const tP=c.totalPoint!=null?c.totalPoint:"", vP=c.ventasPoint!=null?c.ventasPoint:"", pP=c.propinasPoint!=null?c.propinasPoint:"", nP=c.cantPoint!=null?c.cantPoint:"", ef=c.efectivoContado!=null?c.efectivoContado:"";
   const fila=(lbl,sis,real,fmt=clp)=>{if(real===""||real==null)return`<tr><td>${lbl}</td><td class="n">${fmt(sis)}</td><td class="n">—</td><td class="n">—</td><td><span class="pill n">Falta dato</span></td></tr>`;const d=Number(real)-sis;return`<tr><td>${lbl}</td><td class="n">${fmt(sis)}</td><td class="n">${fmt(real)}</td><td class="n">${fmt(d)}</td><td>${d===0?`<span class="pill g">Cuadra</span>`:`<span class="pill r">${d>0?"Cobro sin registro":"Registro sin cobro"}</span>`}</td></tr>`};
   const fmtN=n=>String(Math.round(n));
@@ -421,7 +424,7 @@ function mpOps(imp){const m=imp.map;const g=(r,k)=>m[k]>-1?r[m[k]]:"";
     return{op:String(g(r,"op")==null?"":g(r,"op")).trim().replace(/\.0+$/,""),fecha:fe?fe.f:"",hora:fe?fe.h:"",monto:pMonto(g(r,"monto")),propina:pMonto(g(r,"propina")),comision:Math.abs(pMonto(g(r,"comision"))),estado:est,
       valido:!/rechaz|cancel|devuel|reembols|refund|reject|anula|contracargo|charged/i.test(est)}}).filter(o=>o.op&&o.fecha)}
 function concilia(){const mp=S.mpDia;if(!mp||!Array.isArray(mp.ops))return null;
-  const regs=S.regsDia.filter(r=>r.estado!=="anulado"&&r.medio==="tarjeta");const byOp={};
+  const regs=S.regsDia.concat(gcPseudo()).filter(r=>r.estado!=="anulado"&&r.medio==="tarjeta");const byOp={};
   regs.forEach(r=>{const k=String(r.operacion||"").trim();if(k)(byOp[k]=byOp[k]||[]).push(r)});
   const opsSet=new Set(mp.ops.map(o=>o.op));const sueltos=regs.filter(r=>!opsSet.has(String(r.operacion||"").trim()));
   const rows=[],usados=new Set(),usadosR=new Set();
@@ -876,6 +879,7 @@ document.addEventListener("input",ev=>{
   if(t.id==="f-fecha"){sel.fecha=t.value&&t.value<=hoy()?t.value:hoy();if(sel.fecha===hoy())sel.hora="";render();return}
   if(t.id==="f-hora"){sel.hora=t.value;return}
   if(t.id==="f-op"){sel.op=t.value;return}
+  if(t.id==="f-gc"){sel.gc=t.value;return}
   if(t.id==="f-nota"){sel.nota=t.value;return}
   if(t.id==="l-desde"){S.liq.desde=t.value;return}
   if(t.id==="l-hasta"){S.liq.hasta=t.value;return}
@@ -923,6 +927,7 @@ async function guardar(){
   const dupOp=!mismoOp&&sel.medio==="tarjeta"&&sel.op&&S.regsDia.some(r=>r.id!==sel.editId&&r.operacion===sel.op.trim()&&r.profId===pro.id&&r.estado!=="anulado");
   if(dupOp&&!sel.okOp){sel.okOp=true;toast("Ese voucher ya tiene un servicio de "+pro.nombre+". Si es otro servicio suyo con el mismo voucher, toca Guardar de nuevo");return}
   const now=new Date();
+  if(sel.editId&&(sel.medio==="giftcard"||(sel.orig&&sel.orig.medio==="giftcard"))&&sel.medio!==(sel.orig||{}).medio){toast("Un pago con gift card no se puede cambiar editando: anula el servicio, ajusta el saldo en Gift cards y regístralo de nuevo");return}
   if(sel.editId){const o=sel.orig||{};
     const upd={servicios:items,precioLista:lista,venta,propina:int(sel.propina),medio:sel.medio,operacion:sel.medio==="tarjeta"?sel.op.trim():"",nota:sel.nota.trim(),
       profId:pro.id,profNombre:pro.nombre,fecha:(S.admin&&sel.fecha&&sel.fecha<=ymd(now))?sel.fecha:o.fecha,hora:sel.hora||o.hora,
@@ -932,13 +937,17 @@ async function guardar(){
       S.sel={pro:null,items:{},cobrado:null,manual:false,propina:"",medio:"tarjeta",op:"",nota:""};S.tab="hoy"}catch(e){fail(e)}
     S.saving=false;render();return}
   const pasada=!!(S.admin&&sel.fecha&&sel.fecha<ymd(now));
+  let gc=null;if(sel.medio==="giftcard"){const code=String(sel.gc||"").trim().toUpperCase();if(!code){toast("Ingresa el código de la gift card");return}
+    try{const g=await S.db.doc("giftcards/"+code).get();if(!g.exists){toast("No existe una gift card con el código "+code);return}gc={id:code,...g.data()}}catch(e){toast("No se pudo revisar la gift card");return}
+    if(gc.estado!=="vigente"){toast("La gift card "+code+" está "+gc.estado);return}if((+gc.saldo||0)<venta){toast("Saldo insuficiente: a la gift card le quedan "+clp(gc.saldo));return}}
   if(pasada&&!sel.hora){toast("Indica la hora del cobro (la del voucher)");return}
   const doc={fecha:pasada?sel.fecha:ymd(now),hora:pasada?sel.hora:now.toTimeString().slice(0,5),creado:now.toISOString(),atrasado:pasada,
     profId:pro.id,profNombre:pro.nombre,modelo:pro.modelo||"",comisionPct:Number(pro.comision)||0,base:S.cfg.base==="bruto"?"bruto":"neto",
     servicios:items,precioLista:lista,venta,propina:int(sel.propina),medio:sel.medio,operacion:sel.medio==="tarjeta"?sel.op.trim():"",nota:sel.nota.trim(),estado:"ok",
-    citaId:sel.citaId||"",clientaId:sel.clientaId||"",clientaNombre:sel.clientaNombre||""};
+    citaId:sel.citaId||"",clientaId:sel.clientaId||"",clientaNombre:sel.clientaNombre||"",giftcard:gc?gc.id:""};
   S.saving=true;refreshPreview();
   try{const ref=await S.db.collection("registros").add(doc);
+    if(gc){try{const ns=(+gc.saldo||0)-venta;await S.db.doc("giftcards/"+gc.id).update({saldo:ns,estado:ns===0?"canjeada":"vigente",canjes:(gc.canjes||[]).concat([{fecha:doc.fecha,registroId:ref.id,prof:pro.nombre,monto:venta}])})}catch(e){console.warn(e);toast("Servicio guardado, pero no se pudo descontar la gift card. Avisa a la administradora.")}}
     if(sel.citaId){try{await S.db.doc("citas/"+sel.citaId).update({estado:"atendida",registroId:ref.id,venta,modificado:now.toISOString()})}catch(e){console.warn(e)}}
     if(sel.clientaId){try{await S.db.doc("clientas/"+sel.clientaId).update({ultimaVisita:doc.fecha})}catch(e){console.warn(e)}}
     const c=calc(venta,doc.comisionPct,doc.base);
