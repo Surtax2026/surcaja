@@ -322,7 +322,7 @@ function resumen(regs){
   const ok=regs.filter(r=>r.estado!=="anulado");
   const t={n:ok.length,venta:0,prop:0,neto:0,iva:0,com:0,porMedio:{tarjeta:{n:0,v:0,p:0},efectivo:{n:0,v:0,p:0},transferencia:{n:0,v:0,p:0}},porPro:{}};
   ok.forEach(r=>{const c=calc(r.venta,r.comisionPct,r.base);t.venta+=r.venta;t.prop+=r.propina||0;t.neto+=c.neto;t.iva+=c.iva;t.com+=c.com;
-    const m=t.porMedio[r.medio]||(t.porMedio[r.medio]={n:0,v:0,p:0});m.n++;m.v+=r.venta;m.p+=r.propina||0;
+    const m=t.porMedio[r.medio]||(t.porMedio[r.medio]={n:0,v:0,p:0});const op=String(r.operacion||"").trim();if(!m.ops)m.ops=new Set();if(op){if(!m.ops.has(op)){m.ops.add(op);m.n++}}else m.n++;m.v+=r.venta;m.p+=r.propina||0;
     const k=r.profId;const pp=t.porPro[k]||(t.porPro[k]={nombre:r.profNombre,modelo:r.modelo,n:0,venta:0,neto:0,iva:0,com:0,prop:0});
     pp.n++;pp.venta+=r.venta;pp.neto+=c.neto;pp.iva+=c.iva;pp.com+=c.com;pp.prop+=r.propina||0});
   return t;
@@ -362,7 +362,7 @@ function vCierre(){
       <div class="fields">
         <label for="c-total">Total del ticket<input id="c-total" class="m" inputmode="numeric" value="${esc(tP)}" placeholder="Ej. 103532"></label>
         <label for="c-ventas">Ventas<input id="c-ventas" class="m" inputmode="numeric" value="${esc(vP)}" placeholder="Ej. 98236"></label>
-        <label for="c-cant">N° de ventas<input id="c-cant" class="m" inputmode="numeric" value="${esc(nP)}" placeholder="Ej. 5"></label>
+        <label for="c-cant">N° de ventas (tickets)<input id="c-cant" class="m" inputmode="numeric" value="${esc(nP)}" placeholder="Ej. 5"></label>
         <label for="c-prop">Propinas<input id="c-prop" class="m" inputmode="numeric" value="${esc(pP)}" placeholder="Ej. 5296"></label>
         <label for="c-ef">Efectivo contado<input id="c-ef" class="m" inputmode="numeric" value="${esc(ef)}" placeholder="0"></label>
       </div>
