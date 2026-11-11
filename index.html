@@ -217,8 +217,9 @@ async function init(){
   subDia();subAgenda();
 }
 function subAgenda(){
-  if(!S.db||S.myPro)return;
+  if(!S.db)return;
   if(S.unsubSem)S.unsubSem();if(S.unsubMan)S.unsubMan();
+  if(S.myPro){const a=lunesDe(S.agDia),b=masDias(a,6),m=masDias(hoy(),1);S.unsubMan=null;S.unsubSem=S.db.collection("citas").where("profId","==",S.myPro).onSnapshot(q=>{const all=q.docs.map(d=>({id:d.id,...d.data()}));S.citasSem=all.filter(c=>c.fecha>=a&&c.fecha<=b);S.citasMan=all.filter(c=>c.fecha===m);render()},err);return}
   const a=lunesDe(S.agDia),b=masDias(a,6);
   S.unsubSem=S.db.collection("citas").where("fecha",">=",a).where("fecha","<=",b).onSnapshot(q=>{S.citasSem=q.docs.map(d=>({id:d.id,...d.data()}));render()},err);
   S.unsubMan=S.db.collection("citas").where("fecha","==",masDias(hoy(),1)).onSnapshot(q=>{S.citasMan=q.docs.map(d=>({id:d.id,...d.data()}));render()},err);
@@ -236,7 +237,7 @@ function subDia(){
 function render(){
   document.querySelectorAll("#nav button").forEach(b=>{b.setAttribute("aria-current",b.dataset.tab===S.tab?"page":"false")});
   $("#tab-ajustes").hidden=!S.admin&&!S.offline;$("#tab-reportes").hidden=!S.admin&&!S.offline;
-  ["cierre","clientas","agenda"].forEach(k=>{const b=document.querySelector('#nav button[data-tab="'+k+'"]');if(b)b.hidden=!!S.myPro});
+  ["cierre","clientas"].forEach(k=>{const b=document.querySelector('#nav button[data-tab="'+k+'"]');if(b)b.hidden=!!S.myPro});
   const app=$("#app");
   if(S.offline){app.innerHTML=`<div class="empty"><strong>La caja no está conectada en esta vista</strong><span>Ábrela desde claude.ai con tu sesión iniciada para registrar y ver los servicios.</span></div>`;return}
   if(!S.ready){return}
@@ -742,7 +743,7 @@ function vDet(){const c=citaPorId(S.det);if(!c){S.det=null;return""}
     <button class="btn wsp" data-act="c-wsp" data-k="recordatorio" data-id="${esc(c.id)}">Recordatorio</button>
     ${c.estado==="cancelada"?`<button class="btn wsp" data-act="c-wsp" data-k="cancelada" data-id="${esc(c.id)}">Avisar cancelación</button>`:""}</div>
     <p class="status">${c.avisado?"Confirmación enviada "+esc(new Date(c.avisado).toLocaleString("es-CL"))+". ":""}${c.recordado?"Recordatorio enviado "+esc(new Date(c.recordado).toLocaleString("es-CL"))+".":""}${!c.avisado&&!c.recordado?"Se abre WhatsApp con el mensaje listo; solo hay que tocar enviar.":""}</p></div>
-  <div class="row-btns">${c.registroId?"":`<button class="btn" data-act="c-cobrar" data-id="${esc(c.id)}">Cobrar en caja</button>`}<button class="btn sec" data-act="c-editar" data-id="${esc(c.id)}">Editar o mover</button>${c.clientaId?`<button class="btn sec" data-act="cli-abrir" data-id="${esc(c.clientaId)}">Ver ficha</button>`:""}</div>`}
+  <div class="row-btns">${c.registroId?"":`<button class="btn" data-act="c-cobrar" data-id="${esc(c.id)}">Cobrar en caja</button>`}<button class="btn sec" data-act="c-editar" data-id="${esc(c.id)}">Editar o mover</button>${c.clientaId&&!S.myPro?`<button class="btn sec" data-act="cli-abrir" data-id="${esc(c.clientaId)}">Ver ficha</button>`:""}</div>`}
 function vSheet(){if(!S.form&&!S.det)return"";return`<div class="sheet-bg" data-act="sheet-bg"><div class="sheet" role="dialog" aria-modal="true">${S.form?vForm():vDet()}</div></div>`}
 function cobrarCita(c){const items={};(c.servicios||[]).forEach(s=>{if(S.servs.find(x=>x.id===s.id))items[s.id]=(items[s.id]||0)+1});
   S.sel={pro:c.profId,items,cobrado:null,manual:false,propina:"",medio:"tarjeta",op:"",nota:"",citaId:c.id,clientaId:c.clientaId||"",clientaNombre:c.clientaNombre||""};
