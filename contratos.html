@@ -1,0 +1,434 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Contratos NÚASPA</title>
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#5b2a6e">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="config.js"></script>
+<script src="adapter.js"></script>
+
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: barra superior; dos columnas (parámetros a la izquierda, contrato vivo a la derecha) que se apilan en teléfono */
+:root{
+  --bg:#f3f4f6; --surface:#ffffff; --paper:#fffefb; --ink:#17212b; --muted:#5d6874; --line:#dde1e6;
+  --navy:#16324f; --navy-ink:#ffffff; --teal:#1d7a74; --teal-soft:#e2f1ef;
+  --amber:#8a5a00; --amber-soft:#fdf0d6; --mark:#e8f0fb; --red:#a3312f;
+  --f-display:"Fraunces",Georgia,"Times New Roman",serif;
+  --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11161c; --surface:#1a2129; --paper:#1d242c; --ink:#e8edf2; --muted:#9aa6b2; --line:#2e3843;
+  --navy:#8fb6e0; --navy-ink:#0f1a26; --teal:#6cc5bc; --teal-soft:#16302d;
+  --amber:#f0be66; --amber-soft:#3a2c12; --mark:#22344a; --red:#f08b88; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11161c; --surface:#1a2129; --paper:#1d242c; --ink:#e8edf2; --muted:#9aa6b2; --line:#2e3843;
+  --navy:#8fb6e0; --navy-ink:#0f1a26; --teal:#6cc5bc; --teal-soft:#16302d;
+  --amber:#f0be66; --amber-soft:#3a2c12; --mark:#22344a; --red:#f08b88; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top-in{max-width:1240px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-block:12px}
+.brand{font-family:var(--f-display);font-size:22px;font-weight:600;margin-right:auto}
+.brand small{font:600 11px var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-left:10px}
+.status{font-size:13px;color:var(--muted)}
+.status.ok{color:var(--teal)} .status.err{color:var(--red)}
+main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 64px}
+.wrap{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:minmax(0,400px) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:900px){.wrap{grid-template-columns:1fr}}
+.side{display:grid;gap:16px;min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:12px;min-width:0}
+h2{margin:0;font:700 12px var(--f-body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:600 14px var(--f-body);border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:8px 14px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:var(--navy-ink)}
+.chip.add{border-style:dashed;color:var(--muted)}
+label{display:grid;gap:4px;font-size:12px;font-weight:600;color:var(--muted)}
+input,select,textarea{font:15px var(--f-body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 11px;width:100%}
+input.m{font-family:var(--f-mono)}
+textarea{resize:vertical;min-height:70px}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:420px){.grid2{grid-template-columns:1fr}}
+.hint{font-size:12px;color:var(--muted);font-weight:400}
+.btn{font:700 14px var(--f-body);border:0;border-radius:10px;padding:11px 16px;cursor:pointer;background:var(--navy);color:var(--navy-ink)}
+.btn.sec{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.calc{width:100%;border-collapse:collapse;font-size:14px}
+.calc th,.calc td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
+.calc th:first-child,.calc td:first-child{text-align:left}
+.calc th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.calc tr.k td{font-weight:700;color:var(--teal)}
+.calc td{font-family:var(--f-mono)} .calc td:first-child{font-family:var(--f-body)}
+.doc-col{display:grid;gap:12px;min-width:0}
+.doc-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.legend{font-size:12px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.sw{width:14px;height:14px;border-radius:3px;display:inline-block}
+.paper{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:clamp(20px,5vw,56px);font:15.5px/1.7 var(--f-body);min-width:0}
+.paper h1{font-family:var(--f-display);font-weight:600;font-size:clamp(20px,3vw,26px);line-height:1.25;margin:0 0 20px;text-align:center;text-wrap:balance}
+.paper h3{font:700 14px var(--f-body);letter-spacing:.06em;text-transform:uppercase;margin:28px 0 8px;color:var(--navy)}
+.paper p{margin:0 0 12px;max-width:72ch}
+.paper ol{margin:0 0 12px;padding-left:22px;max-width:70ch}
+.paper li{margin:0 0 4px}
+.v{background:var(--mark);border-radius:3px;padding:0 3px}
+.miss{background:var(--amber-soft);color:var(--amber);border-radius:3px;padding:0 3px;font-weight:600}
+.sign{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;margin-top:48px;text-align:center;font-size:14px}
+.sign div{border-top:1px solid var(--ink);padding-top:8px}
+.tbl{overflow-x:auto}
+.tbl table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 12px}
+.tbl th,.tbl td{border:1px solid var(--line);padding:6px 8px;text-align:left}
+.tbl td.n{text-align:right;font-variant-numeric:tabular-nums}
+.empty{border:1.5px dashed var(--line);border-radius:12px;padding:28px;text-align:center;color:var(--muted);display:grid;gap:8px}
+.empty strong{color:var(--ink);font-size:16px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:11px 16px;border-radius:10px;font-weight:600;z-index:20;max-width:calc(100% - 32px)}
+.foot{max-width:1240px;margin:24px auto 0;font-size:12px;color:var(--muted)}
+details summary{cursor:pointer;font-weight:600;font-size:14px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="top"><div class="top-in">
+  <a href="./" class="btn sec" style="text-decoration:none">← SurCaja</a><div class="brand">Contratos NÚASPA <small>Surtax</small></div>
+  <span id="status" class="status">Conectando…</span>
+  <button class="btn" id="btn-save" type="button">Guardar cambios</button>
+</div></div>
+
+<main>
+  <div class="wrap">
+    <div class="side" id="side">
+      <div class="empty"><strong>Cargando los contratos…</strong><span>Conectando con los datos guardados.</span></div>
+    </div>
+    <div class="doc-col">
+      <div class="doc-bar">
+        <div class="legend"><span><i class="sw" style="background:var(--mark)"></i>Dato que viene de los parámetros</span><span><i class="sw" style="background:var(--amber-soft)"></i>Falta completar</span></div>
+        <div class="row">
+          <button class="btn sec" id="btn-copy" type="button">Copiar texto</button>
+          <button class="btn" id="btn-word" type="button" hidden>Descargar Word</button>
+        </div>
+      </div>
+      <article class="paper" id="paper" aria-label="Vista previa del contrato"></article>
+    </div>
+  </div>
+  <p class="foot">Herramienta preparada por Surtax. Cada cambio se guarda solo (arriba dice “Guardado” con la hora) y lo ven Francisca y Surtax. También puedes tocar “Guardar cambios”. Antes de firmar, conviene que un abogado laboral revise el texto final.</p>
+</main>
+<div id="toast" class="toast" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(function(){
+"use strict";
+/* ---------- Estado ---------- */
+const DEF_T={horaAbre:"10:00",horaCierra:"20:00",pct:50,baseProp:"con",baseSalon:"sin",hrsCancel:24,diasLiq:3,diasRev:3,diasPago:3,diasTermino:15,tasa:15.25,diasPropina:7,
+  ciudad:"Santiago",servicios:"manicure, pedicure, depilación, cejas y pestañas y otros tratamientos de belleza",herramientas:"no"};
+const S={db:null,dl:null,ready:false,offline:false,T:Object.assign({},DEF_T),pros:{},sel:null,precio:20990,timers:{},vT:null,vP:{}};
+const $=s=>document.querySelector(s);
+const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const clp=n=>"$"+Math.round(Number(n)||0).toLocaleString("es-CL");
+const num=v=>{const n=Number(String(v).replace(",","."));return isFinite(n)?n:0};
+function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,3000)}
+function status(t,c){const s=$("#status");s.textContent=t;s.className="status "+(c||"")}
+const slug=s=>String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,40)||"profesional";
+
+/* ---------- Números en palabras (1 a 100) ---------- */
+function palabras(n){n=Math.round(n);const u=["cero","uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve","veinte","veintiuno","veintidós","veintitrés","veinticuatro","veinticinco","veintiséis","veintisiete","veintiocho","veintinueve"];
+  const d=["","","","treinta","cuarenta","cincuenta","sesenta","setenta","ochenta","noventa"];
+  if(n===100)return"cien";if(n<30&&n>=0)return u[n];if(n>100||n<0)return String(n);const t=Math.floor(n/10),r=n%10;return d[t]+(r?" y "+u[r]:"")}
+
+/* ---------- Conexión ---------- */
+async function init(){
+  const c=window.claude;
+  if(!c||typeof c.use!=="function"){S.offline=true;renderSide();renderDoc();status("Sin conexión: los cambios no se guardan","err");return}
+  let db=null,dl=null;try{[db,dl]=await Promise.all([c.use("db"),c.use("downloads")])}catch(e){}
+  S.db=db;S.dl=dl;$("#btn-word").hidden=!dl;
+  if(!db){S.offline=true;renderSide();renderDoc();status("Inicia sesión para guardar cambios","err");return}
+  let rol=null;try{const u=await c.use("user");rol=u&&u.rol?u.rol():null}catch(e){}
+  if(rol!=="admin"){S.offline=true;$("#side").innerHTML=`<div class="empty"><strong>Solo la administradora puede ver los contratos</strong><span><a href="./">Volver a SurCaja</a></span></div>`;$("#paper").innerHTML="";status("Sin acceso","err");$("#btn-save").hidden=true;return}
+  status("Conectado","ok");
+  db.doc("contratosConfig/terminos").onSnapshot(s=>{const d=s.exists?s.data():null;S.T=Object.assign({},DEF_T,d||{});S.ready=true;syncForm("t");renderDoc();},onErr);
+  db.collection("contratos").onSnapshot(q=>{const o={};q.docs.forEach(d=>o[d.id]=d.data());S.pros=o;
+    if(!S.sel||!o[S.sel]){S.sel=Object.keys(o).sort((a,b)=>String(o[a].nombre).localeCompare(String(o[b].nombre),"es"))[0]||null;renderSide();}
+    else{syncForm("p");renderChips();}
+    S.ready=true;renderDoc();},onErr);
+}
+function onErr(e){console.warn(e);status("No se pudo leer: recarga la página","err")}
+
+/* ---------- Guardado ---------- */
+function guardar(kind,key,value){
+  if(kind==="t")S.T[key]=value;else if(S.sel&&S.pros[S.sel])S.pros[S.sel][key]=value;
+  renderDoc();if(kind==="p"&&(key==="nombre"))renderChips();
+  if(!S.db)return;status("Guardando…");
+  const id=kind==="t"?"t":"p:"+S.sel;clearTimeout(S.timers[id]);
+  S.timers[id]=setTimeout(async()=>{
+    try{const now=new Date().toISOString();
+      if(kind==="t")await S.db.doc("contratosConfig/terminos").set(Object.assign({},S.T,{actualizado:now}));
+      else await S.db.doc("contratos/"+S.sel).set(Object.assign({},S.pros[S.sel],{actualizado:now}));
+      status("Guardado "+new Date().toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"}),"ok")}
+    catch(e){console.warn(e);status(e&&e.code==="invalid_argument"?"No tienes permiso para guardar":"No se pudo guardar. Intenta de nuevo","err")}
+  },700);
+}
+
+/* ---------- Panel lateral ---------- */
+const PF=[["nombre","Nombre completo"],["rut","Cédula de identidad (RUT)"],["nacionalidad","Nacionalidad"],["domicilio","Domicilio"],["correo","Correo"],["cuenta","Banco, tipo y número de cuenta"],["inicio","Fecha de inicio del contrato"],["fechaFirma","Fecha de firma"]];
+function renderChips(){const c=$("#chips");if(!c)return;const ids=Object.keys(S.pros).sort((a,b)=>String(S.pros[a].nombre).localeCompare(String(S.pros[b].nombre),"es"));
+  c.innerHTML=ids.map(id=>`<button class="chip" type="button" data-pro="${esc(id)}" aria-pressed="${id===S.sel}">${esc((S.pros[id].nombre||id).split(" ")[0])}</button>`).join("")+`<button class="chip add" type="button" data-act="add">+ Agregar</button>`}
+function renderSide(){
+  const side=$("#side"),T=S.T,P=S.sel?S.pros[S.sel]:null;
+  side.innerHTML=`
+  <div class="panel"><h2>Profesional</h2><div class="chips" id="chips"></div>
+    <div id="add-box" hidden class="grid2"><label for="new-name">Nombre completo<input id="new-name" placeholder="Ej. Sara …"></label><div style="display:grid;align-items:end"><button class="btn" type="button" data-act="add-ok">Crear contrato</button></div></div>
+    ${P?`<div class="grid2">${PF.map(([k,l])=>`<label for="p-${k}" ${k==="nombre"||k==="domicilio"||k==="cuenta"?'style="grid-column:1/-1"':""}>${l}<input id="p-${k}" data-p="${k}" ${k==="inicio"||k==="fechaFirma"?'type="date"':""} value="${esc(P[k]||"")}"></label>`).join("")}
+      <label for="p-tipo" style="grid-column:1/-1">Documento a firmar<select id="p-tipo" data-p="tipo"><option value="" ${P.tipo!=="transicion"?"selected":""}>Contrato de prestación de servicios a honorarios</option><option value="transicion" ${P.tipo==="transicion"?"selected":""}>Acuerdo de período de transición (sin permiso de residencia)</option></select></label>
+      ${P.tipo==="transicion"?`<label for="p-documento">Documento de su país (tipo y número)<input id="p-documento" data-p="documento" value="${esc(P.documento||"")}" placeholder="Ej. pasaporte N° …"></label><label for="p-limite">Plazo para presentar la solicitud de residencia<input id="p-limite" type="date" data-p="limite" value="${esc(P.limite||"")}"></label><p class="hint" style="grid-column:1/-1;margin:0">Este acuerdo deja por escrito el compromiso de regularizarse y de firmar el contrato a honorarios al obtener el permiso. Revísalo con el abogado migratorio antes de firmar.</p>`:""}
+      <label for="p-emiteBH">¿Emite boletas de honorarios?<select id="p-emiteBH" data-p="emiteBH"><option value="">Sin confirmar</option><option value="si" ${P.emiteBH==="si"?"selected":""}>Sí</option><option value="no" ${P.emiteBH==="no"?"selected":""}>No</option></select></label>
+      <label for="p-pct">% comisión de ella<input id="p-pct" class="m" inputmode="decimal" data-p="pct" value="${esc(P.pct==null?"":P.pct)}" placeholder="${esc(T.pct)} (común)"></label>
+      <label for="p-servicios" style="grid-column:1/-1">Servicios que presta<input id="p-servicios" data-p="servicios" value="${esc(P.servicios||"")}" placeholder="${esc(T.servicios)}"></label>
+      <label for="p-obs" style="grid-column:1/-1">Observaciones para Surtax<textarea id="p-obs" data-p="obs" placeholder="Cambios que quieres en el contrato de ella, dudas…">${esc(P.obs||"")}</textarea></label></div>`
+    :`<div class="empty"><strong>Aún no hay contratos</strong><span>Toca "+ Agregar" para crear el primero.</span></div>`}
+  </div>
+  <div class="panel"><h2>Condiciones comunes</h2><p class="hint" style="margin:0">Valen para todas las profesionales.</p>
+    <div class="grid2">
+      <label for="t-pct">% comisión<input id="t-pct" class="m" inputmode="decimal" data-t="pct" value="${esc(T.pct)}"></label>
+      <label for="t-tasa">Retención (%)<input id="t-tasa" class="m" inputmode="decimal" data-t="tasa" value="${esc(T.tasa)}"></label>
+      <p class="hint" style="grid-column:1/-1;margin:0">La comisión se calcula sobre el total cobrado por el servicio, sin la propina. La propina es 100% de la profesional.</p>
+      <label for="t-hrsCancel">Aviso para cancelar (horas)<input id="t-hrsCancel" class="m" inputmode="numeric" data-t="hrsCancel" value="${esc(T.hrsCancel)}"></label>
+      <label for="t-diasPropina">Plazo propinas (días hábiles)<input id="t-diasPropina" class="m" inputmode="numeric" data-t="diasPropina" value="${esc(T.diasPropina)}"></label>
+      <label for="t-diasLiq">Liquidación (primeros días hábiles)<input id="t-diasLiq" class="m" inputmode="numeric" data-t="diasLiq" value="${esc(T.diasLiq)}"></label>
+      <label for="t-diasRev">Revisión de ella (días hábiles)<input id="t-diasRev" class="m" inputmode="numeric" data-t="diasRev" value="${esc(T.diasRev)}"></label>
+      <label for="t-diasPago">Pago tras la boleta (días hábiles)<input id="t-diasPago" class="m" inputmode="numeric" data-t="diasPago" value="${esc(T.diasPago)}"></label>
+      <label for="t-diasTermino">Aviso de término (días)<input id="t-diasTermino" class="m" inputmode="numeric" data-t="diasTermino" value="${esc(T.diasTermino)}"></label>
+      <label for="t-horaAbre">El local abre a las<input id="t-horaAbre" type="time" data-t="horaAbre" value="${esc(T.horaAbre)}"></label>
+      <label for="t-horaCierra">El local cierra a las<input id="t-horaCierra" type="time" data-t="horaCierra" value="${esc(T.horaCierra)}"></label>
+      <label for="t-herr">Herramientas propias<select id="t-herr" data-t="herramientas"><option value="no">No se menciona</option><option value="si">Ella usa sus herramientas</option></select></label>
+      <label for="t-ciudad">Ciudad de firma<input id="t-ciudad" data-t="ciudad" value="${esc(T.ciudad)}"></label>
+      <label for="t-servicios" style="grid-column:1/-1">Servicios (texto común)<input id="t-servicios" data-t="servicios" value="${esc(T.servicios)}"></label>
+    </div></div>
+  <div class="panel"><h2>Calculadora de un servicio</h2>
+    <label for="c-precio">Precio cobrado a la clienta<input id="c-precio" class="m" inputmode="numeric" value="${S.precio}"></label>
+    <div id="calc"></div></div>`;
+  $("#t-herr").value=T.herramientas;
+  renderChips();renderCalc();
+}
+function syncForm(kind){
+  const a=document.activeElement;
+  if(!$("#side .panel")){renderSide();return}
+  if(kind==="t")document.querySelectorAll("[data-t]").forEach(el=>{if(el!==a){const v=S.T[el.dataset.t];el.value=v==null?"":v}});
+  if(kind==="p"&&S.sel){const P=S.pros[S.sel];document.querySelectorAll("[data-p]").forEach(el=>{if(el!==a){const v=P[el.dataset.p];el.value=v==null?"":v}})}
+  renderCalc();
+}
+function pctDe(P){const v=P&&P.pct!==""&&P.pct!=null?num(P.pct):num(S.T.pct);return v}
+function efPct(base,pct){return base==="con"?pct:pct/1.19}
+function fmtPct(v){return (Math.round(v*100)/100).toLocaleString("es-CL",{maximumFractionDigits:2})+"%"}
+function calcula(precio,base,pct){const ef=efPct(base,pct),com=Math.round(precio*ef/100);return{ef,com}}
+function renderCalc(){const el=$("#calc");if(!el)return;const P=S.sel?S.pros[S.sel]:null,pct=pctDe(P),p=Math.max(0,Math.round(num(S.precio)));
+  const a=calcula(p,"con",pct);
+  const r=n=>Math.round(n*num(S.T.tasa)/100);
+  el.innerHTML=`<table class="calc"><thead><tr><th>Concepto</th><th>Monto</th></tr></thead><tbody>
+  <tr><td>Porcentaje del total cobrado</td><td>${fmtPct(a.ef)}</td></tr>
+  <tr class="k"><td>Comisión</td><td>${clp(a.com)}</td></tr>
+  <tr><td>Retención ${esc(S.T.tasa)}%</td><td>${clp(r(a.com))}</td></tr>
+  <tr><td>Líquido para ella</td><td>${clp(a.com-r(a.com))}</td></tr></tbody></table>`}
+
+/* ---------- Modelo del contrato ---------- */
+/* Cada bloque: {k:"h"|"p"|"li"|"title"|"sign"|"table", r:[runs]} ; run: {t, b?, v?(valor de parámetro), m?(falta)} */
+function contrato(){
+  const T=S.T,P=(S.sel&&S.pros[S.sel])||{},pct=pctDe(P),tasa=num(T.tasa);
+  const V=(x,ph)=>{const s=x==null?"":String(x).trim();return s?{t:s,v:1}:{t:"["+ph+"]",m:1}};
+  const fecha=d=>{if(!d)return null;const [y,m,dd]=String(d).split("-").map(Number);if(!y)return d;return dd+" de "+["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"][m-1]+" de "+y};
+
+  const t=(s,b)=>({t:s,b:!!b});
+  const B=[];const h=s=>B.push({k:"h",r:[t(s,1)]});const p=(...r)=>B.push({k:"p",r});const li=(...r)=>B.push({k:"li",r});
+  if(P.tipo==="transicion"){
+  B.push({k:"title",r:[t("Acuerdo de período de transición y compromiso de contratación")]});
+  p(t("En "),V(T.ciudad,"ciudad"),t(", a "),V(fecha(P.fechaFirma),"fecha de firma"),t(", comparecen:"));
+  p(t("Por una parte, "),t("LUZIA SpA",1),t(", RUT 78.520.581-2, que usa el nombre comercial "),t("NÚASPA",1),t(", representada por doña "),t("María Francisca Barros Tejeda",1),t(", cédula de identidad N° 15.830.847-9, ambas con domicilio en Avenida Cristóbal Colón N° 6555, local 9, piso 2, comuna de Las Condes, en adelante "),t("“el Salón”",1),t("."));
+  p(t("Por otra parte, doña "),V(P.nombre,"nombre completo"),t(", "),V(P.nacionalidad,"nacionalidad"),t(", "),V(P.documento,"documento de identidad de su país"),t(", con domicilio en "),V(P.domicilio,"domicilio"),t(", correo electrónico "),V(P.correo,"correo"),t(", en adelante "),t("“la Profesional”",1),t("."));
+  p(t("Ambas partes acuerdan lo siguiente:"));
+  h("Primero. Antecedentes");
+  p(t("La Profesional declara que hoy no cuenta con un permiso de residencia que la habilite para realizar actividades remuneradas en Chile, y que iniciará su regularización ante el Servicio Nacional de Migraciones. El Salón conoce esta situación."));
+  h("Segundo. Compromiso de regularización");
+  li(t("La Profesional presentará su solicitud de residencia a más tardar el "),V(fecha(P.limite),"plazo"),t("."));
+  li(t("Entregará al Salón copia del comprobante de la solicitud, de cualquier autorización para trabajar que reciba y de la resolución final."));
+  li(t("El Salón le entregará los antecedentes que requiera para su solicitud, incluida una oferta de contratación por escrito si el abogado lo recomienda."));
+  h("Tercero. Compromiso de contratación");
+  p(t("Apenas la Profesional obtenga la autorización para trabajar y su RUT, las partes firmarán el contrato de prestación de servicios a honorarios del Salón, en las mismas condiciones que rigen para las demás profesionales. Desde esa fecha, la Profesional emitirá boleta de honorarios mensual y el Salón hará la retención que fija la ley."));
+  h("Cuarto. Condiciones durante la transición");
+  li(t("Comisión: ",1),{t:palabras(pct)+" por ciento ("+pct+"%) del total cobrado a la clienta por el servicio",v:1,b:1},t(", sin incluir la propina."));
+  li(t("Propinas: 100% de la Profesional, entregadas cada semana, a más tardar dentro de "),V(T.diasPropina,"días"),t(" días hábiles desde que la clienta las pagó."));
+  li(t("El Salón cobra todos los servicios con su máquina de pago o en su cuenta. La Profesional no recibe pagos de clientas."));
+  li(t("La Profesional registra cada servicio en el sistema del Salón (SurCaja) al terminarlo."));
+  h("Quinto. Forma de pago y respaldo");
+  li(t("El Salón paga por transferencia a una cuenta a nombre de la Profesional: "),V(P.cuenta,"banco, tipo y número de cuenta"),t(". Nunca a terceros."));
+  li(t("Por cada pago, la Profesional firma un recibo interno con el período, los servicios, la comisión y las propinas."));
+  li(t("Mientras la Profesional no tenga RUT, los pagos no cuentan con documento tributario y quedan registrados como pagos pendientes de regularizar."));
+  h("Sexto. Vigencia y término");
+  p(t("Este acuerdo rige desde el "),V(fecha(P.inicio),"fecha de inicio"),t(" hasta la firma del contrato a honorarios. Termina sin indemnización si al "),V(fecha(P.limite),"plazo"),t(" no se ha presentado la solicitud de residencia, si la solicitud es rechazada, o por aviso escrito de cualquiera de las partes con "),V(T.diasTermino,"días"),t(" días de anticipación. Al término, el Salón paga las comisiones y propinas pendientes."));
+  h("Séptimo. Datos personales y reserva");
+  p(t("El Salón tratará los datos de la Profesional solo para administrar este acuerdo y apoyar su regularización, y los mantendrá en reserva."));
+  h("Octavo. Ejemplares");
+  p(t("Para todos los efectos, las partes fijan su domicilio en la comuna de Las Condes. El acuerdo se firma en dos ejemplares, uno para cada parte."));
+  B.push({k:"sign",a:[t("María Francisca Barros Tejeda"),t("p.p. LUZIA SpA")],b:[V(P.nombre,"nombre de la Profesional"),V(P.documento||"","documento")]});
+  return B;
+  }
+  B.push({k:"title",r:[t("Contrato de prestación de servicios a honorarios")]});
+  p(t("En "),V(T.ciudad,"ciudad"),t(", a "),V(fecha(P.fechaFirma),"fecha de firma"),t(", comparecen:"));
+  p(t("Por una parte, "),t("LUZIA SpA",1),t(", RUT 78.520.581-2, que usa el nombre comercial "),t("NÚASPA",1),t(", representada por doña "),t("María Francisca Barros Tejeda",1),t(", cédula de identidad N° 15.830.847-9, ambas con domicilio en Avenida Cristóbal Colón N° 6555, local 9, piso 2, comuna de Las Condes, en adelante "),t("“el Salón”",1),t("."));
+  p(t("Por otra parte, doña "),V(P.nombre,"nombre completo"),t(", "),V(P.nacionalidad,"nacionalidad"),t(", cédula de identidad N° "),V(P.rut,"RUT"),t(", con domicilio en "),V(P.domicilio,"domicilio"),t(", correo electrónico "),V(P.correo,"correo"),t(", en adelante "),t("“la Prestadora”",1),t("."));
+  p(t("Ambas partes acuerdan lo siguiente:"));
+  h("Primero. Objeto");
+  p(t("La Prestadora prestará al Salón servicios de "),V(P.servicios||T.servicios,"servicios"),t(" a las clientas del Salón, en el local señalado. Los ejecutará con sus propios conocimientos, técnica y criterio profesional."));
+  h("Segundo. Naturaleza del contrato y autonomía");
+  p(t("Este es un contrato civil de prestación de servicios a honorarios. No es un contrato de trabajo. En consecuencia:"));
+  li(t("La Prestadora no tiene jornada ordinaria ni está obligada a prestar servicios un número mínimo de días."));
+  li(t("Informa cada semana al Salón los días en que prestará servicios. "),t("Cada día que informe, se compromete a estar disponible durante todo el horario de atención del local, de ",1),V(T.horaAbre,"hora de apertura"),t(" a ",1),V(T.horaCierra,"hora de cierre"),t(" horas",1),t(", porque el Salón agenda clientas para ella en todo ese horario. El Salón agenda clientas solo en los días que ella informó."));
+  li(t("Si un día comprometido no llega a la hora de apertura o se retira antes sin avisar con al menos "),V(T.hrsCancel,"horas"),t(" horas de anticipación, el Salón puede atender con otra profesional a las clientas agendadas para ella, sin que esos servicios le generen comisión. Si esto se repite, el Salón puede poner término al contrato con el aviso de la cláusula decimocuarta."));
+  li(t("Puede rechazar o cancelar una reserva, avisando con al menos "),V(T.hrsCancel,"horas"),t(" horas de anticipación, sin multa ni sanción."));
+  li(t("Decide cómo realizar cada servicio. El Salón no le da instrucciones sobre su técnica."));
+  li(t("No está obligada a usar uniforme con la marca del Salón."));
+  li(t("Puede prestar servicios a otras personas o empresas fuera del local."));
+  h("Tercero. Lugar de trabajo");
+  p(t("Los servicios se prestan en el local del Salón, que pone a disposición las estaciones de trabajo."+(T.herramientas==="si"?" La Prestadora usa sus propias herramientas de trabajo.":"")));
+  h("Cuarto. Cobro a la clienta");
+  p(t("El Salón cobra todos los servicios",1),t(", a su nombre, con su máquina de pago o en su cuenta bancaria, y emite a la clienta la boleta que corresponda. La Prestadora:"));
+  li(t("No puede recibir pagos de clientas por servicios prestados en el local, ni en efectivo ni por transferencia a cuentas propias."));
+  li(t("No emite boletas a las clientas."));
+  li(t("Si opera la máquina de pago, debe elegir siempre "),t("boleta afecta",1),t(" y nunca “exenta”."));
+  h("Quinto. Comisión");
+  p(t("Por cada servicio, la Prestadora tiene derecho a una comisión del "),{t:palabras(pct)+" por ciento ("+pct+"%) del total cobrado a la clienta por el servicio",v:1,b:1},t(", sin incluir la propina."));
+  p(t("Reglas:"));
+  li(t("Los descuentos solo se aplican con autorización del Salón y rebajan el precio sobre el que se calcula la comisión."));
+  li(t("Si un servicio lo prestan dos o más profesionales, cada una registra solo los servicios que hizo y cobra comisión sobre ellos."));
+  li(t("Un servicio anulado o devuelto a la clienta no genera comisión."));
+  p(t("El Anexo contiene un ejemplo de cálculo."));
+  h("Sexto. Propinas");
+  p(t("Las propinas que deje la clienta son "),t("100% de la Prestadora",1),t(" que la atendió."));
+  li(t("Se cobran aparte del precio del servicio y no forman parte de la comisión."));
+  li(t("No llevan retención ni ningún descuento."));
+  li(t("No se incluyen en la boleta de honorarios."));
+  li(t("El Salón las entrega cada semana, a más tardar dentro de "),V(T.diasPropina,"días"),t(" días hábiles desde que la clienta las pagó."));
+  li(t("Si dos profesionales atendieron a la misma clienta, la propina se reparte según lo que cada una registre."));
+  h("Séptimo. Registro de los servicios");
+  p(t("La Prestadora registra cada servicio en el sistema de registro del Salón (SurCaja) al terminarlo: servicios realizados, precio cobrado, propina, medio de pago y número de operación. Lo que no esté registrado no se liquida hasta que se aclare."));
+  h("Octavo. Liquidación mensual");
+  p(t("Dentro de los primeros "),V(T.diasLiq,"días"),t(" días hábiles de cada mes, el Salón entrega a la Prestadora una liquidación del mes anterior con el detalle de servicios, la comisión total, la retención y el monto líquido a pagar. La Prestadora tiene "),V(T.diasRev,"días"),t(" días hábiles para revisarla y hacer observaciones."));
+  h("Noveno. Boleta de honorarios");
+  p(t("Con la liquidación aprobada, la Prestadora emite "),t("una sola boleta de honorarios electrónica al mes",1),t(":"));
+  li(t("A nombre de "),t("LUZIA SpA, RUT 78.520.581-2",1),t("."));
+  li(t("Por el "),t("total bruto de sus comisiones del mes",1),t(", sin incluir propinas."));
+  li(t("Marcando que la "),t("retención la hace el receptor",1),t(" (el Salón)."));
+  p(t("Si la Prestadora no tiene inicio de actividades para emitir boletas de honorarios, el Salón emitirá a su nombre una boleta de prestación de servicios de terceros por el mismo monto y con la misma retención."));
+  h("Décimo. Retención de impuesto");
+  p(t("El Salón retiene del monto bruto de la boleta el porcentaje que fija la ley para cada año ("),{t:String(tasa).replace(".",",")+"% en 2026",v:1,b:1},t(") y lo paga al Servicio de Impuestos Internos a nombre de la Prestadora. Esa retención no es un cobro del Salón: es un pago a cuenta del impuesto anual de la Prestadora, que se considera en su declaración de renta y financia sus cotizaciones previsionales y de salud, según la ley."));
+  h("Undécimo. Pago");
+  p(t("El Salón paga el monto líquido (comisión bruta menos retención) por transferencia a la cuenta "),V(P.cuenta,"banco, tipo y número de cuenta"),t(", dentro de "),V(T.diasPago,"días"),t(" días hábiles desde que recibe la boleta."));
+  h("Duodécimo. Obligaciones de la Prestadora");
+  li(t("Cumplir las normas sanitarias y de higiene aplicables a su oficio."));
+  li(t("Cuidar las instalaciones, equipos e insumos del Salón."));
+  li(t("Respetar los precios del Salón."));
+  li(t("Mantener en reserva los datos de las clientas y no usarlos para fines propios."));
+  h("Decimotercero. Declaración de la Prestadora");
+  p(t("La Prestadora declara que tiene autorización vigente para realizar actividades remuneradas en Chile y se obliga a informar al Salón cualquier cambio. Esta declaración es esencial para el Salón."));
+  h("Decimocuarto. Vigencia y término");
+  p(t("El contrato rige desde el "),V(fecha(P.inicio),"fecha de inicio"),t(" y dura indefinidamente. Cualquiera de las partes puede ponerle término avisando por escrito, incluso por correo o WhatsApp, con "),V(T.diasTermino,"días"),t(" días de anticipación. Al término, el Salón liquida y paga las comisiones y propinas pendientes."));
+  h("Decimoquinto. Datos personales");
+  p(t("La Prestadora autoriza al Salón a tratar sus datos personales solo para administrar este contrato y cumplir sus obligaciones tributarias."));
+  h("Decimosexto. Domicilio y ejemplares");
+  p(t("Para todos los efectos, las partes fijan su domicilio en la comuna de Las Condes. El contrato se firma en dos ejemplares, uno para cada parte."));
+  B.push({k:"sign",a:[t("María Francisca Barros Tejeda"),t("p.p. LUZIA SpA")],b:[V(P.nombre,"nombre de la Prestadora"),V(P.rut?"RUT "+P.rut:"","RUT")]});
+  /* Anexo */
+  const pr=20990,ca=calcula(pr,"con",pct);
+  h("Anexo. Ejemplo de cálculo");
+  p(t("Un servicio de "+clp(pr)+", con propina de $2.000:"));
+  B.push({k:"table",head:["Concepto","Monto"],rows:[
+    ["Total cobrado por el servicio (sin propina)",clp(pr)],["Porcentaje de comisión",fmtPct(ca.ef)],
+    ["Comisión de la Prestadora",clp(ca.com)],["Propina (aparte, 100% de ella)","$2.000"],["Total para la Prestadora por este servicio",clp(ca.com+2000)]]});
+  const mes=500000,ret=Math.round(mes*tasa/100);
+  p(t("Un mes con comisiones por "+clp(mes)+" y propinas por $40.000: boleta de honorarios bruta "+clp(mes)+"; retención "+String(tasa).replace(".",",")+"% "+clp(ret)+"; líquido de honorarios "+clp(mes-ret)+"; más propinas $40.000; total que recibe la Prestadora "+clp(mes-ret+40000)+"."));
+  return B;
+}
+
+/* ---------- Vista previa ---------- */
+function runsHTML(r){return r.map(x=>{let s=esc(x.t);if(x.b)s="<strong>"+s+"</strong>";if(x.m)return`<span class="miss">${s}</span>`;if(x.v)return`<span class="v">${s}</span>`;return s}).join("")}
+function renderDoc(){
+  const el=$("#paper");if(!S.sel&&S.ready){el.innerHTML=`<div class="empty"><strong>Elige o agrega una profesional</strong><span>El contrato se redacta aquí con sus datos.</span></div>`;return}
+  const B=contrato();let html="",inList=false;
+  B.forEach(b=>{if(b.k!=="li"&&inList){html+="</ol>";inList=false}
+    if(b.k==="title")html+=`<h1>${runsHTML(b.r)}</h1>`;
+    else if(b.k==="h")html+=`<h3>${runsHTML(b.r)}</h3>`;
+    else if(b.k==="p")html+=`<p>${runsHTML(b.r)}</p>`;
+    else if(b.k==="li"){if(!inList){html+="<ol>";inList=true}html+=`<li>${runsHTML(b.r)}</li>`}
+    else if(b.k==="sign")html+=`<div class="sign"><div>${runsHTML([b.a[0]])}<br>${runsHTML([b.a[1]])}</div><div>${runsHTML([b.b[0]])}<br>${runsHTML([b.b[1]])}</div></div>`;
+    else if(b.k==="table")html+=`<div class="tbl"><table><thead><tr>${b.head.map(c=>`<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${b.rows.map(r=>`<tr>${r.map((c,i)=>`<td class="${i?"n":""}">${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`});
+  if(inList)html+="</ol>";el.innerHTML=html;
+}
+function textoPlano(){const B=contrato();let n=0;return B.map(b=>{const tx=r=>r.map(x=>x.t).join("");
+  if(b.k==="li"){n++;return"   "+n+". "+tx(b.r)}n=0;
+  if(b.k==="title")return tx(b.r).toUpperCase()+"\n";if(b.k==="h")return"\n"+tx(b.r).toUpperCase();
+  if(b.k==="sign")return"\n\n______________________________        ______________________________\n"+tx([b.a[0]])+"        "+tx([b.b[0]])+"\n"+tx([b.a[1]])+"        "+tx([b.b[1]]);
+  if(b.k==="table")return[b.head.join(" | ")].concat(b.rows.map(r=>r.join(" | "))).join("\n");return tx(b.r)}).join("\n")}
+
+/* ---------- Word (.docx) ---------- */
+function x(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function wr(r,extra){return r.map(z=>`<w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/>${z.b?"<w:b/>":""}${extra||""}</w:rPr><w:t xml:space="preserve">${x(z.t)}</w:t></w:r>`).join("")}
+function wp(r,o){o=o||{};return`<w:p><w:pPr>${o.center?'<w:jc w:val="center"/>':'<w:jc w:val="both"/>'}<w:spacing w:before="${o.before||0}" w:after="${o.after==null?120:o.after}"/>${o.ind?'<w:ind w:left="567" w:hanging="283"/>':""}</w:pPr>${wr(r,o.rpr)}</w:p>`}
+async function descargarWord(){
+  if(!S.dl||!window.JSZip){toast("La descarga no está disponible en esta vista");return}
+  const B=contrato();let body="",n=0;
+  B.forEach(b=>{if(b.k!=="li")n=0;
+    if(b.k==="title")body+=wp(b.r.map(z=>({t:z.t.toUpperCase(),b:1})),{center:1,after:240,rpr:'<w:sz w:val="28"/>'});
+    else if(b.k==="h")body+=wp(b.r.map(z=>({t:z.t.toUpperCase(),b:1})),{before:200});
+    else if(b.k==="p")body+=wp(b.r);
+    else if(b.k==="li"){n++;body+=wp([{t:n+". "}].concat(b.r),{ind:1,after:60})}
+    else if(b.k==="sign"){body+=wp([{t:" "}],{before:600});
+      const cell=(a,c)=>`<w:tc><w:tcPr><w:tcW w:w="4500" w:type="dxa"/></w:tcPr>${wp([{t:"______________________________"}],{center:1,after:0})}${wp([a],{center:1,after:0})}${wp([c],{center:1,after:0})}</w:tc>`;
+      body+=`<w:tbl><w:tblPr><w:tblW w:w="9000" w:type="dxa"/></w:tblPr><w:tblGrid><w:gridCol w:w="4500"/><w:gridCol w:w="4500"/></w:tblGrid><w:tr>${cell(b.a[0],b.a[1])}${cell(b.b[0],b.b[1])}</w:tr></w:tbl>`}
+    else if(b.k==="table"){const bd='<w:tblBorders><w:top w:val="single" w:sz="4"/><w:left w:val="single" w:sz="4"/><w:bottom w:val="single" w:sz="4"/><w:right w:val="single" w:sz="4"/><w:insideH w:val="single" w:sz="4"/><w:insideV w:val="single" w:sz="4"/></w:tblBorders>';
+      const row=(cs,bold)=>`<w:tr>${cs.map(c=>`<w:tc><w:tcPr><w:tcW w:w="${Math.round(9000/cs.length)}" w:type="dxa"/></w:tcPr>${wp([{t:c,b:bold}],{after:0})}</w:tc>`).join("")}</w:tr>`;
+      body+=`<w:tbl><w:tblPr><w:tblW w:w="9000" w:type="dxa"/>${bd}</w:tblPr><w:tblGrid>${b.head.map(()=>'<w:gridCol w:w="'+Math.round(9000/b.head.length)+'"/>').join("")}</w:tblGrid>${row(b.head,1)}${b.rows.map(r=>row(r)).join("")}</w:tbl>`+wp([{t:" "}])}});
+  const doc=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${body}<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1418" w:right="1418" w:bottom="1418" w:left="1418" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+  const z=new JSZip();
+  z.file("[Content_Types].xml",'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+  z.file("_rels/.rels",'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+  z.file("word/document.xml",doc);
+  const blob=await z.generateAsync({type:"blob",mimeType:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
+  const P=S.pros[S.sel]||{};const nom=(P.nombre||"profesional").split(" ").slice(0,2).join(" ");
+  try{await S.dl.save({filename:(P.tipo==="transicion"?"Acuerdo de transición NÚASPA - ":"Contrato honorarios NÚASPA - ")+nom+".docx",data:blob});toast("Contrato descargado")}
+  catch(e){if(e&&e.code==="declined")return;toast(e&&e.code==="rate_limited"?"Ya hay una descarga pendiente":"No se pudo descargar en esta vista")}
+}
+
+/* ---------- Eventos ---------- */
+document.addEventListener("input",ev=>{const t=ev.target;
+  if(t.dataset.t){const k=t.dataset.t;const numK=["pct","tasa","hrsCancel","diasLiq","diasRev","diasPago","diasTermino","diasPropina"];guardar("t",k,numK.includes(k)?(t.value===""?"":num(t.value)):t.value);renderCalc();return}
+  if(t.dataset.p){const k=t.dataset.p;guardar("p",k,k==="pct"?(t.value===""?"":num(t.value)):t.value);renderCalc();if(k==="tipo")renderSide();return}
+  if(t.id==="c-precio"){S.precio=num(String(t.value).replace(/\./g,""));renderCalc()}});
+document.addEventListener("click",async ev=>{
+  const c=ev.target.closest("[data-pro]");if(c){S.sel=c.dataset.pro;renderSide();renderDoc();return}
+  const a=ev.target.closest("[data-act]");if(!a)return;
+  if(a.dataset.act==="add"){const b=$("#add-box");b.hidden=!b.hidden;if(!b.hidden)$("#new-name").focus();return}
+  if(a.dataset.act==="add-ok"){const n=$("#new-name").value.trim();if(!n){toast("Escribe el nombre");return}
+    let id=slug(n.split(" ")[0]);if(S.pros[id])id=slug(n);if(S.pros[id]){toast("Ya existe un contrato con ese nombre");return}
+    S.pros[id]={nombre:n,creado:new Date().toISOString()};S.sel=id;renderSide();renderDoc();
+    if(S.db){try{await S.db.doc("contratos/"+id).set(S.pros[id]);toast("Contrato creado")}catch(e){toast("No se pudo crear")}}}
+});
+$("#btn-word").addEventListener("click",descargarWord);
+$("#btn-save").addEventListener("click",async()=>{
+  if(!S.db){toast("No se puede guardar: inicia sesión de nuevo");return}
+  Object.keys(S.timers).forEach(k=>clearTimeout(S.timers[k]));status("Guardando…");
+  try{const now=new Date().toISOString();
+    await S.db.doc("contratosConfig/terminos").set(Object.assign({},S.T,{actualizado:now}));
+    if(S.sel&&S.pros[S.sel])await S.db.doc("contratos/"+S.sel).set(Object.assign({},S.pros[S.sel],{actualizado:now}));
+    const h=new Date().toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"});status("Guardado "+h,"ok");toast("Cambios guardados")}
+  catch(e){console.warn(e);const m=e&&(e.code==="invalid_argument"||e.code==="permission-denied"||e.code==="not_granted")?"No tienes permiso para guardar: pide a Surtax acceso para editar":"No se pudo guardar. Intenta de nuevo";status(m,"err");toast(m)}
+});
+$("#btn-copy").addEventListener("click",async()=>{const s=textoPlano();try{await navigator.clipboard.writeText(s);toast("Texto copiado")}catch(e){const r=document.createRange();r.selectNodeContents($("#paper"));const sel=getSelection();sel.removeAllRanges();sel.addRange(r);toast("Texto seleccionado: cópialo con Ctrl+C")}});
+
+renderSide();renderDoc();init();
+})();
+</script>
+
+</body></html>
