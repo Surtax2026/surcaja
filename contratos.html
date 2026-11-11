@@ -126,7 +126,7 @@ details summary{cursor:pointer;font-weight:600;font-size:14px}
 /* ---------- Estado ---------- */
 const DEF_T={horaAbre:"10:00",horaCierra:"20:00",pct:50,baseProp:"con",baseSalon:"sin",hrsCancel:24,diasLiq:3,diasRev:3,diasPago:3,diasTermino:15,tasa:15.25,diasPropina:7,
   ciudad:"Santiago",servicios:"manicure, pedicure, depilación, cejas y pestañas y otros tratamientos de belleza",herramientas:"no"};
-const S={db:null,dl:null,ready:false,offline:false,T:Object.assign({},DEF_T),pros:{},sel:null,precio:20990,timers:{},vT:null,vP:{}};
+const S={profs:[],firmas:[],unsubF:null,email:"",db:null,dl:null,ready:false,offline:false,T:Object.assign({},DEF_T),pros:{},sel:null,precio:20990,timers:{},vT:null,vP:{}};
 const $=s=>document.querySelector(s);
 const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const clp=n=>"$"+Math.round(Number(n)||0).toLocaleString("es-CL");
@@ -150,6 +150,7 @@ async function init(){
   let rol=null;try{const u=await c.use("user");rol=u&&u.rol?u.rol():null}catch(e){}
   if(rol!=="admin"){S.offline=true;$("#side").innerHTML=`<div class="empty"><strong>Solo la administradora puede ver los contratos</strong><span><a href="./">Volver a SurCaja</a></span></div>`;$("#paper").innerHTML="";status("Sin acceso","err");$("#btn-save").hidden=true;return}
   status("Conectado","ok");
+  try{const u=window.__sxAuth&&window.__sxAuth.currentUser;S.email=u?u.email:"";const q=await db.collection("profesionales").get();S.profs=q.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.activo!==false).sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre),"es"))}catch(e){console.warn(e)}
   db.doc("contratosConfig/terminos").onSnapshot(s=>{const d=s.exists?s.data():null;S.T=Object.assign({},DEF_T,d||{});S.ready=true;syncForm("t");renderDoc();},onErr);
   db.collection("contratos").onSnapshot(q=>{const o={};q.docs.forEach(d=>o[d.id]=d.data());S.pros=o;
     if(!S.sel||!o[S.sel]){S.sel=Object.keys(o).sort((a,b)=>String(o[a].nombre).localeCompare(String(o[b].nombre),"es"))[0]||null;renderSide();}
@@ -191,6 +192,7 @@ function renderSide(){
       <label for="p-obs" style="grid-column:1/-1">Observaciones para Surtax<textarea id="p-obs" data-p="obs" placeholder="Cambios que quieres en el contrato de ella, dudas…">${esc(P.obs||"")}</textarea></label></div>`
     :`<div class="empty"><strong>Aún no hay contratos</strong><span>Toca "+ Agregar" para crear el primero.</span></div>`}
   </div>
+  ${P?vFirma(P):""}
   <div class="panel"><h2>Condiciones comunes</h2><p class="hint" style="margin:0">Valen para todas las profesionales.</p>
     <div class="grid2">
       <label for="t-pct">% comisión<input id="t-pct" class="m" inputmode="decimal" data-t="pct" value="${esc(T.pct)}"></label>
@@ -212,7 +214,7 @@ function renderSide(){
     <label for="c-precio">Precio cobrado a la clienta<input id="c-precio" class="m" inputmode="numeric" value="${S.precio}"></label>
     <div id="calc"></div></div>`;
   $("#t-herr").value=T.herramientas;
-  renderChips();renderCalc();
+  renderChips();renderCalc();subFirmas();
 }
 function syncForm(kind){
   const a=document.activeElement;
@@ -401,6 +403,28 @@ async function descargarWord(){
   catch(e){if(e&&e.code==="declined")return;toast(e&&e.code==="rate_limited"?"Ya hay una descarga pendiente":"No se pudo descargar en esta vista")}
 }
 
+
+/* ---------- Firma electrónica ---------- */
+const EST={enviado:"Por firmar (profesional)",firmado_pro:"Firmó la profesional · falta el salón",firmado:"Firmado por ambas partes",anulado:"Anulado"};
+function profDe(P){if(P.profId)return P.profId;const n=String(P.nombre||"").split(" ")[0].toLowerCase();const m=S.profs.find(x=>String(x.nombre||"").split(" ")[0].toLowerCase()===n||String(x.nombreCompleto||"").toLowerCase()===String(P.nombre||"").toLowerCase());return m?m.id:""}
+function faltan(){let n=0;contrato().forEach(b=>{(b.r||[]).concat(b.a||[],b.b||[]).forEach(x=>{if(x&&x.m)n++})});return n}
+function vFirma(P){const pid=profDe(P);const fs=S.firmas;
+  return`<div class="panel"><h2>Firma electrónica</h2>
+    <label for="f-prof">Profesional en SurCaja (quien firmará)<select id="f-prof"><option value="">Elegir…</option>${S.profs.map(x=>`<option value="${esc(x.id)}" ${x.id===pid?"selected":""}>${esc(x.nombreCompleto||x.nombre)}</option>`).join("")}</select></label>
+    <div class="row"><button class="btn" type="button" data-act="enviar-firma">Enviar a firmar</button><a href="firmar.html" class="status">Ver todas las firmas →</a></div>
+    <p class="hint" style="margin:0">Se envía el texto tal como se ve a la derecha. La profesional lo firma desde su celular con su clave; después firmas tú. Si cambias el contrato, envíalo de nuevo.</p>
+    <div id="firmas-list">${fs.length?fs.map(f=>`<div class="row" style="justify-content:space-between;border-top:1px solid var(--line);padding-top:6px"><span class="status">${esc(new Date(f.creado).toLocaleDateString("es-CL"))} · ${esc(EST[f.estado]||f.estado)}</span><a class="status" href="firmar.html?id=${esc(f.id)}">Ver →</a></div>`).join(""):`<p class="hint" style="margin:0">Aún no se ha enviado a firma.</p>`}</div></div>`}
+function subFirmas(){if(!S.db||!S.sel)return;if(S.unsubF)S.unsubF();const sel=S.sel;if(S._fsel!==sel){S._fsel=sel;S.firmas=[];const el=$("#firmas-list");if(el)el.innerHTML=`<p class="hint" style="margin:0">Cargando…</p>`}
+  S.unsubF=S.db.collection("firmas").where("contratoId","==",sel).onSnapshot(q=>{if(sel!==S.sel)return;S.firmas=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(b.creado).localeCompare(String(a.creado)));const el=$("#firmas-list");if(el){const P=S.pros[S.sel];const tmp=document.createElement("div");tmp.innerHTML=vFirma(P);el.innerHTML=tmp.querySelector("#firmas-list").innerHTML}},e=>console.warn(e))}
+async function enviarFirma(){const P=S.pros[S.sel];if(!P||!S.db)return;const pid=$("#f-prof").value;if(!pid){toast("Elige a la profesional que firmará");return}
+  const n=faltan();if(n){toast(`Faltan ${n} dato(s) por completar (en amarillo). Complétalos antes de enviar.`);return}
+  const abiertas=S.firmas.filter(f=>f.estado==="enviado"||f.estado==="firmado_pro");
+  const texto=textoPlano();const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(texto));const hash=[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");
+  const pr=S.profs.find(x=>x.id===pid)||{};
+  try{for(const f of abiertas)await S.db.doc("firmas/"+f.id).update({estado:"anulado",anulado:new Date().toISOString(),motivo:"Reemplazado por un nuevo envío"});
+    await S.db.collection("firmas").add({contratoId:S.sel,profId:pid,profNombre:pr.nombre||"",nombre:P.nombre||"",tipo:P.tipo==="transicion"?"Acuerdo de período de transición":"Contrato de prestación de servicios a honorarios",texto,hash,estado:"enviado",creado:new Date().toISOString(),enviadoPor:S.email});
+    if(P.profId!==pid)guardar("p","profId",pid);toast(abiertas.length?"Enviado a firmar (el envío anterior quedó anulado)":"Enviado a firmar: la profesional lo verá al entrar a SurCaja")}
+  catch(e){console.warn(e);toast("No se pudo enviar a firma")}}
 /* ---------- Eventos ---------- */
 document.addEventListener("input",ev=>{const t=ev.target;
   if(t.dataset.t){const k=t.dataset.t;const numK=["pct","tasa","hrsCancel","diasLiq","diasRev","diasPago","diasTermino","diasPropina"];guardar("t",k,numK.includes(k)?(t.value===""?"":num(t.value)):t.value);renderCalc();return}
@@ -409,6 +433,7 @@ document.addEventListener("input",ev=>{const t=ev.target;
 document.addEventListener("click",async ev=>{
   const c=ev.target.closest("[data-pro]");if(c){S.sel=c.dataset.pro;renderSide();renderDoc();return}
   const a=ev.target.closest("[data-act]");if(!a)return;
+  if(a.dataset.act==="enviar-firma"){enviarFirma();return}
   if(a.dataset.act==="add"){const b=$("#add-box");b.hidden=!b.hidden;if(!b.hidden)$("#new-name").focus();return}
   if(a.dataset.act==="add-ok"){const n=$("#new-name").value.trim();if(!n){toast("Escribe el nombre");return}
     let id=slug(n.split(" ")[0]);if(S.pros[id])id=slug(n);if(S.pros[id]){toast("Ya existe un contrato con ese nombre");return}
