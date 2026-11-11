@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Firmas SurCaja</title>
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#5b2a6e">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="config.js"></script>
+<script src="adapter.js"></script>
+<style>
+:root{--bg:#eef2f5;--surface:#fff;--ink:#132338;--muted:#5b6b7d;--line:#d9e1e8;--navy:#16325c;--plum:#5b2a6e;--sage:#0d7a77;--sage-soft:#e2f2f1;--amber:#b26b12;--amber-soft:#fbefdc;--red:#a3312f;--red-soft:#f8e3e2}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+.top{background:var(--surface);border-bottom:2px solid var(--navy);padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.top b{font-size:20px;color:var(--navy);margin-right:auto}
+.top a{color:var(--navy);font-weight:600}
+main{max-width:900px;margin:0 auto;padding:20px 16px 64px;display:grid;gap:16px}
+h1{margin:0;font-size:24px}
+.muted{color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:6px;cursor:pointer;text-align:left;font:inherit;color:inherit;width:100%}
+.card:hover{border-color:var(--navy)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border-radius:99px;white-space:nowrap}
+.p-env{background:var(--amber-soft);color:var(--amber)}.p-pro{background:#e6ecf5;color:var(--navy)}.p-ok{background:var(--sage-soft);color:var(--sage)}.p-an{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:12px}
+.doc{background:#fffefb;border:1px solid var(--line);border-radius:8px;padding:18px;white-space:pre-wrap;font:15px/1.6 Georgia,"Times New Roman",serif;max-height:60vh;overflow:auto}
+.note{border-radius:10px;padding:12px 14px;font-size:14px}
+.ok{background:var(--sage-soft)}.warn{background:var(--amber-soft)}.risk{background:var(--red-soft)}
+label{display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--muted)}
+input[type=password]{font:16px inherit;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);width:100%;max-width:320px}
+.chk{display:flex;gap:10px;align-items:flex-start;font-size:15px;color:var(--ink);font-weight:500}
+.chk input{width:20px;height:20px;margin-top:2px}
+.btn{font:700 16px inherit;border:0;border-radius:10px;padding:12px 18px;cursor:pointer;background:var(--navy);color:#fff}
+.btn.sec{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:0;font-size:14px}dt{color:var(--muted)}dd{margin:0;word-break:break-all}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;font-weight:600;max-width:calc(100% - 32px)}
+.empty{border:1.5px dashed var(--line);border-radius:12px;padding:24px;text-align:center;color:var(--muted)}
+</style></head><body>
+<div class="top"><b>Firmas · SurCaja</b><a href="./">← Volver a SurCaja</a></div>
+<main id="app"><div class="empty">Cargando…</div></main>
+<div id="toast" class="toast" hidden></div>
+<script>
+(function(){"use strict";
+const S={db:null,user:null,dl:null,rol:null,myPro:null,email:"",uid:"",list:[],sel:null,ok:{}};
+const $=s=>document.querySelector(s);
+const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fh=s=>s?new Date(s).toLocaleString("es-CL",{dateStyle:"medium",timeStyle:"short"}):"—";
+function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,3500)}
+async function sha(t){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
+const EST={enviado:["Por firmar (profesional)","p-env"],firmado_pro:["Firmado por la profesional · falta el salón","p-pro"],firmado:["Firmado por ambas partes","p-ok"],anulado:["Anulado","p-an"]};
+async function init(){const c=window.claude;S.db=await c.use("db");S.user=await c.use("user");S.dl=await c.use("downloads");
+  S.rol=S.user.rol();S.myPro=S.user.profId();const u=window.__sxAuth.currentUser;S.email=u?u.email:"";S.uid=u?u.uid:"";
+  if(S.rol!=="admin"&&!S.myPro){$("#app").innerHTML=`<div class="empty">Tu cuenta aún no está asociada a una profesional. Pídele a la administradora que te habilite.</div>`;return}
+  const q=S.rol==="admin"?S.db.collection("firmas"):S.db.collection("firmas").where("profId","==",S.myPro);
+  q.onSnapshot(async s=>{S.list=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(b.creado).localeCompare(String(a.creado)));
+    for(const f of S.list){if(S.ok[f.id]===undefined)S.ok[f.id]=(await sha(f.texto||""))===f.hash}
+    const p=new URLSearchParams(location.search).get("id");if(p&&!S.sel&&S.list.find(x=>x.id===p))S.sel=p;render()},e=>{console.warn(e);$("#app").innerHTML=`<div class="empty">No se pudieron leer las firmas.</div>`})}
+function render(){const f=S.list.find(x=>x.id===S.sel);$("#app").innerHTML=f?vDet(f):vList()}
+function vList(){const pend=S.list.filter(f=>(S.rol!=="admin"&&f.estado==="enviado")||(S.rol==="admin"&&f.estado==="firmado_pro")).length;
+  return`<div><h1>${S.rol==="admin"?"Contratos enviados a firma":"Mis contratos"}</h1><p class="muted">${pend?`Tienes <b>${pend}</b> por firmar.`:"No tienes contratos pendientes de firma."}</p></div>
+  ${S.list.length?S.list.map(f=>{const e=EST[f.estado]||[f.estado,"p-an"];return`<button class="card" data-id="${esc(f.id)}"><div class="row"><b>${esc(f.tipo)} · ${esc(f.nombre||f.profNombre)}</b><span class="pill ${e[1]}">${esc(e[0])}</span></div><span class="muted" style="font-size:14px">Enviado ${esc(fh(f.creado))}${f.firmaPro?` · firmó ${esc(fh(f.firmaPro.ts))}`:""}${f.firmaSalon?` · salón ${esc(fh(f.firmaSalon.ts))}`:""}</span></button>`}).join(""):`<div class="empty">Aún no hay contratos enviados a firma.</div>`}`}
+function constancia(f){return`<dl><dt>Documento</dt><dd>${esc(f.tipo)} · ${esc(f.nombre||f.profNombre)}</dd><dt>Enviado</dt><dd>${esc(fh(f.creado))} por ${esc(f.enviadoPor||"—")}</dd>
+  <dt>Firma profesional</dt><dd>${f.firmaPro?`${esc(f.firmaPro.email)} · ${esc(fh(f.firmaPro.ts))}`:"Pendiente"}</dd>
+  <dt>Firma del salón</dt><dd>${f.firmaSalon?`${esc(f.firmaSalon.email)} · ${esc(fh(f.firmaSalon.ts))} (p.p. LUZIA SpA)`:"Pendiente"}</dd>
+  <dt>Huella del texto</dt><dd style="font-family:ui-monospace,monospace;font-size:12px">${esc(f.hash)}</dd></dl>`}
+function vDet(f){const e=EST[f.estado]||[f.estado,"p-an"];const ok=S.ok[f.id];
+  const puedePro=S.rol!=="admin"&&f.estado==="enviado"&&f.profId===S.myPro;const puedeSalon=S.rol==="admin"&&f.estado==="firmado_pro";
+  let act="";
+  if(puedePro||puedeSalon)act=`<div class="panel"><b>${puedePro?"Firma electrónica":"Firma del salón (p.p. LUZIA SpA)"}</b>
+    <label class="chk"><input type="checkbox" id="acepto"> <span>${puedePro?"Leí el documento completo y acepto sus condiciones.":"Revisé el documento firmado por la profesional y lo acepto en representación de LUZIA SpA."}</span></label>
+    <label for="clave">Para firmar, escribe tu clave de SurCaja (${esc(S.email)})<input type="password" id="clave" autocomplete="current-password"></label>
+    <div><button class="btn" data-act="${puedePro?"firmar-pro":"firmar-salon"}">Firmar</button></div>
+    <p class="muted" style="font-size:13px;margin:0">Tu firma queda registrada con tu cuenta, la fecha y hora, y la huella del texto. Equivale a una firma electrónica simple.</p></div>`;
+  return`<div class="row"><button class="btn sec" data-act="volver">← Volver</button><span class="pill ${e[1]}">${esc(e[0])}</span></div>
+  <h1>${esc(f.tipo)}</h1>
+  ${ok?`<div class="note ok">✓ El texto está íntegro: coincide exactamente con el que se envió a firma.</div>`:`<div class="note risk"><b>Atención:</b> el texto no coincide con su huella. No firmes y avisa a la administradora.</div>`}
+  <div class="doc">${esc(f.texto)}</div>
+  ${ok?act:""}
+  <div class="panel"><b>Constancia de firma</b>${constancia(f)}
+    <div class="row" style="justify-content:flex-start"><button class="btn sec" data-act="descargar">Descargar documento con constancia</button>
+    ${S.rol==="admin"&&f.estado==="enviado"?`<button class="btn sec" data-act="anular">Anular envío</button>`:""}</div></div>`}
+async function reauth(){const p=$("#clave").value;if(!$("#acepto").checked){toast("Marca la casilla de aceptación");return false}if(!p){toast("Escribe tu clave");return false}
+  try{const cred=firebase.auth.EmailAuthProvider.credential(S.email,p);await window.__sxAuth.currentUser.reauthenticateWithCredential(cred);return true}
+  catch(e){toast(/wrong-password|invalid-credential|invalid-login/.test(e.code||"")?"Clave incorrecta":/too-many/.test(e.code||"")?"Demasiados intentos. Espera unos minutos.":"No se pudo verificar tu clave");return false}}
+function firmaObj(f){return{uid:S.uid,email:S.email,ts:new Date().toISOString(),hash:f.hash,dispositivo:navigator.userAgent.slice(0,180)}}
+function descargar(f){const html=`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>${esc(f.tipo)} - ${esc(f.nombre||"")}</title><style>body{font:15px/1.6 Georgia,serif;max-width:760px;margin:40px auto;padding:0 20px;color:#111}pre{white-space:pre-wrap;font:inherit}h2{font:700 15px Arial,sans-serif;text-transform:uppercase;border-top:1px solid #999;padding-top:16px;margin-top:32px}dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font:13px Arial,sans-serif}dt{color:#555}dd{margin:0;word-break:break-all}</style></head><body><pre>${esc(f.texto)}</pre><h2>Constancia de firma electrónica (SurCaja)</h2>${constancia(f)}<p style="font:12px Arial,sans-serif;color:#555">Firma electrónica simple: cada parte firmó con su cuenta de SurCaja, verificando su clave. La huella (SHA-256) identifica el texto exacto aceptado; cualquier cambio en el texto produce una huella distinta.</p></body></html>`;
+  S.dl.save({filename:`${f.tipo} - ${(f.nombre||"").split(" ").slice(0,2).join(" ")}${f.estado==="firmado"?" (firmado)":""}.html`,data:new Blob([html],{type:"text/html;charset=utf-8"})});toast("Descargado. Ábrelo y usa Imprimir → Guardar como PDF.")}
+document.addEventListener("click",async ev=>{const c=ev.target.closest("[data-id]");if(c){S.sel=c.dataset.id;render();window.scrollTo(0,0);return}
+  const a=ev.target.closest("[data-act]");if(!a)return;const f=S.list.find(x=>x.id===S.sel);const k=a.dataset.act;
+  if(k==="volver"){S.sel=null;render();return}
+  if(k==="descargar"&&f){descargar(f);return}
+  if(k==="anular"&&f){try{await S.db.doc("firmas/"+f.id).update({estado:"anulado",anulado:new Date().toISOString()});toast("Envío anulado")}catch(e){toast("No se pudo anular")}return}
+  if((k==="firmar-pro"||k==="firmar-salon")&&f){a.disabled=true;if(!(await reauth())){a.disabled=false;return}
+    try{if(k==="firmar-pro")await S.db.doc("firmas/"+f.id).update({estado:"firmado_pro",firmaPro:firmaObj(f)});
+      else await S.db.doc("firmas/"+f.id).update({estado:"firmado",firmaSalon:firmaObj(f)});toast("¡Firmado!")}
+    catch(e){console.warn(e);toast("No se pudo registrar la firma");a.disabled=false}}});
+init();
+})();
+</script></body></html>
