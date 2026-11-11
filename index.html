@@ -1,0 +1,1059 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>SurCaja NÚASPA</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: barra de pestañas fija arriba; cada pestaña en una columna de hasta 1040px; la de registro usa botones grandes para tablet */
+:root{
+  --bg:#eef2f5; --surface:#ffffff; --ink:#132338; --muted:#5b6b7d; --line:#d9e1e8;
+  --plum:#16325c; --plum-ink:#ffffff; --plum-soft:#e6ecf5; --sage:#0d7a77; --sage-soft:#e2f2f1;
+  --amber:#b26b12; --amber-soft:#fbefdc; --red:#a3312f; --red-soft:#f8e3e2;
+  --f-display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --f-body:"IBM Plex Sans","Segoe UI",Arial,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0c1420; --surface:#132033; --ink:#e6edf5; --muted:#9db0c4; --line:#26384f;
+  --plum:#9cc1f0; --plum-ink:#0c1420; --plum-soft:#1a2a40; --sage:#4cc2bd; --sage-soft:#163a3d;
+  --amber:#f0b260; --amber-soft:#3a2c17; --red:#f08b88; --red-soft:#3d1f1f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c1420; --surface:#132033; --ink:#e6edf5; --muted:#9db0c4; --line:#26384f;
+  --plum:#9cc1f0; --plum-ink:#0c1420; --plum-soft:#1a2a40; --sage:#4cc2bd; --sage-soft:#163a3d;
+  --amber:#f0b260; --amber-soft:#3a2c17; --red:#f08b88; --red-soft:#3d1f1f; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--f-body);margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.bar-in{max-width:1040px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding-block:10px}
+.brand{font-family:var(--f-display);font-weight:700;font-size:20px;margin-right:auto;color:var(--plum)}
+.brand .sx{font-weight:800;letter-spacing:.04em}
+.bar{border-bottom:2px solid var(--plum)!important}
+.brand small{font-family:var(--f-body);font-size:12px;color:var(--muted);margin-left:8px;letter-spacing:.06em;text-transform:uppercase}
+nav{display:flex;gap:4px;flex-wrap:wrap}
+nav button{font:600 14px var(--f-body);border:0;background:transparent;color:var(--muted);padding:8px 12px;border-radius:8px;cursor:pointer}
+nav button[aria-current="page"]{background:var(--plum-soft);color:var(--plum)}
+nav a.navlink{font:600 14px var(--f-body);color:var(--plum);padding:8px 12px;border-radius:8px;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 64px}
+.page{max-width:1040px;margin:0 auto;display:grid;gap:24px}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(24px,3.6vw,32px);margin:0;line-height:1.15;text-wrap:balance}
+h2{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0;font-weight:700}
+p{margin:0}
+.muted{color:var(--muted)}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.step{display:grid;gap:12px}
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{font:600 17px var(--f-body);padding:14px 20px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;min-height:56px}
+.chip[aria-pressed="true"]{background:var(--plum);border-color:var(--plum);color:var(--plum-ink)}
+.chip small{display:block;font:500 12px var(--f-body);opacity:.75}
+.svc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.svc{display:grid;gap:4px;text-align:left;padding:14px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;font:inherit;position:relative;min-height:84px}
+.svc b{font-weight:600}
+.svc .p{font-family:var(--f-mono);color:var(--muted);font-size:14px}
+.svc[data-on="true"]{border-color:var(--plum);background:var(--plum-soft)}
+.qty{position:absolute;top:8px;right:8px;background:var(--plum);color:var(--plum-ink);border-radius:99px;min-width:26px;height:26px;display:grid;place-items:center;font:700 13px var(--f-mono)}
+.cat{font-size:13px;font-weight:700;color:var(--muted);margin-top:4px}
+.two{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:820px){.two{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:grid;gap:14px;min-width:0}
+.sticky{position:sticky;top:calc(env(safe-area-inset-top,0px) + 76px)}
+@media (max-width:820px){.sticky{position:static}}
+.line{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.line b{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.big{font-size:20px}
+.sel-list{display:grid;gap:6px}
+.sel-item{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:15px}
+.mini{font:600 13px var(--f-body);border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:4px 10px;cursor:pointer}
+label{display:grid;gap:4px;font-size:13px;color:var(--muted);font-weight:600}
+input,select,textarea{font:16px var(--f-body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%}
+input.m{font-family:var(--f-mono)}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--plum);outline-offset:2px}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.btn{font:700 16px var(--f-body);border:0;border-radius:12px;padding:14px 18px;cursor:pointer;background:var(--plum);color:var(--plum-ink);min-height:52px}
+.btn.sec{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.row-btns{display:flex;gap:10px;flex-wrap:wrap}
+.note{border-radius:10px;padding:12px 14px;font-size:14px;display:grid;gap:4px}
+.note.warn{background:var(--amber-soft);color:var(--ink)} .note.ok{background:var(--sage-soft)} .note.risk{background:var(--red-soft)} .note.info{background:var(--plum-soft)}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:720px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--bg);font-weight:700;white-space:nowrap}
+td.n,th.n{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.void td{color:var(--muted);text-decoration:line-through}
+tr.tot td{font-weight:700;background:var(--bg)}
+tr:last-child td{border-bottom:0}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:2px 9px;border-radius:99px;white-space:nowrap}
+.pill.g{background:var(--sage-soft);color:var(--sage)} .pill.a{background:var(--amber-soft);color:var(--amber)} .pill.r{background:var(--red-soft);color:var(--red)} .pill.n{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:2px}
+.kpi span{font-size:12px;color:var(--muted);font-weight:600}
+.kpi b{font-family:var(--f-mono);font-size:20px;font-variant-numeric:tabular-nums}
+.empty{border:1.5px dashed var(--line);border-radius:14px;padding:28px;text-align:center;display:grid;gap:8px;justify-items:center;color:var(--muted)}
+.empty strong{color:var(--ink);font-size:17px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:12px;font-weight:600;z-index:20;max-width:calc(100% - 32px)}
+.status{font-size:12px;color:var(--muted)}
+.cmp td.n{min-width:110px}
+/* ---- Agenda ---- */
+.ag-head{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:end}
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.wd{border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:8px 4px;cursor:pointer;font:inherit;display:grid;justify-items:center;gap:0;min-height:58px}
+.wd small{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.wd b{font-family:var(--f-mono);font-size:16px}
+.wd i{font-style:normal;font-size:11px;color:var(--sage);font-weight:700}
+.wd[aria-pressed="true"]{border-color:var(--plum);background:var(--plum-soft)}
+.wd.today b{color:var(--sage)}
+.grid-wrap{overflow:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface);max-height:74vh}
+.ag{display:grid;position:relative;min-width:100%}
+.ag .th{position:sticky;top:0;z-index:3;background:var(--bg);border-bottom:1px solid var(--line);padding:8px;font-weight:700;font-size:14px;text-align:center}
+.ag .tl{position:sticky;left:0;z-index:2;background:var(--surface);font:500 11px var(--f-mono);color:var(--muted);padding:0 6px;border-right:1px solid var(--line);text-align:right;line-height:1;padding-top:2px}
+.ag .th.tl{z-index:4;background:var(--bg)}
+.ag .cita.l0{justify-self:stretch;margin-right:50%} .ag .cita.l1{margin-left:50%}
+.ag .cell{border:0;border-top:1px solid transparent;border-left:1px solid var(--line);background:transparent;cursor:pointer;padding:0;min-height:0}
+.ag .cell.h{border-top-color:var(--line)}
+.ag .cell:hover{background:var(--plum-soft)}
+.ag .cita{z-index:1;margin:1px 3px;border-radius:8px;padding:4px 7px;font-size:12px;line-height:1.25;text-align:left;border:0;border-left:4px solid var(--plum);background:var(--plum-soft);color:var(--ink);cursor:pointer;overflow:hidden;font-family:var(--f-body)}
+.ag .cita b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ag .cita span{display:block;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ag .cita.confirmada{border-left-color:var(--sage);background:var(--sage-soft)}
+.ag .cita.llego{border-left-color:var(--amber);background:var(--amber-soft)}
+.ag .cita.atendida{border-left-color:var(--sage);background:var(--sage-soft);opacity:.7}
+.ag .cita.noasistio{border-left-color:var(--red);background:var(--red-soft)}
+.ag .cita.cancelada{opacity:.45;text-decoration:line-through}
+.ag .cita.bloqueo{border-left-color:var(--muted);background:repeating-linear-gradient(135deg,var(--bg),var(--bg) 6px,var(--surface) 6px,var(--surface) 12px);color:var(--muted)}
+.ag .cita.choque{outline:2px solid var(--red)}
+.legend{display:flex;flex-wrap:wrap;gap:8px;font-size:12px}
+.sheet-bg{position:fixed;inset:0;background:rgba(10,20,35,.45);z-index:30;display:grid;place-items:end center;padding:16px}
+@media (min-width:700px){.sheet-bg{place-items:center}}
+.sheet{background:var(--surface);color:var(--ink);border-radius:16px;width:min(620px,100%);max-height:calc(100vh - 32px);overflow:auto;padding:20px;display:grid;gap:14px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.sheet h3{font-family:var(--f-display);font-size:20px;margin:0}
+.sheet-top{display:flex;justify-content:space-between;align-items:start;gap:12px}
+.x{border:0;background:var(--bg);color:var(--ink);border-radius:99px;width:36px;height:36px;font-size:18px;cursor:pointer;flex:none}
+.pick{display:grid;gap:4px}
+.pick button{text-align:left;font:inherit;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:8px 10px;cursor:pointer}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:15px}
+.kv dt{color:var(--muted)} .kv dd{margin:0}
+.wsp{background:#1f8a4c!important;color:#fff!important}
+.cli-row{cursor:pointer} .cli-row:hover td{background:var(--plum-soft)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="bar"><div class="bar-in">
+  <div class="brand"><span class="sx">SurCaja</span> <small>NÚASPA · La caja que cuadra todos los días</small></div>
+  <nav id="nav" aria-label="Secciones">
+    <button data-tab="agenda" aria-current="page">Agenda</button>
+    <button data-tab="registrar">Registrar</button>
+    <button data-tab="hoy">Día</button>
+    <button data-tab="cierre">Cierre de caja</button>
+    <button data-tab="liquidacion">Liquidación</button>
+    <button data-tab="reportes" id="tab-reportes">Reportes</button>
+    <button data-tab="clientas">Clientas</button>
+    <button data-tab="ajustes" id="tab-ajustes">Ajustes</button>
+    <a class="navlink" href="https://claude.ai/artifact/BdRKSSHS6oe1g8Rx8g3n3C" target="_blank" rel="noopener">¿Cómo emito mi boleta? ↗</a>
+  </nav>
+</div></div>
+<main><div class="page" id="app">
+  <div class="empty"><strong>Cargando SurCaja…</strong><span>Conectando con los registros guardados.</span></div>
+</div></main>
+<div id="toast" class="toast" hidden></div>
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#5b2a6e"><meta name="apple-mobile-web-app-capable" content="yes">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="config.js"></script>
+<script src="adapter.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script>
+(function(){
+"use strict";
+const IVA=0.19;
+const CAT_ORDEN=["manicure","pedicure","pestañas","depilación"];
+function catOrd(c){const i=CAT_ORDEN.indexOf(String(c||"").trim().toLowerCase());return i<0?CAT_ORDEN.length:i}
+const MEDIOS=[["tarjeta","Tarjeta (Mercado Pago)"],["efectivo","Efectivo"],["transferencia","Transferencia"]];
+const MODELOS={contrato:"Contrato de trabajo",honorarios:"Honorarios",arriendo:"Arriendo de sillón",transicion:"En transición (sin documento)"};
+function diasHasta(f){if(!f)return null;const [y,m,d]=String(f).split("-").map(Number);const t=new Date(y,m-1,d),h=new Date();h.setHours(0,0,0,0);return Math.round((t-h)/864e5)}
+const S={db:null,user:null,dl:null,admin:false,ready:false,offline:false,
+  tab:"agenda",pros:[],servs:[],cfg:{base:"neto"},
+  dia:hoy(),regsDia:[],cierreDia:null,unsubDia:null,unsubCierre:null,
+  sel:{pro:null,items:{},cobrado:null,manual:false,propina:"",medio:"tarjeta",op:"",nota:""},
+  liq:{desde:lunes(),hasta:hoy(),rows:null,regs:null,cargando:false,pro:""},
+  rep:{desde:hoy().slice(0,8)+"01",hasta:hoy(),pro:"",cat:"",medio:"",vista:"detalle",regs:null,cargando:false},
+  saving:false,mpDia:null,unsubMp:null,mpImp:null,
+  agDia:hoy(),citasSem:[],citasMan:[],unsubSem:null,unsubMan:null,clientas:[],form:null,det:null,
+  cli:{q:"",sel:null,hist:null,nuevo:false}};
+
+function hoy(){const d=new Date();return ymd(d)}
+function ymd(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function lunesDe(s){const [y,m,d]=s.split("-").map(Number);const t=new Date(y,m-1,d);t.setDate(t.getDate()-((t.getDay()+6)%7));return ymd(t)}
+function masDias(s,n){const [y,m,d]=s.split("-").map(Number);const t=new Date(y,m-1,d+n);return ymd(t)}
+function lunes(){const d=new Date();const k=(d.getDay()+6)%7;d.setDate(d.getDate()-k);return ymd(d)}
+function fechaLarga(s){const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"})}
+const $=s=>document.querySelector(s);
+const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const clp=n=>"$"+Math.round(Number(n)||0).toLocaleString("es-CL");
+const int=v=>{const n=Math.round(Number(String(v).replace(/[^\d-]/g,"")));return isFinite(n)&&n>0?n:0};
+function calc(venta,pct,base){const neto=Math.round(venta/(1+IVA));const iva=venta-neto;const b=base==="bruto"?venta:neto;const com=Math.round(b*(pct||0)/100);return{neto,iva,com,salon:neto-com}}
+function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>{t.hidden=true},3200)}
+
+/* ---------- Conexión ---------- */
+async function init(){
+  const c=window.claude;
+  if(!c||typeof c.use!=="function"){S.offline=true;render();return}
+  let db=null,user=null,dl=null;
+  try{[db,user,dl]=await Promise.all([c.use("db"),c.use("user"),c.use("downloads")])}catch(e){}
+  S.db=db;S.user=user;S.dl=dl;
+  if(!db){S.offline=true;render();return}
+  try{S.admin=user?await user.canEdit():false}catch(e){S.admin=false}
+  S.rol=user&&user.rol?user.rol():(S.admin?"admin":"caja");S.myPro=user&&user.profId?user.profId():null;
+  if(S.myPro){S.tab="registrar";S.sel.pro=S.myPro}
+  if(S.admin)db.collection("usuarios").onSnapshot(q=>{S.usuarios=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.email).localeCompare(String(b.email)));render()},err);
+  db.collection("profesionales").onSnapshot(q=>{S.pros=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre),"es"));S.ready=true;render()},err);
+  db.collection("servicios").onSnapshot(q=>{S.servs=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>catOrd(a.categoria)-catOrd(b.categoria)||String(a.categoria||"").localeCompare(String(b.categoria||""),"es")||String(a.nombre).localeCompare(String(b.nombre),"es"));render()},err);
+  db.doc("config/general").onSnapshot(s=>{S.cfg=Object.assign({base:"neto"},s.exists?s.data():{});render()},err);
+  db.collection("clientas").onSnapshot(q=>{S.clientas=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre),"es"));render()},err);
+  subDia();subAgenda();
+}
+function subAgenda(){
+  if(!S.db)return;
+  if(S.unsubSem)S.unsubSem();if(S.unsubMan)S.unsubMan();
+  const a=lunesDe(S.agDia),b=masDias(a,6);
+  S.unsubSem=S.db.collection("citas").where("fecha",">=",a).where("fecha","<=",b).onSnapshot(q=>{S.citasSem=q.docs.map(d=>({id:d.id,...d.data()}));render()},err);
+  S.unsubMan=S.db.collection("citas").where("fecha","==",masDias(hoy(),1)).onSnapshot(q=>{S.citasMan=q.docs.map(d=>({id:d.id,...d.data()}));render()},err);
+}
+function err(e){console.warn(e);if(e&&e.code==="revoked"){S.offline=true;render()}}
+function subDia(){
+  if(!S.db)return;
+  if(S.unsubDia)S.unsubDia();if(S.unsubCierre)S.unsubCierre();if(S.unsubMp)S.unsubMp();
+  S.unsubMp=S.db.doc("mp/"+S.dia).onSnapshot(s=>{S.mpDia=s.exists?s.data():null;render()},err);
+  S.unsubDia=(S.myPro?S.db.collection("registros").where("fecha","==",S.dia).where("profId","==",S.myPro):S.db.collection("registros").where("fecha","==",S.dia)).onSnapshot(q=>{S.regsDia=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.creado).localeCompare(String(b.creado)));render()},err);
+  S.unsubCierre=S.db.doc("cierres/"+S.dia).onSnapshot(s=>{S.cierreDia=s.exists?s.data():null;render()},err);
+}
+
+/* ---------- Render ---------- */
+function render(){
+  document.querySelectorAll("#nav button").forEach(b=>{b.setAttribute("aria-current",b.dataset.tab===S.tab?"page":"false")});
+  $("#tab-ajustes").hidden=!S.admin&&!S.offline;$("#tab-reportes").hidden=!S.admin&&!S.offline;
+  ["cierre","clientas","agenda"].forEach(k=>{const b=document.querySelector('#nav button[data-tab="'+k+'"]');if(b)b.hidden=!!S.myPro});
+  const app=$("#app");
+  if(S.offline){app.innerHTML=`<div class="empty"><strong>La caja no está conectada en esta vista</strong><span>Ábrela desde claude.ai con tu sesión iniciada para registrar y ver los servicios.</span></div>`;return}
+  if(!S.ready){return}
+  const f={agenda:vAgenda,clientas:vClientas,registrar:vRegistrar,hoy:vDia,cierre:vCierre,liquidacion:vLiq,reportes:vReportes,ajustes:vAjustes}[S.tab];
+  const keep=captureFocus();
+  const gw=document.querySelector(".grid-wrap"),sh=document.querySelector(".sheet");
+  const sc={gt:gw?gw.scrollTop:null,gl:gw?gw.scrollLeft:0,st:sh?sh.scrollTop:0};
+  app.innerHTML=f()+vSheet();
+  restoreFocus(keep);
+  const gw2=document.querySelector(".grid-wrap"),sh2=document.querySelector(".sheet");
+  if(gw2){if(sc.gt!=null){gw2.scrollTop=sc.gt;gw2.scrollLeft=sc.gl}else if(!S._agScrolled){const n=document.querySelector(".ag .now");if(n){gw2.scrollTop=Math.max(0,n.offsetTop-80)}S._agScrolled=true}}
+  if(sh2)sh2.scrollTop=sc.st;
+}
+function captureFocus(){const a=document.activeElement;if(!a||!a.id)return null;const k={id:a.id,s:a.selectionStart,e:a.selectionEnd};if((a.tagName==="INPUT"&&!/^(checkbox|radio|button|submit)$/.test(a.type))||a.tagName==="TEXTAREA")k.v=a.value;return k}
+function restoreFocus(k){if(!k)return;const el=document.getElementById(k.id);if(el){if(k.v!=null&&el.value!==k.v)el.value=k.v;el.focus();try{if(k.s!=null)el.setSelectionRange(k.s,k.e)}catch(e){}}}
+
+function sinCatalogo(){
+  const faltan=[];if(!S.pros.filter(p=>p.activo!==false).length)faltan.push("profesionales");if(!S.servs.filter(s=>s.activo!==false).length)faltan.push("servicios con su precio");
+  if(!faltan.length)return"";
+  return `<div class="empty"><strong>Falta cargar ${faltan.join(" y ")}</strong><span>${S.admin?`Entra a <b>Ajustes</b> y agrega ${faltan.join(" y ")}. Después cada profesional podrá registrar su servicio desde aquí.`:`Francisca debe cargarlos en Ajustes antes de empezar a registrar.`}</span>${S.admin?`<button class="btn" data-act="goto" data-tab="ajustes">Ir a Ajustes</button>`:""}</div>`;
+}
+
+function vRegistrar(){
+  if(S.myPro&&!S.sel.pro)S.sel.pro=S.myPro;
+  const vacio=sinCatalogo();
+  const pros=S.pros.filter(p=>p.activo!==false&&(!S.myPro||p.id===S.myPro)), servs=S.servs.filter(s=>s.activo!==false);
+  const sel=S.sel, pro=pros.find(p=>p.id===sel.pro);
+  const items=Object.entries(sel.items).map(([id,q])=>({s:S.servs.find(x=>x.id===id),q})).filter(x=>x.s&&x.q>0);
+  const lista=items.reduce((a,x)=>a+(Number(x.s.precio)||0)*x.q,0);
+  const cobrado=sel.manual?int(sel.cobrado):lista;
+  const r=calc(cobrado,pro?pro.comision:0,S.cfg.base);
+  const cats={};servs.forEach(s=>{(cats[s.categoria||"Servicios"]=cats[s.categoria||"Servicios"]||[]).push(s)});
+  const puede=pro&&cobrado>0&&!S.saving;
+  return `
+  <div><h1>Registrar un servicio</h1><p class="muted">${esc(fechaLarga(hoy()))}. Registra cada atención al momento de cobrarla.</p></div>
+  ${sel.citaId?`<div class="note ok"><b>Cobro de la cita de ${esc(sel.clientaNombre||"la clienta")}</b><span>Profesional y servicios vienen de la agenda; ajusta si cambió algo. Al guardar, la cita queda como atendida. <button class="mini" data-act="sel-limpiar">No es esta cita</button></span></div>`:""}
+  ${vacio||`
+  <div class="two">
+    <div class="step" style="gap:22px">
+      <div class="step"><h2>1. ¿Quién atendió?</h2>
+        <div class="chips">${pros.map(p=>`<button class="chip" data-act="pro" data-id="${esc(p.id)}" aria-pressed="${p.id===sel.pro}">${esc(p.nombre)}</button>`).join("")}</div>
+        ${pro&&pro.modelo==="arriendo"?`<div class="note warn"><b>${esc(pro.nombre)} trabaja con arriendo de sillón.</b><span>En ese modelo ella cobra con su propio medio de pago y emite boleta de honorarios. Si el cobro entra a la máquina del salón, el salón paga IVA sobre todo el servicio.</span></div>`:""}
+      </div>
+      <div class="step"><h2>2. ¿Qué servicio hizo?</h2>
+        ${Object.entries(cats).map(([c,arr])=>`<div class="cat">${esc(c)}</div><div class="svc-grid">${arr.map(s=>{const q=sel.items[s.id]||0;return`<button class="svc" data-act="svc" data-id="${esc(s.id)}" data-on="${q>0}"><b>${esc(s.nombre)}</b><span class="p">${clp(s.precio)}</span>${q>0?`<span class="qty">${q}</span>`:""}</button>`}).join("")}</div>`).join("")}
+      </div>
+    </div>
+    <div class="panel sticky" aria-label="Resumen del cobro">
+      <h2>3. Cobro</h2>
+      ${items.length?`<div class="sel-list">${items.map(x=>`<div class="sel-item"><span>${x.q>1?x.q+" × ":""}${esc(x.s.nombre)}</span><span class="row-btns"><span class="num">${clp((Number(x.s.precio)||0)*x.q)}</span><button class="mini" data-act="menos" data-id="${esc(x.s.id)}" aria-label="Quitar uno">−</button></span></div>`).join("")}</div>`:`<p class="muted">Toca uno o más servicios.</p>`}
+      <div class="fields">
+        <label for="f-cobrado">Venta cobrada (con IVA)<input id="f-cobrado" class="m" inputmode="numeric" value="${cobrado||""}" placeholder="0"></label>
+        <label for="f-propina">Propina<input id="f-propina" class="m" inputmode="numeric" value="${esc(sel.propina)}" placeholder="0"></label>
+      </div>
+      ${sel.manual&&cobrado!==lista&&lista>0?`<div class="note warn">Cobrado distinto a la lista de precios (${clp(lista)}). Diferencia ${clp(cobrado-lista)}. <button class="mini" data-act="reset-cobrado">Volver al precio de lista</button></div>`:""}
+      <div class="step" style="gap:8px"><span class="muted" style="font-size:13px;font-weight:600">Medio de pago</span>
+        <div class="chips">${MEDIOS.map(([k,l])=>`<button class="chip" style="font-size:14px;padding:10px 14px;min-height:44px" data-act="medio" data-k="${k}" aria-pressed="${sel.medio===k}">${l}</button>`).join("")}</div></div>
+      ${sel.medio==="tarjeta"?`<label for="f-op">N° de operación o de boleta<input id="f-op" class="m" inputmode="numeric" value="${esc(sel.op)}" placeholder="Ej. 186263056396"></label><p class="muted" style="font-size:12px">Si dos profesionales atendieron a la misma clienta con un solo voucher, cada una registra solo sus servicios y su parte de la propina, con el mismo número de operación.</p>`:""}
+      ${S.admin?`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px"><label for="f-fecha">Fecha del servicio<input id="f-fecha" type="date" max="${hoy()}" value="${esc(sel.fecha||hoy())}"></label>${sel.fecha&&sel.fecha!==hoy()?`<label for="f-hora">Hora del cobro<input id="f-hora" type="time" value="${esc(sel.hora||"")}"></label>`:""}</div>${sel.fecha&&sel.fecha!==hoy()?`<p class="muted" style="font-size:12px">Estás registrando un servicio de otro día. Usa la hora del voucher para que cuadre con Mercado Pago.</p>`:""}`:""}
+      <label for="f-nota">Nota (opcional)<input id="f-nota" value="${esc(sel.nota)}" placeholder="Ej. descuento clienta frecuente"></label>
+      <div id="preview" class="step" style="gap:6px;border-top:1px solid var(--line);padding-top:12px">${preview(cobrado,pro,r)}</div>
+      ${sel.editId?`<div class="note info"><b>Estás editando un servicio ya registrado</b><span>${esc((sel.orig&&sel.orig.profNombre)||"")} · ${esc(sel.fecha||"")} ${esc(sel.hora||"")}. Agrega o quita servicios y revisa el monto cobrado; al guardar se reemplaza el registro anterior.</span></div>`:""}
+      <button class="btn" data-act="guardar" ${puede?"":"disabled"}>${S.saving?"Guardando…":sel.editId?"Guardar cambios":"Guardar servicio"}</button>${sel.editId?` <button class="btn sec" data-act="cancelar-edicion">Cancelar edición</button>`:""}
+    </div>
+  </div>`}`;
+}
+function preview(cobrado,pro,r){
+  const prop=int(S.sel.propina);
+  return `<div class="line"><span class="muted">Compra (sin IVA)</span><b>${clp(r.neto)}</b></div>
+  <div class="line"><span class="muted">IVA 19%</span><b>${clp(r.iva)}</b></div>
+  <div class="line"><span>Comisión ${pro?esc(pro.nombre)+" ("+(pro.comision||0)+"%)":"profesional"}</span><b>${clp(r.com)}</b></div>
+  <div class="line"><span>Propina (100% de la profesional)</span><b>${clp(prop)}</b></div>
+  <div class="line big"><span>Total del ticket</span><b>${clp(cobrado+prop)}</b></div>`;
+}
+function refreshPreview(){
+  const sel=S.sel, pro=S.pros.find(p=>p.id===sel.pro);
+  const lista=Object.entries(sel.items).reduce((a,[id,q])=>{const s=S.servs.find(x=>x.id===id);return a+(s?(Number(s.precio)||0)*q:0)},0);
+  const cobrado=sel.manual?int(sel.cobrado):lista;
+  const p=$("#preview");if(p)p.innerHTML=preview(cobrado,pro,calc(cobrado,pro?pro.comision:0,S.cfg.base));
+  const b=document.querySelector('[data-act="guardar"]');if(b)b.disabled=!(pro&&cobrado>0&&!S.saving);
+}
+
+function resumen(regs){
+  const ok=regs.filter(r=>r.estado!=="anulado");
+  const t={n:ok.length,venta:0,prop:0,neto:0,iva:0,com:0,porMedio:{tarjeta:{n:0,v:0,p:0},efectivo:{n:0,v:0,p:0},transferencia:{n:0,v:0,p:0}},porPro:{}};
+  ok.forEach(r=>{const c=calc(r.venta,r.comisionPct,r.base);t.venta+=r.venta;t.prop+=r.propina||0;t.neto+=c.neto;t.iva+=c.iva;t.com+=c.com;
+    const m=t.porMedio[r.medio]||(t.porMedio[r.medio]={n:0,v:0,p:0});m.n++;m.v+=r.venta;m.p+=r.propina||0;
+    const k=r.profId;const pp=t.porPro[k]||(t.porPro[k]={nombre:r.profNombre,modelo:r.modelo,n:0,venta:0,neto:0,iva:0,com:0,prop:0});
+    pp.n++;pp.venta+=r.venta;pp.neto+=c.neto;pp.iva+=c.iva;pp.com+=c.com;pp.prop+=r.propina||0});
+  return t;
+}
+
+function vDia(){
+  const t=resumen(S.regsDia);
+  return `<div class="row-btns" style="justify-content:space-between;align-items:end">
+    <div><h1>Servicios del día</h1><p class="muted">${esc(fechaLarga(S.dia))}</p></div>
+    <label for="f-dia" style="min-width:180px">Día<input id="f-dia" type="date" value="${S.dia}"></label></div>
+  <div class="kpis">
+    <div class="kpi"><span>Servicios</span><b>${t.n}</b></div>
+    <div class="kpi"><span>Ventas con IVA</span><b>${clp(t.venta)}</b></div>
+    <div class="kpi"><span>IVA del día</span><b>${clp(t.iva)}</b></div>
+    <div class="kpi"><span>Propinas</span><b>${clp(t.prop)}</b></div>
+    <div class="kpi"><span>Total cobrado (con propinas)</span><b>${clp(t.venta+t.prop)}</b></div>
+    <div class="kpi"><span>Comisiones</span><b>${clp(t.com)}</b></div>
+    <div class="kpi"><span>Queda al salón (sin IVA)</span><b>${clp(t.neto-t.com)}</b></div>
+  </div>
+  ${S.regsDia.length?`<div class="tbl"><table><thead><tr><th>Hora</th><th>Profesional</th><th>Servicio</th><th>Medio</th><th>Operación</th><th class="n">Compra</th><th class="n">IVA 19%</th><th class="n">Propina</th><th class="n">Total ticket</th><th class="n">Comisión</th><th></th></tr></thead><tbody>
+  ${S.regsDia.map(r=>{const c=calc(r.venta,r.comisionPct,r.base);const an=r.estado==="anulado";return`<tr class="${an?"void":""}"><td class="num">${esc(r.hora)}</td><td>${esc(r.profNombre)}</td><td>${esc((r.servicios||[]).map(s=>(s.cantidad>1?s.cantidad+"× ":"")+s.nombre).join(", "))}${r.nota?`<br><span class="muted" style="font-size:12px">${esc(r.nota)}</span>`:""}</td><td>${esc(medioTxt(r.medio))}</td><td class="num">${esc(r.operacion||"—")}</td><td class="n">${clp(c.neto)}</td><td class="n">${clp(c.iva)}</td><td class="n">${clp(r.propina)}</td><td class="n"><b>${clp(r.venta+(r.propina||0))}</b></td><td class="n">${clp(c.com)}</td><td>${S.admin?`${an?"":`<button class="mini" data-act="editar" data-id="${esc(r.id)}">Editar</button> `}<button class="mini" data-act="${an?"restaurar":"anular"}" data-id="${esc(r.id)}">${an?"Restaurar":"Anular"}</button>`:(an?`<span class="pill n">Anulado</span>`:"")}</td></tr>`}).join("")}
+  </tbody></table></div>`:`<div class="empty"><strong>No hay servicios registrados este día</strong><span>Los servicios aparecen aquí apenas se guardan en Registrar.</span></div>`}`;
+}
+const medioTxt=k=>(MEDIOS.find(m=>m[0]===k)||[k,k])[1];
+
+function vCierre(){
+  const t=resumen(S.regsDia), c=S.cierreDia||{}, tj=t.porMedio.tarjeta;
+  const tP=c.totalPoint!=null?c.totalPoint:"", vP=c.ventasPoint!=null?c.ventasPoint:"", pP=c.propinasPoint!=null?c.propinasPoint:"", nP=c.cantPoint!=null?c.cantPoint:"", ef=c.efectivoContado!=null?c.efectivoContado:"";
+  const fila=(lbl,sis,real,fmt=clp)=>{if(real===""||real==null)return`<tr><td>${lbl}</td><td class="n">${fmt(sis)}</td><td class="n">—</td><td class="n">—</td><td><span class="pill n">Falta dato</span></td></tr>`;const d=Number(real)-sis;return`<tr><td>${lbl}</td><td class="n">${fmt(sis)}</td><td class="n">${fmt(real)}</td><td class="n">${fmt(d)}</td><td>${d===0?`<span class="pill g">Cuadra</span>`:`<span class="pill r">${d>0?"Cobro sin registro":"Registro sin cobro"}</span>`}</td></tr>`};
+  const fmtN=n=>String(Math.round(n));
+  return `<div class="row-btns" style="justify-content:space-between;align-items:end">
+    <div><h1>Cierre de caja</h1><p class="muted">${esc(fechaLarga(S.dia))}. Compara lo registrado por las profesionales con el resumen del Point Smart.</p></div>
+    <label for="f-dia" style="min-width:180px">Día<input id="f-dia" type="date" value="${S.dia}"></label></div>
+  <div class="two">
+    <div class="panel"><h2>Resumen del Point Smart y caja</h2>
+      <p class="muted" style="font-size:14px">Copia los totales del ticket "Resumen de ventas" que imprime la máquina al final del día.</p>
+      <div class="fields">
+        <label for="c-total">Total del ticket<input id="c-total" class="m" inputmode="numeric" value="${esc(tP)}" placeholder="Ej. 103532"></label>
+        <label for="c-ventas">Ventas<input id="c-ventas" class="m" inputmode="numeric" value="${esc(vP)}" placeholder="Ej. 98236"></label>
+        <label for="c-cant">N° de ventas<input id="c-cant" class="m" inputmode="numeric" value="${esc(nP)}" placeholder="Ej. 5"></label>
+        <label for="c-prop">Propinas<input id="c-prop" class="m" inputmode="numeric" value="${esc(pP)}" placeholder="Ej. 5296"></label>
+        <label for="c-ef">Efectivo contado<input id="c-ef" class="m" inputmode="numeric" value="${esc(ef)}" placeholder="0"></label>
+      </div>
+      <label for="c-obs">Observaciones<textarea id="c-obs" rows="2">${esc(c.obs||"")}</textarea></label>
+      <div class="row-btns"><button class="btn" data-act="cerrar">${S.cierreDia?"Actualizar cierre":"Guardar cierre"}</button></div>
+      ${S.cierreDia?`<p class="status">Cierre guardado ${esc(new Date(c.ts).toLocaleString("es-CL"))}. Estado: ${c.estado==="cuadra"?"cuadra":"con diferencias"}.</p>`:""}
+    </div>
+    <div class="step">
+      <div class="tbl cmp"><table style="min-width:520px"><thead><tr><th>Concepto</th><th class="n">Registrado</th><th class="n">Point Smart / caja</th><th class="n">Diferencia</th><th>Estado</th></tr></thead><tbody>
+        ${fila("Total del ticket (ventas + propinas)",tj.v+tj.p,tP)}
+        ${fila("Ventas con tarjeta",tj.v,vP)}
+        ${fila("N° de ventas con tarjeta",tj.n,nP,fmtN)}
+        ${fila("Propinas con tarjeta",tj.p,pP)}
+        ${fila("Efectivo (venta + propina)",t.porMedio.efectivo.v+t.porMedio.efectivo.p,ef)}
+      </tbody></table></div>
+      <div class="note info"><b>Cómo leer las diferencias</b><span>"Cobro sin registro": la máquina cobró algo que nadie anotó aquí. "Registro sin cobro": alguien registró un servicio que no pasó por la máquina, o se anotó con otro medio de pago. Revisa los números de operación en la pestaña Día.</span></div>
+      ${t.porMedio.transferencia.n?`<div class="note warn">Hay ${t.porMedio.transferencia.n} servicio(s) pagados por transferencia (${clp(t.porMedio.transferencia.v+t.porMedio.transferencia.p)}). Revisa que hayan llegado a la cuenta de la sociedad y no a una cuenta personal.</div>`:""}
+    </div>
+  </div>
+  ${vMP()}`;
+}
+
+/* ---------- Mercado Pago ---------- */
+const MPCOLS=[["op","N° de operación"],["fecha","Fecha"],["monto","Monto cobrado"],["propina","Propina"],["comision","Comisión Mercado Pago"],["estado","Estado"]];
+function pMonto(v){if(typeof v==="number")return Math.round(v);let s=String(v==null?"":v).replace(/[^\d.,-]/g,"");if(!s)return 0;const c=s.lastIndexOf(","),d=s.lastIndexOf(".");
+  if(c>-1&&d>-1){s=c>d?s.replace(/\./g,"").replace(",","."):s.replace(/,/g,"")}
+  else if(c>-1){s=/,\d{1,2}$/.test(s)?s.replace(",","."):s.replace(/,/g,"")}
+  else if(d>-1&&/^-?\d{1,3}(\.\d{3})+$/.test(s)){s=s.replace(/\./g,"")}
+  const n=parseFloat(s);return isFinite(n)?Math.round(n):0}
+function pFecha(v){
+  if(v instanceof Date&&!isNaN(v))return{f:ymd(v),h:String(v.getHours()).padStart(2,"0")+":"+String(v.getMinutes()).padStart(2,"0")};
+  if(typeof v==="number"&&v>20000){const d=new Date(Math.round((v-25569)*864e5));return{f:d.toISOString().slice(0,10),h:d.toISOString().slice(11,16)}}
+  const s=String(v==null?"":v).trim();let m=s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}:\d{2}))?/);if(m)return{f:`${m[1]}-${m[2]}-${m[3]}`,h:m[4]||""};
+  m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})(?:[\s,]+(\d{1,2}:\d{2}))?/);if(m){const y=m[3].length===2?"20"+m[3]:m[3];return{f:`${y}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`,h:m[4]?m[4].padStart(5,"0"):""}}
+  return null}
+function mpDetect(h){const m={},used=new Set();const pick=(k,res)=>{for(const re of res){const i=h.findIndex((x,ix)=>!used.has(ix)&&re.test(String(x)));if(i>-1){m[k]=i;used.add(i);return}}m[k]=-1};
+  pick("op",[/operation_id|n[uú]mero de operaci|operaci[oó]n/i,/^id$|transacci/i]);
+  pick("fecha",[/date_created|fecha de (origen|creaci|compra)/i,/fecha|date/i]);
+  pick("propina",[/propina|tip_amount|\btip\b/i]);
+  pick("comision",[/comisi|fee|cargo|costo/i]);
+  pick("estado",[/estado|status/i]);
+  pick("monto",[/transaction_amount|valor del producto|monto bruto|total|valor/i,/monto|amount|importe/i]);
+  return m}
+function mpParse(rows){let hi=rows.findIndex((r,i)=>i<20&&r.filter(c=>String(c==null?"":c).trim()!=="").length>=3&&r.some(c=>/operaci|operation|fecha|date/i.test(String(c==null?"":c))));if(hi<0)hi=0;
+  const header=(rows[hi]||[]).map(c=>String(c==null?"":c).trim());return{header,data:rows.slice(hi+1).filter(r=>r.some(c=>String(c==null?"":c).trim()!==""))}}
+function mpOps(imp){const m=imp.map;const g=(r,k)=>m[k]>-1?r[m[k]]:"";
+  return imp.data.map(r=>{const fe=pFecha(g(r,"fecha"));const est=String(g(r,"estado")||"");
+    return{op:String(g(r,"op")==null?"":g(r,"op")).trim().replace(/\.0+$/,""),fecha:fe?fe.f:"",hora:fe?fe.h:"",monto:pMonto(g(r,"monto")),propina:pMonto(g(r,"propina")),comision:Math.abs(pMonto(g(r,"comision"))),estado:est,
+      valido:!/rechaz|cancel|devuel|reembols|refund|reject|anula|contracargo|charged/i.test(est)}}).filter(o=>o.op&&o.fecha)}
+function concilia(){const mp=S.mpDia;if(!mp||!Array.isArray(mp.ops))return null;
+  const regs=S.regsDia.filter(r=>r.estado!=="anulado"&&r.medio==="tarjeta");const byOp={};
+  regs.forEach(r=>{const k=String(r.operacion||"").trim();if(k)(byOp[k]=byOp[k]||[]).push(r)});
+  const opsSet=new Set(mp.ops.map(o=>o.op));const sueltos=regs.filter(r=>!opsSet.has(String(r.operacion||"").trim()));
+  const rows=[],usados=new Set(),usadosR=new Set();
+  mp.ops.forEach(o=>{let rs=byOp[o.op]||[];usados.add(o.op);const total=mp.incluyePropina?o.monto:o.monto+o.propina;let porMonto=false;
+    if(!rs.length&&o.valido&&o.hora){const c=sueltos.find(r=>!usadosR.has(r.id)&&r.venta+(r.propina||0)===total&&Math.abs(toMin(r.hora)-toMin(o.hora))<=20);if(c){rs=[c];usadosR.add(c.id);porMonto=true}}
+    const reg=rs.length?rs.reduce((a,r)=>a+r.venta+(r.propina||0),0):null;
+    let est;if(!o.valido)est=rs.length?"Registro con pago anulado":"Anulado en Mercado Pago";else if(!rs.length)est="Cobro sin registro";else if(reg===total)est=porMonto?"Cuadra (por monto y hora)":"Cuadra";else est="Monto distinto";
+    rows.push({op:o.op,hora:o.hora,mp:total,reg,pros:rs.map(r=>r.profNombre).join(", "),est})});
+  regs.forEach(r=>{const k=String(r.operacion||"").trim();if((!k||!usados.has(k))&&!usadosR.has(r.id))rows.push({op:k||"(sin número)",hora:r.hora,mp:null,reg:r.venta+(r.propina||0),pros:r.profNombre,est:"Registro sin cobro"})});
+  return rows.sort((a,b)=>String(a.hora).localeCompare(String(b.hora)))}
+function mpTotales(){const mp=S.mpDia;const val=mp.ops.filter(o=>o.valido);const tot=val.reduce((a,o)=>a+(mp.incluyePropina?o.monto:o.monto+o.propina),0),prop=val.reduce((a,o)=>a+o.propina,0),com=val.reduce((a,o)=>a+o.comision,0);return{n:val.length,tot,prop,com}}
+function vMP(){
+  const imp=S.mpImp;let h=`<div class="panel"><h2>Ventas de Mercado Pago</h2><p class="muted" style="font-size:14px">Descarga desde tu cuenta de Mercado Pago el reporte de ventas del período (Excel o CSV) y súbelo aquí. Cada operación se cruza con lo que registraron las profesionales usando el número de operación del voucher.</p>`;
+  if(S.admin)h+=`<label for="mp-file">Archivo de Mercado Pago<input id="mp-file" type="file" accept=".csv,.xlsx,.xls"></label>`;
+  if(imp){const ops=mpOps(imp);const fechas=[...new Set(ops.map(o=>o.fecha))].sort();
+    h+=`<div class="note info"><b>Revisa que las columnas estén bien elegidas</b><span>Archivo: ${esc(imp.archivo)}. ${ops.length} operaciones leídas${fechas.length?`, del ${esc(fechas[0])} al ${esc(fechas[fechas.length-1])}`:""}.</span></div>
+    <div class="fields">${MPCOLS.map(([k,l])=>`<label for="mp-map-${k}">${l}<select id="mp-map-${k}" data-mpk="${k}"><option value="-1">(no está)</option>${imp.header.map((c,i)=>`<option value="${i}" ${imp.map[k]===i?"selected":""}>${esc(c||"Columna "+(i+1))}</option>`).join("")}</select></label>`).join("")}
+    <label for="mp-incl">¿El monto incluye la propina?<select id="mp-incl"><option value="1" ${imp.incl?"selected":""}>Sí, es el total cobrado</option><option value="0" ${imp.incl?"":"selected"}>No, la propina viene aparte</option></select></label></div>
+    ${ops.length?`<div class="tbl"><table style="min-width:560px"><thead><tr><th>Fecha</th><th>Hora</th><th>Operación</th><th class="n">Monto</th><th class="n">Propina</th><th class="n">Comisión</th><th>Estado</th></tr></thead><tbody>${ops.slice(0,6).map(o=>`<tr><td>${esc(o.fecha)}</td><td class="num">${esc(o.hora)}</td><td class="num">${esc(o.op)}</td><td class="n">${clp(o.monto)}</td><td class="n">${clp(o.propina)}</td><td class="n">${clp(o.comision)}</td><td>${o.valido?`<span class="pill g">${esc(o.estado||"Válida")}</span>`:`<span class="pill r">${esc(o.estado)}</span>`}</td></tr>`).join("")}</tbody></table></div><p class="status">Vista previa de las primeras 6 filas.</p>`:`<div class="note risk">No se pudo leer ninguna operación con estas columnas. Ajusta "N° de operación" y "Fecha".</div>`}
+    <div class="row-btns"><button class="btn" data-act="mp-guardar" ${ops.length?"":"disabled"}>Guardar ${fechas.length} día(s) en SurCaja</button><button class="btn sec" data-act="mp-cancelar">Cancelar</button></div>`}
+  const rows=concilia();
+  if(rows){const mp=S.mpDia,T=mpTotales();const malos=rows.filter(r=>!String(r.est).startsWith("Cuadra")&&r.est!=="Anulado en Mercado Pago").length;
+    h+=`<h2 style="margin-top:6px">Cruce del ${esc(fechaLarga(S.dia))}</h2>
+    <div class="kpis"><div class="kpi"><span>Operaciones válidas</span><b>${T.n}</b></div><div class="kpi"><span>Cobrado (venta + propina)</span><b>${clp(T.tot)}</b></div><div class="kpi"><span>Propinas</span><b>${clp(T.prop)}</b></div><div class="kpi"><span>Comisión Mercado Pago</span><b>${clp(T.com)}</b></div><div class="kpi"><span>Diferencias por revisar</span><b>${malos}</b></div></div>
+    <div class="tbl"><table><thead><tr><th>Hora</th><th>Operación</th><th>Profesional</th><th class="n">Mercado Pago</th><th class="n">Registrado</th><th class="n">Diferencia</th><th>Estado</th></tr></thead><tbody>
+    ${rows.map(r=>{const p=String(r.est).startsWith("Cuadra")?"g":r.est==="Monto distinto"?"a":r.est==="Anulado en Mercado Pago"?"n":"r";return`<tr><td class="num">${esc(r.hora)}</td><td class="num">${esc(r.op)}</td><td>${esc(r.pros||"—")}</td><td class="n">${r.mp==null?"—":clp(r.mp)}</td><td class="n">${r.reg==null?"—":clp(r.reg)}</td><td class="n">${r.mp==null||r.reg==null?"—":clp(r.reg-r.mp)}</td><td><span class="pill ${p}">${esc(r.est)}</span></td></tr>`}).join("")}
+    </tbody></table></div>
+    ${S.admin?`<div class="row-btns"><button class="btn sec" data-act="mp-usar">Usar estos totales en el cierre</button></div>`:""}
+    <p class="status">Importado el ${esc(new Date(mp.importado).toLocaleString("es-CL"))} desde ${esc(mp.archivo||"archivo")}.</p>`}
+  else if(!imp)h+=`<p class="muted">Aún no hay ventas de Mercado Pago cargadas para este día.</p>`;
+  return h+`</div>`}
+async function mpLeer(file){if(!window.XLSX){toast("No se pudo cargar el lector de planillas. Recarga la página.");return}
+  try{const buf=await file.arrayBuffer();const wb=XLSX.read(buf,{type:"array",cellDates:true});const ws=wb.Sheets[wb.SheetNames[0]];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:""});const p=mpParse(rows);
+    S.mpImp={archivo:file.name,header:p.header,data:p.data,map:mpDetect(p.header),incl:true};render()}
+  catch(e){console.warn(e);toast("No se pudo leer el archivo. Usa el reporte de Mercado Pago en Excel o CSV.")}}
+async function mpGuardar(){const imp=S.mpImp;if(!imp)return;const ops=mpOps(imp);const by={};ops.forEach(o=>{(by[o.fecha]=by[o.fecha]||[]).push(o)});
+  const now=new Date().toISOString();let n=0;
+  for(const f of Object.keys(by).sort()){await S.db.doc("mp/"+f).set({fecha:f,ops:by[f],incluyePropina:imp.incl,archivo:imp.archivo,importado:now});n++}
+  S.mpImp=null;toast(`Ventas de Mercado Pago guardadas: ${n} día(s)`);render()}
+function mpUsar(){if(!S.mpDia)return;const T=mpTotales();const set=(id,v)=>{const el=$(id);if(el)el.value=v};
+  set("#c-total",T.tot);set("#c-ventas",T.tot-T.prop);set("#c-cant",T.n);set("#c-prop",T.prop);toast("Totales copiados. Revisa y guarda el cierre.")}
+
+function vLiq(){
+  const L=S.liq;
+  let body="";
+  if(L.cargando)body=`<div class="empty"><strong>Calculando…</strong></div>`;
+  else if(L.rows){
+    const rows=Object.values(L.rows.porPro);
+    const T=L.rows;
+    const ids=Object.keys(L.rows.porPro);if(L.pro&&!ids.includes(L.pro))L.pro="";
+    const tabs=rows.length?`<div class="chips"><button class="chip" style="font-size:14px;padding:10px 14px;min-height:44px" data-act="liq-pro" data-id="" aria-pressed="${!L.pro}">Todas</button>${ids.map(k=>`<button class="chip" style="font-size:14px;padding:10px 14px;min-height:44px" data-act="liq-pro" data-id="${esc(k)}" aria-pressed="${L.pro===k}">${esc(L.rows.porPro[k].nombre)}</button>`).join("")}</div>`:"";
+    if(rows.length&&L.pro)body=tabs+liqPro(L,L.pro);else
+    body=rows.length?tabs+`<div class="tbl"><table><thead><tr><th>Profesional</th><th>Modelo</th><th class="n">Servicios</th><th class="n">Venta con IVA</th><th class="n">IVA</th><th class="n">Venta sin IVA</th><th class="n">Comisión</th><th class="n">Propinas</th><th class="n">Total a pagar</th><th class="n">Queda al salón</th></tr></thead><tbody>
+    ${rows.map(p=>`<tr><td>${esc(p.nombre)}</td><td>${esc(MODELOS[p.modelo]||"—")}</td><td class="n">${p.n}</td><td class="n">${clp(p.venta)}</td><td class="n">${clp(p.iva)}</td><td class="n">${clp(p.neto)}</td><td class="n">${clp(p.com)}</td><td class="n">${clp(p.prop)}</td><td class="n"><b>${clp(p.com+p.prop)}</b></td><td class="n">${clp(p.neto-p.com)}</td></tr>`).join("")}
+    <tr class="tot"><td>Total</td><td></td><td class="n">${T.n}</td><td class="n">${clp(T.venta)}</td><td class="n">${clp(T.iva)}</td><td class="n">${clp(T.neto)}</td><td class="n">${clp(T.com)}</td><td class="n">${clp(T.prop)}</td><td class="n">${clp(T.com+T.prop)}</td><td class="n">${clp(T.neto-T.com)}</td></tr>
+    </tbody></table></div>
+    <div class="note info"><b>Para pagar</b><span>La comisión se calcula sobre el total cobrado por el servicio, sin la propina, con el porcentaje que tenía cada profesional el día del servicio. Las propinas se entregan completas, a más tardar 7 días hábiles después de recibidas. Los servicios anulados no se cuentan. En contrato de trabajo, la comisión se agrega a la liquidación de sueldo; en honorarios, el salón retiene 15,25%.</span></div>
+    ${S.dl?`<div class="row-btns"><button class="btn" data-act="csv-liq">Descargar liquidación (planilla)</button><button class="btn sec" data-act="csv-det">Descargar detalle de servicios (planilla)</button></div>`:""}`
+    :`<div class="empty"><strong>No hay servicios en ese período</strong><span>Prueba con otras fechas.</span></div>`;
+  }
+  return `<div><h1>Liquidación por profesional</h1><p class="muted">Suma la comisión y las propinas de cada profesional en el período.</p></div>
+  <div class="panel"><div class="fields">
+    <label for="l-desde">Desde<input id="l-desde" type="date" value="${L.desde}"></label>
+    <label for="l-hasta">Hasta<input id="l-hasta" type="date" value="${L.hasta}"></label>
+    <div style="display:grid;align-items:end"><button class="btn" data-act="liquidar">Calcular</button></div>
+  </div></div>${body}`;
+}
+
+const RET=0.1525;
+function liqPro(L,id){
+  const p=L.rows.porPro[id];const regs=(L.regs||[]).filter(r=>r.profId===id&&r.estado!=="anulado").sort((a,b)=>(a.fecha+a.hora).localeCompare(b.fecha+b.hora));
+  const pf=S.pros.find(x=>x.id===id)||{};const mod=pf.modelo||p.modelo;
+  if(mod==="transicion")return liqTrans(L,id,p,pf,regs);
+  const hon=mod==="honorarios";const ret=hon?Math.round(p.com*RET):0;const liq=p.com-ret;
+  return `<div class="kpis">
+    <div class="kpi"><span>Servicios</span><b>${p.n}</b></div>
+    <div class="kpi"><span>Venta con IVA</span><b>${clp(p.venta)}</b></div>
+    <div class="kpi"><span>Comisión (${hon?"monto de la boleta":"bruta"})</span><b>${clp(p.com)}</b></div>
+    <div class="kpi"><span>Retención 15,25%</span><b>${hon?"−"+clp(ret):"—"}</b></div>
+    <div class="kpi"><span>Propinas</span><b>${clp(p.prop)}</b></div>
+    <div class="kpi"><span>Total a transferir</span><b>${clp(liq+p.prop)}</b></div></div>
+  ${hon?`<div class="note info"><b>Boleta de honorarios de ${esc(p.nombre)}</b><span>Monto bruto ${clp(p.com)} a nombre de LUZIA SpA, con retención. El salón le paga ${clp(liq)} de comisión más ${clp(p.prop)} de propinas, y entera ${clp(ret)} de retención en el F29 del mes del pago.</span></div>`
+    :`<div class="note warn"><b>${esc(p.nombre)} no tiene modelo definido</b><span>No se calcula retención. Define su forma de trabajo antes de pagarle.</span></div>`}
+  <div class="tbl"><table><thead><tr><th>Fecha</th><th>Hora</th><th>Servicio</th><th>Medio</th><th class="n">Venta con IVA</th><th class="n">Comisión</th><th class="n">Propina</th></tr></thead><tbody>
+  ${regs.map(r=>{const c=calc(r.venta,r.comisionPct,r.base);return`<tr><td class="num">${esc(r.fecha)}</td><td class="num">${esc(r.hora)}</td><td>${esc((r.servicios||[]).map(s=>(s.cantidad>1?s.cantidad+"× ":"")+s.nombre).join(", "))}</td><td>${esc(medioTxt(r.medio))}</td><td class="n">${clp(r.venta)}</td><td class="n">${clp(c.com)}</td><td class="n">${clp(r.propina||0)}</td></tr>`}).join("")}
+  <tr class="tot"><td colspan="4">Total</td><td class="n">${clp(p.venta)}</td><td class="n">${clp(p.com)}</td><td class="n">${clp(p.prop)}</td></tr></tbody></table></div>
+  ${S.dl&&window.XLSX?`<div class="row-btns"><button class="btn" data-act="liq-pro-xlsx" data-id="${esc(id)}">Descargar liquidación de ${esc(p.nombre)} (Excel)</button></div>`:""}`;
+}
+function liqTrans(L,id,p,pf,regs){const dl=diasHasta(pf.limite);
+  return `<div class="note risk"><b>${esc(p.nombre)}: período de transición</b><span>Trabaja sin permiso de residencia mientras tramita su regularización. Sus pagos no tienen boleta ni retención: se pagan por transferencia a una cuenta a su nombre, con recibo interno firmado, y quedan registrados como pagos pendientes de regularizar.${pf.limite?` Plazo para presentar la solicitud de residencia: <b>${esc(fechaLarga(pf.limite))}</b> (${dl>=0?`quedan ${dl} días`:`vencido hace ${-dl} días`}).`:" Falta fijar el plazo para presentar la solicitud de residencia (Ajustes)."}</span></div>
+  <div class="kpis">
+    <div class="kpi"><span>Servicios</span><b>${p.n}</b></div>
+    <div class="kpi"><span>Total cobrado por sus servicios</span><b>${clp(p.venta)}</b></div>
+    <div class="kpi"><span>Comisión</span><b>${clp(p.com)}</b></div>
+    <div class="kpi"><span>Propinas</span><b>${clp(p.prop)}</b></div>
+    <div class="kpi"><span>Total a transferir</span><b>${clp(p.com+p.prop)}</b></div></div>
+  <div class="tbl"><table><thead><tr><th>Fecha</th><th>Hora</th><th>Servicio</th><th>Medio</th><th class="n">Total cobrado</th><th class="n">Comisión</th><th class="n">Propina</th></tr></thead><tbody>
+  ${regs.map(r=>{const c=calc(r.venta,r.comisionPct,r.base);return`<tr><td class="num">${esc(r.fecha)}</td><td class="num">${esc(r.hora)}</td><td>${esc((r.servicios||[]).map(s=>(s.cantidad>1?s.cantidad+"× ":"")+s.nombre).join(", "))}</td><td>${esc(medioTxt(r.medio))}</td><td class="n">${clp(r.venta)}</td><td class="n">${clp(c.com)}</td><td class="n">${clp(r.propina||0)}</td></tr>`}).join("")}
+  <tr class="tot"><td colspan="4">Total</td><td class="n">${clp(p.venta)}</td><td class="n">${clp(p.com)}</td><td class="n">${clp(p.prop)}</td></tr></tbody></table></div>
+  ${S.dl?`<div class="row-btns"><button class="btn" data-act="recibo" data-id="${esc(id)}">Descargar recibo interno de pago</button></div><p class="status">El recibo se imprime, lo firma ${esc(p.nombre)} al recibir la transferencia y se guarda junto al comprobante bancario.</p>`:""}`}
+async function reciboTrans(id){const L=S.liq;const p=L.rows&&L.rows.porPro[id];if(!p)return;const pf=S.pros.find(x=>x.id===id)||{};
+  const regs=(L.regs||[]).filter(r=>r.profId===id&&r.estado!=="anulado").sort((a,b)=>(a.fecha+a.hora).localeCompare(b.fecha+b.hora));
+  const f=s=>{const [y,m,d]=String(s).split("-");return d+"-"+m+"-"+y};const nom=pf.nombreCompleto||p.nombre;
+  const filas=regs.map(r=>{const c=calc(r.venta,r.comisionPct,r.base);return`<tr><td>${esc(f(r.fecha))}</td><td>${esc((r.servicios||[]).map(s=>(s.cantidad>1?s.cantidad+"x ":"")+s.nombre).join(", "))}</td><td class="n">${clp(r.venta)}</td><td class="n">${clp(c.com)}</td><td class="n">${clp(r.propina||0)}</td></tr>`}).join("");
+  const html=`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Recibo interno ${esc(nom)}</title><style>body{font:14px/1.5 Arial,sans-serif;color:#111;max-width:760px;margin:32px auto;padding:0 24px}h1{font-size:18px;margin:0 0 4px}p{margin:6px 0}table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13px}th,td{border:1px solid #999;padding:5px 7px;text-align:left}td.n,th.n{text-align:right}.tot td{font-weight:bold}.firma{display:flex;gap:48px;margin-top:64px}.firma div{flex:1;border-top:1px solid #111;padding-top:6px;text-align:center}.nota{border:1px solid #999;padding:8px 10px;font-size:12px;margin-top:12px}</style></head><body>
+<h1>Recibo interno de pago · Período de transición</h1>
+<p><b>Pagador:</b> LUZIA SpA, RUT 78.520.581-2 (NÚASPA), Av. Cristóbal Colón 6555, local 9, Las Condes.</p>
+<p><b>Recibe:</b> ${esc(nom)} · Documento: ${esc(pf.documento||"____________________")}</p>
+<p><b>Período:</b> ${esc(f(L.desde))} al ${esc(f(L.hasta))}</p>
+<table><thead><tr><th>Fecha</th><th>Servicios</th><th class="n">Total cobrado</th><th class="n">Comisión</th><th class="n">Propina</th></tr></thead><tbody>${filas}
+<tr class="tot"><td colspan="2">Total</td><td class="n">${clp(p.venta)}</td><td class="n">${clp(p.com)}</td><td class="n">${clp(p.prop)}</td></tr></tbody></table>
+<p><b>Monto pagado:</b> ${clp(p.com+p.prop)} (comisión ${clp(p.com)} + propinas ${clp(p.prop)}).</p>
+<p><b>Forma de pago:</b> transferencia a la cuenta ____________________ a nombre de ${esc(nom)}, de fecha ____/____/______.</p>
+<p class="nota">Este pago no cuenta con documento tributario porque la persona que recibe aún no tiene permiso de residencia ni RUT. Se registra como pago pendiente de regularizar mientras tramita su permiso ante el Servicio Nacional de Migraciones${pf.limite?`, con plazo para presentar la solicitud hasta el ${esc(f(pf.limite))}`:""}. Las propinas corresponden íntegramente a quien recibe.</p>
+<div class="firma"><div>Recibí conforme<br>${esc(nom)}<br>Fecha: ____/____/______</div><div>María Francisca Barros Tejeda<br>p.p. LUZIA SpA</div></div>
+</body></html>`;
+  save(`Recibo interno ${p.nombre} ${L.desde} a ${L.hasta}.html`,html)}
+async function liqProXlsx(id){const L=S.liq;const p=L.rows&&L.rows.porPro[id];if(!p)return;
+  const regs=(L.regs||[]).filter(r=>r.profId===id&&r.estado!=="anulado").sort((a,b)=>(a.fecha+a.hora).localeCompare(b.fecha+b.hora));
+  const hon=p.modelo==="honorarios";const ret=hon?Math.round(p.com*RET):0;
+  const aoa=[["Liquidación "+p.nombre,"",L.desde+" a "+L.hasta],[],["Fecha","Hora","Servicio","Medio","Venta con IVA","Comisión","Propina"],
+    ...regs.map(r=>{const c=calc(r.venta,r.comisionPct,r.base);return[r.fecha,r.hora,(r.servicios||[]).map(s=>(s.cantidad>1?s.cantidad+"x ":"")+s.nombre).join(" + "),medioTxt(r.medio),r.venta,c.com,r.propina||0]}),
+    ["Total","","","",p.venta,p.com,p.prop],[],
+    ["Comisión (monto de la boleta)","","","","",p.com],["Retención 15,25%","","","","",hon?-ret:0],["Comisión líquida","","","","",p.com-ret],["Propinas","","","","",p.prop],["Total a transferir","","","","",p.com-ret+p.prop]];
+  const wb=XLSX.utils.book_new();const ws=XLSX.utils.aoa_to_sheet(aoa);ws["!cols"]=[{wch:24},{wch:7},{wch:40},{wch:20},{wch:14},{wch:13},{wch:11}];XLSX.utils.book_append_sheet(wb,ws,"Liquidación");
+  save(`Liquidacion ${p.nombre} ${L.desde} a ${L.hasta}.xlsx`,new Uint8Array(XLSX.write(wb,{type:"array",bookType:"xlsx"})));
+}
+
+function vAjustes(){return vAjustesBase()+vUsuarios()}
+function vUsuarios(){const us=S.usuarios||[];const pros=S.pros||[];
+  const R={pendiente:"Por habilitar",profesional:"Profesional",caja:"Caja del local",admin:"Administradora"};
+  return `<div class="panel"><h2>Usuarios</h2><p class="muted">Quien crea su cuenta queda "Por habilitar". Elige su rol: <b>Profesional</b> registra y ve solo lo suyo; <b>Caja del local</b> registra para todas y hace el cierre; <b>Administradora</b> ve y ajusta todo.</p>
+  ${us.length?`<div class="tbl"><table style="min-width:560px"><thead><tr><th>Correo</th><th>Rol</th><th>Profesional</th></tr></thead><tbody>
+  ${us.map(u=>`<tr><td>${esc(u.email||u.id)}</td><td><select id="ur-${esc(u.id)}" data-urol="${esc(u.id)}">${Object.entries(R).map(([k,v])=>`<option value="${k}" ${u.rol===k?"selected":""}>${v}</option>`).join("")}</select></td>
+  <td>${u.rol==="profesional"?`<select id="up-${esc(u.id)}" data-upro="${esc(u.id)}"><option value="">Elige…</option>${pros.map(p=>`<option value="${esc(p.id)}" ${u.profId===p.id?"selected":""}>${esc(p.nombre)}</option>`).join("")}</select>`:"—"}</td></tr>`).join("")}
+  </tbody></table></div>`:`<p class="muted">Aún no hay usuarios.</p>`}</div>
+  <div class="panel"><h2>Cargar respaldo</h2><p class="muted">Sube el archivo "SurCaja respaldo" descargado desde la versión anterior. Los datos con el mismo identificador se reemplazan; no se duplican.</p>
+  <label for="sx-import">Archivo de respaldo (.json)<input id="sx-import" type="file" accept="application/json,.json"></label></div>`}
+function vAjustesBase(){
+  if(!S.admin)return`<div class="empty"><strong>Solo Francisca puede cambiar los ajustes</strong></div>`;
+  return `<div><h1>Ajustes</h1><p class="muted">Profesionales, servicios y precios. Los cambios no alteran los servicios ya registrados.</p></div>
+  <div class="panel"><h2>Cálculo de la comisión</h2>
+    <div class="chips">    <button class="chip" data-act="base" data-k="bruto" aria-pressed="${S.cfg.base==="bruto"}">Sobre el total cobrado<small>Acordado: 50% del total, sin propina, desde el inicio</small></button></div></div>
+  <div class="panel"><h2>Horario del local y WhatsApp</h2><p class="muted">Define desde y hasta qué hora se puede agendar.</p>
+    <div class="fields">
+      <label for="cf-local">Nombre en los mensajes<input id="cf-local" value="${esc(S.cfg.local||"NÚASPA")}"></label>
+      <label for="cf-dir">Dirección (opcional)<input id="cf-dir" value="${esc(S.cfg.direccion||"")}" placeholder="Ej. Local 9, Puerto Varas"></label>
+      <label for="cf-wsp">WhatsApp del local<input id="cf-wsp" class="m" inputmode="tel" value="${esc(S.cfg.whatsapp||"")}" placeholder="9 1234 5678"></label>
+      <label for="cf-abre">Horario: abre a las<input id="cf-abre" type="time" step="900" value="${esc(S.cfg.abre||"10:00")}"></label>
+      <label for="cf-cierra">Horario: cierra a las<input id="cf-cierra" type="time" step="900" value="${esc(S.cfg.cierra||"20:00")}"></label>
+    </div><div><button class="btn" data-act="cfg-agenda">Guardar</button></div></div>
+  <div class="panel"><h2>Profesionales</h2>
+    ${S.pros.length?`<div class="tbl"><table style="min-width:560px"><thead><tr><th>Nombre</th><th>Modelo</th><th class="n">% comisión</th><th>Estado</th><th></th></tr></thead><tbody>
+    ${S.pros.map(p=>`<tr><td>${esc(p.nombre)}</td><td><select id="pm-${esc(p.id)}" data-modelo="${esc(p.id)}" style="min-width:190px"><option value="">Sin definir</option>${Object.entries(MODELOS).map(([k,v])=>`<option value="${k}" ${p.modelo===k?"selected":""}>${v}</option>`).join("")}</select>${p.modelo==="transicion"?`<label for="pl-${esc(p.id)}" style="margin-top:6px">Plazo para presentar la solicitud<input id="pl-${esc(p.id)}" type="date" value="${esc(p.limite||"")}" data-limite="${esc(p.id)}"></label>`:""}</td><td class="n"><input id="pc-${esc(p.id)}" class="m" style="width:80px;text-align:right" inputmode="numeric" value="${esc(p.comision)}" data-pct="${esc(p.id)}"></td><td>${p.activo===false?`<span class="pill n">Inactiva</span>`:`<span class="pill g">Activa</span>`}</td><td><button class="mini" data-act="toggle-pro" data-id="${esc(p.id)}">${p.activo===false?"Activar":"Desactivar"}</button></td></tr>`).join("")}
+    </tbody></table></div>`:`<p class="muted">Aún no hay profesionales.</p>`}
+    <div class="fields">
+      <label for="np-nombre">Nombre<input id="np-nombre" placeholder="Ej. Sara"></label>
+      <label for="np-modelo">Modelo<select id="np-modelo">${Object.entries(MODELOS).map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}</select></label>
+      <label for="np-pct">% comisión<input id="np-pct" class="m" inputmode="numeric" value="50"></label>
+      <div style="display:grid;align-items:end"><button class="btn" data-act="add-pro">Agregar</button></div>
+    </div></div>
+  <div class="panel"><h2>Servicios y precios</h2>
+    ${S.servs.length?`<div class="tbl"><table style="min-width:560px"><thead><tr><th>Categoría</th><th>Servicio</th><th class="n">Precio con IVA</th><th class="n">Minutos</th><th>Estado</th><th></th></tr></thead><tbody>
+    ${S.servs.map(s=>`<tr><td>${esc(s.categoria||"—")}</td><td>${esc(s.nombre)}</td><td class="n"><input id="sp-${esc(s.id)}" class="m" style="width:110px;text-align:right" inputmode="numeric" value="${esc(s.precio)}" data-precio="${esc(s.id)}"></td><td class="n"><input id="sd-${esc(s.id)}" class="m" style="width:70px;text-align:right" inputmode="numeric" value="${esc(s.duracion||"")}" placeholder="60" data-dur="${esc(s.id)}"></td><td>${s.activo===false?`<span class="pill n">Oculto</span>`:`<span class="pill g">Visible</span>`}</td><td><button class="mini" data-act="toggle-svc" data-id="${esc(s.id)}">${s.activo===false?"Mostrar":"Ocultar"}</button></td></tr>`).join("")}
+    </tbody></table></div>`:`<p class="muted">Aún no hay servicios.</p>`}
+    <div class="fields">
+      <label for="ns-cat">Categoría<input id="ns-cat" placeholder="Ej. Manicure" list="cats"></label>
+      <datalist id="cats">${[...new Set(S.servs.map(s=>s.categoria).filter(Boolean))].map(c=>`<option value="${esc(c)}">`).join("")}</datalist>
+      <label for="ns-nombre">Servicio<input id="ns-nombre" placeholder="Ej. Esmaltado permanente"></label>
+      <label for="ns-precio">Precio con IVA<input id="ns-precio" class="m" inputmode="numeric" placeholder="Ej. 20990"></label>
+      <div style="display:grid;align-items:end"><button class="btn" data-act="add-svc">Agregar</button></div>
+    </div></div>`;
+}
+
+
+/* ---------- Agenda ---------- */
+const ESTADOS=[["reservada","Reservada","n"],["confirmada","Confirmada","g"],["llego","Llegó","a"],["atendida","Atendida","g"],["noasistio","No asistió","r"],["cancelada","Cancelada","n"]];
+const ORIGENES=[["presencial","En el local"],["whatsapp","WhatsApp"],["instagram","Instagram"],["web","Reserva web"],["telefono","Teléfono"]];
+const PASO=15;
+const estTxt=k=>(ESTADOS.find(e=>e[0]===k)||[k,k,"n"]);
+const toMin=h=>{const m=String(h||"").match(/^(\d{1,2}):(\d{2})/);return m?Number(m[1])*60+Number(m[2]):0};
+const fromMin=n=>String(Math.floor(n/60)).padStart(2,"0")+":"+String(n%60).padStart(2,"0");
+const durDe=s=>Number(s&&s.duracion)||60;
+const activa=c=>c.estado!=="cancelada"&&c.estado!=="noasistio";
+function horario(){const a=toMin(S.cfg.abre||"10:00"),b=toMin(S.cfg.cierra||"20:00");return{a,b:b>a?b:a+600}}
+function citasDe(f){return S.citasSem.filter(c=>c.fecha===f)}
+function choques(c,lista){const a=toMin(c.hora),b=a+(Number(c.dur)||0);return lista.filter(x=>x.id!==c.id&&x.profId===c.profId&&x.fecha===c.fecha&&activa(x)&&toMin(x.hora)<b&&toMin(x.hora)+(Number(x.dur)||0)>a)}
+function fechaCorta(s){const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString("es-CL",{weekday:"short",day:"numeric",month:"short"})}
+
+function vAgenda(){
+  const vacio=sinCatalogo();if(vacio)return vacio;
+  const pros=S.pros.filter(p=>p.activo!==false);
+  const L=lunesDe(S.agDia),H=horario(),dia=citasDe(S.agDia);
+  const week=Array.from({length:7},(_,i)=>{const f=masDias(L,i);const n=citasDe(f).filter(c=>c.tipo!=="bloqueo"&&activa(c)).length;const [y,m,d]=f.split("-").map(Number);
+    return`<button class="wd ${f===hoy()?"today":""}" data-act="ag-dia" data-f="${f}" aria-pressed="${f===S.agDia}"><small>${new Date(y,m-1,d).toLocaleDateString("es-CL",{weekday:"short"})}</small><b>${d}</b><i>${n?n+" cita"+(n>1?"s":""):"&nbsp;"}</i></button>`}).join("");
+  const filas=(H.b-H.a)/PASO;
+  const cols=`56px repeat(${pros.length},minmax(150px,1fr))`;
+  let g=`<div class="th tl" style="grid-row:1;grid-column:1"></div>`+pros.map((p,i)=>`<div class="th" style="grid-row:1;grid-column:${i+2}">${esc(p.nombre)}</div>`).join("");
+  const ahora=new Date(),nowMin=ahora.getHours()*60+ahora.getMinutes();
+  for(let r=0;r<filas;r++){const m=H.a+r*PASO,row=r+2,hh=m%30===0;
+    if(hh)g+=`<div class="tl ${S.agDia===hoy()&&nowMin>=m&&nowMin<m+30?"now":""}" style="grid-row:${row};grid-column:1">${fromMin(m)}</div>`;
+    pros.forEach((p,i)=>{g+=`<button class="cell ${hh?"h":""}" style="grid-row:${row};grid-column:${i+2}" data-act="ag-nueva" data-pro="${esc(p.id)}" data-hora="${fromMin(m)}" aria-label="Nueva cita ${esc(p.nombre)} ${fromMin(m)}"></button>`})}
+  const lane={};pros.forEach(p=>{const ends=[];dia.filter(c=>c.profId===p.id).sort((a,b)=>toMin(a.hora)-toMin(b.hora)).forEach(c=>{const a=toMin(c.hora);let k=ends.findIndex(e=>e<=a);if(k<0){k=ends.length;ends.push(0)}ends[k]=a+(Number(c.dur)||PASO);lane[c.id]=k})});
+  dia.forEach(c=>{const i=pros.findIndex(p=>p.id===c.profId);if(i<0)return;
+    const st=Math.max(0,Math.round((toMin(c.hora)-H.a)/PASO)),span=Math.max(1,Math.round((Number(c.dur)||PASO)/PASO));
+    const ch=activa(c)&&choques(c,dia).length;
+    const ln=ch?" l"+Math.min(1,lane[c.id]||0):"";
+    g+=`<button class="cita ${c.tipo==="bloqueo"?"bloqueo":esc(c.estado)} ${ch?"choque":""}${ln}" style="grid-row:${st+2}/span ${span};grid-column:${i+2}" data-act="ag-abrir" data-id="${esc(c.id)}">
+      <b>${esc(c.hora)} ${c.tipo==="bloqueo"?esc(c.motivo||"Bloqueado"):esc(c.clientaNombre||"Sin nombre")}</b>
+      ${c.tipo==="bloqueo"?"":`<span>${esc((c.servicios||[]).map(x=>x.nombre).join(", "))}</span><span>${esc(estTxt(c.estado)[1])}</span>`}</button>`});
+  const act=dia.filter(c=>c.tipo!=="bloqueo"&&activa(c));
+  const valor=act.reduce((a,c)=>a+(Number(c.precio)||0),0);
+  const man=S.citasMan.filter(c=>c.tipo!=="bloqueo"&&(c.estado==="reservada"||c.estado==="confirmada"));
+  const pend=man.filter(c=>!c.recordado);
+  return `<div class="ag-head"><div><h1>Agenda</h1><p class="muted">${esc(fechaLarga(S.agDia))}</p></div>
+    <div class="row-btns"><button class="btn sec" data-act="ag-mover" data-n="-7" aria-label="Semana anterior">‹</button><button class="btn sec" data-act="ag-hoy">Hoy</button><button class="btn sec" data-act="ag-mover" data-n="7" aria-label="Semana siguiente">›</button>
+    <label for="ag-fecha" style="min-width:160px"><input id="ag-fecha" type="date" value="${S.agDia}" aria-label="Ir a fecha"></label>
+    <button class="btn" data-act="ag-nueva">+ Nueva cita</button></div></div>
+  <div class="week">${week}</div>
+  <div class="kpis">
+    <div class="kpi"><span>Citas del día</span><b>${act.length}</b></div>
+    <div class="kpi"><span>Confirmadas</span><b>${act.filter(c=>c.estado==="confirmada"||c.estado==="llego"||c.estado==="atendida").length}</b></div>
+    <div class="kpi"><span>Atendidas</span><b>${act.filter(c=>c.estado==="atendida").length}</b></div>
+    <div class="kpi"><span>Valor agendado (lista)</span><b>${clp(valor)}</b></div>
+  </div>
+  ${pend.length?`<div class="note warn"><b>Recordatorios de mañana: ${pend.length} sin enviar</b><span>${pend.map(c=>`${esc(c.hora)} ${esc(c.clientaNombre)} (${esc(c.profNombre)}) <button class="mini wsp" data-act="c-wsp" data-k="recordatorio" data-id="${esc(c.id)}">Enviar</button>`).join(" · ")}</span></div>`:man.length?`<div class="note ok">Los ${man.length} recordatorios de mañana ya se enviaron.</div>`:""}
+  <div class="grid-wrap"><div class="ag" style="grid-template-columns:${cols};grid-template-rows:auto repeat(${filas},14px)">${g}</div></div>
+  <div class="legend">${ESTADOS.map(e=>`<span class="pill ${e[2]}">${e[1]}</span>`).join("")}<span class="pill n">Rayado = bloqueo</span><span class="pill r">Borde rojo = tope de horario</span></div>
+  <p class="status">Toca un espacio libre para agendar, o una cita para confirmarla, avisar por WhatsApp o cobrarla.</p>`;
+}
+
+/* --- Formulario de cita --- */
+function nuevaForm(o){o=Object.fromEntries(Object.entries(o||{}).filter(([k,v])=>v!==undefined));const pros=S.pros.filter(p=>p.activo!==false);
+  S.form=Object.assign({id:null,tipo:"cita",pro:pros.length===1?pros[0].id:null,fecha:S.agDia,hora:"",dur:60,durManual:false,items:[],cliId:null,cliQ:"",cliNom:"",cliTel:"",origen:"presencial",nota:"",hasta:"",motivo:"",forzar:false},o||{});S.det=null;render()}
+function formCita(){const F=S.form,pro=S.pros.find(p=>p.id===F.pro);
+  const items=F.items.map(id=>S.servs.find(s=>s.id===id)).filter(Boolean);
+  const dur=F.tipo==="bloqueo"?Math.max(PASO,toMin(F.hasta)-toMin(F.hora)):(F.durManual?int(F.dur):(items.reduce((a,s)=>a+durDe(s),0)||60));
+  const precio=items.reduce((a,s)=>a+(Number(s.precio)||0),0);
+  const cli=S.clientas.find(c=>c.id===F.cliId);
+  return{F,pro,items,dur,precio,cli}}
+function opcHoras(sel){const H=horario();let o=`<option value="">Hora…</option>`;for(let m=H.a;m<=H.b;m+=PASO)o+=`<option ${fromMin(m)===sel?"selected":""}>${fromMin(m)}</option>`;return o}
+function pickClientas(q){q=String(q||"").trim().toLowerCase();if(q.length<2)return"";const dq=q.replace(/\D/g,"");
+  const m=S.clientas.filter(c=>String(c.nombre||"").toLowerCase().includes(q)||(dq.length>=3&&String(c.telefono||"").replace(/\D/g,"").includes(dq))).slice(0,6);
+  return m.map(c=>`<button data-act="f-cli-pick" data-id="${esc(c.id)}"><b>${esc(c.nombre)}</b> <span class="muted">${esc(c.telefono||"")}</span></button>`).join("")||`<span class="muted" style="font-size:13px">No está registrada: completa nombre y teléfono abajo y se crea al guardar.</span>`}
+function vForm(){const {F,pro,items,dur,precio,cli}=formCita();const pros=S.pros.filter(p=>p.activo!==false);
+  const servs=S.servs.filter(s=>s.activo!==false);const cats={};servs.forEach(s=>{(cats[s.categoria||"Servicios"]=cats[s.categoria||"Servicios"]||[]).push(s)});
+  const tmp={id:F.id,profId:F.pro,fecha:F.fecha,hora:F.hora,dur};const ch=F.pro&&F.hora?choques(tmp,S.citasSem.filter(c=>c.fecha===F.fecha)):[];
+  const fuera=F.hora&&toMin(F.hora)+dur>horario().b;
+  return `<div class="sheet-top"><h3>${F.id?"Editar":"Nueva"} ${F.tipo==="bloqueo"?"bloqueo de horario":"cita"}</h3><button class="x" data-act="sheet-close" aria-label="Cerrar">×</button></div>
+  ${F.id?"":`<div class="chips"><button class="chip" style="min-height:44px;padding:8px 14px;font-size:15px" data-act="f-tipo" data-k="cita" aria-pressed="${F.tipo==="cita"}">Cita</button><button class="chip" style="min-height:44px;padding:8px 14px;font-size:15px" data-act="f-tipo" data-k="bloqueo" aria-pressed="${F.tipo==="bloqueo"}">Bloquear horario</button></div>`}
+  <div class="step" style="gap:8px"><h2>Profesional</h2><div class="chips">${pros.map(p=>`<button class="chip" style="min-height:44px;padding:8px 14px;font-size:15px" data-act="f-pro" data-id="${esc(p.id)}" aria-pressed="${p.id===F.pro}">${esc(p.nombre)}</button>`).join("")}</div></div>
+  ${F.tipo==="cita"?`
+  <div class="step" style="gap:8px"><h2>Clienta</h2>
+    ${cli?`<div class="line"><span><b>${esc(cli.nombre)}</b> <span class="muted">${esc(cli.telefono||"sin teléfono")}</span></span><button class="mini" data-act="f-cli-quitar">Cambiar</button></div>${cli.notas?`<div class="note info" style="font-size:13px">${esc(cli.notas)}</div>`:""}`
+    :`<label for="f-cli-q">Buscar por nombre o teléfono<input id="f-cli-q" value="${esc(F.cliQ)}" placeholder="Ej. Camila o 9876" autocomplete="off"></label>
+    <div class="pick" id="f-cli-pick">${pickClientas(F.cliQ)}</div>
+    <div class="fields"><label for="f-cli-nom">Nombre (si es nueva)<input id="f-cli-nom" value="${esc(F.cliNom)}"></label><label for="f-cli-tel">WhatsApp<input id="f-cli-tel" class="m" inputmode="tel" value="${esc(F.cliTel)}" placeholder="9 1234 5678"></label></div>`}
+  </div>
+  <div class="step" style="gap:8px"><h2>Servicios</h2>
+    ${items.length?`<div class="sel-list">${items.map((s,i)=>`<div class="sel-item"><span>${esc(s.nombre)} <span class="muted">· ${durDe(s)} min</span></span><span class="row-btns"><span class="num">${clp(s.precio)}</span><button class="mini" data-act="f-svc-del" data-i="${i}" aria-label="Quitar">−</button></span></div>`).join("")}</div>`:""}
+    <label for="f-svc-add">Agregar servicio<select id="f-svc-add"><option value="">Elegir…</option>${Object.entries(cats).map(([c,arr])=>`<optgroup label="${esc(c)}">${arr.map(s=>`<option value="${esc(s.id)}">${esc(s.nombre)} · ${clp(s.precio)}</option>`).join("")}</optgroup>`).join("")}</select></label>
+  </div>`:`<label for="f-motivo">Motivo<input id="f-motivo" value="${esc(F.motivo)}" placeholder="Ej. colación, trámite, día libre"></label>`}
+  <div class="fields">
+    <label for="f-fecha">Fecha<input id="f-fecha" type="date" value="${esc(F.fecha)}"></label>
+    <label for="f-hora">${F.tipo==="bloqueo"?"Desde":"Hora"}<select id="f-hora">${opcHoras(F.hora)}</select></label>
+    ${F.tipo==="bloqueo"?`<label for="f-hasta">Hasta<select id="f-hasta">${opcHoras(F.hasta)}</select></label>`:`<label for="f-dur">Duración (min)<input id="f-dur" class="m" inputmode="numeric" value="${dur}"></label>`}
+    ${F.tipo==="cita"?`<label for="f-origen">Cómo reservó<select id="f-origen">${ORIGENES.map(([k,l])=>`<option value="${k}" ${F.origen===k?"selected":""}>${l}</option>`).join("")}</select></label>`:""}
+  </div>
+  ${F.tipo==="cita"?`<label for="f-nota">Nota<input id="f-nota" value="${esc(F.nota)}" placeholder="Ej. viene con su hija, prefiere tonos nude"></label>`:""}
+  ${ch.length?`<div class="note risk"><b>Tope de horario con ${esc(pro?pro.nombre:"la profesional")}</b><span>${ch.map(c=>`${esc(c.hora)} ${esc(c.tipo==="bloqueo"?(c.motivo||"Bloqueo"):c.clientaNombre)}`).join(", ")}.</span>${F.forzar?"":`<span><button class="mini" data-act="f-forzar">Agendar igual</button></span>`}</div>`:""}
+  ${fuera?`<div class="note warn">Termina después del cierre (${esc(S.cfg.cierra||"20:00")}).</div>`:""}
+  ${F.tipo==="cita"&&precio?`<div class="line"><span class="muted">Valor de lista · ${dur} min</span><b>${clp(precio)}</b></div>`:""}
+  <button class="btn" data-act="f-guardar">${F.id?"Guardar cambios":F.tipo==="bloqueo"?"Bloquear":"Agendar"}</button>`}
+
+async function guardarCita(){const {F,pro,items,dur,precio,cli}=formCita();
+  if(!pro){toast("Elige la profesional");return}
+  if(!F.fecha||!F.hora){toast("Elige fecha y hora");return}
+  if(F.tipo==="bloqueo"&&!(toMin(F.hasta)>toMin(F.hora))){toast("La hora de término debe ser posterior");return}
+  if(F.tipo==="cita"&&!cli&&!F.cliNom.trim()){toast("Indica la clienta");return}
+  if(F.tipo==="cita"&&!items.length){toast("Agrega al menos un servicio");return}
+  const ch=choques({id:F.id,profId:F.pro,fecha:F.fecha,hora:F.hora,dur},S.citasSem.filter(c=>c.fecha===F.fecha));
+  if(ch.length&&!F.forzar&&F.fecha>=lunesDe(S.agDia)&&F.fecha<=masDias(lunesDe(S.agDia),6)){toast("Hay un tope de horario. Revisa o toca “Agendar igual”.");render();return}
+  const now=new Date().toISOString();
+  try{
+    let cId=cli?cli.id:null,cNom=cli?cli.nombre:"",cTel=cli?(cli.telefono||""):"";
+    if(F.tipo==="cita"&&!cli){cNom=F.cliNom.trim();cTel=F.cliTel.trim();
+      const dup=S.clientas.find(c=>String(c.nombre).toLowerCase()===cNom.toLowerCase()&&telNorm(c.telefono)===telNorm(cTel));
+      if(dup)cId=dup.id;else{const r=await S.db.collection("clientas").add({nombre:cNom,telefono:cTel,creado:now,origen:F.origen});cId=r.id}}
+    const doc=F.tipo==="bloqueo"?{tipo:"bloqueo",fecha:F.fecha,hora:F.hora,dur,profId:pro.id,profNombre:pro.nombre,motivo:F.motivo.trim(),estado:"reservada",modificado:now}
+      :{tipo:"cita",fecha:F.fecha,hora:F.hora,dur,profId:pro.id,profNombre:pro.nombre,clientaId:cId,clientaNombre:cNom,telefono:cTel,
+        servicios:items.map(s=>({id:s.id,nombre:s.nombre,precio:Number(s.precio)||0,dur:durDe(s)})),precio,origen:F.origen,nota:F.nota.trim(),modificado:now};
+    if(F.id){await S.db.doc("citas/"+F.id).update(doc);toast("Cita actualizada")}
+    else{doc.estado="reservada";doc.creado=now;await S.db.collection("citas").add(doc);toast(F.tipo==="bloqueo"?"Horario bloqueado":`Agendada: ${cNom}, ${fechaCorta(F.fecha)} ${F.hora}`)}
+    if(F.fecha!==S.agDia){S.agDia=F.fecha;subAgenda()}
+    S.form=null;render();
+  }catch(e){fail(e)}
+}
+
+/* --- Detalle de cita y WhatsApp --- */
+function telNorm(t){let d=String(t||"").replace(/\D/g,"");if(!d)return"";if(d.startsWith("56"))return d;if(d.length===9&&d[0]==="9")return"56"+d;if(d.length===8)return"569"+d;return d}
+function msjWsp(c,k){const nom=String(c.clientaNombre||"").split(" ")[0]||"";const local=S.cfg.local||"NÚASPA";
+  const sv=(c.servicios||[]).map(s=>s.nombre).join(", ");const dir=S.cfg.direccion?` en ${S.cfg.direccion}`:"";
+  if(k==="recordatorio")return`Hola ${nom}! Te recordamos tu hora en ${local}${dir}: ${fechaLarga(c.fecha)} a las ${c.hora}, ${sv} con ${c.profNombre}. Si no puedes asistir, avísanos por aquí para liberar el horario. ¡Te esperamos!`;
+  if(k==="cancelada")return`Hola ${nom}, te escribimos de ${local}. Tu hora del ${fechaLarga(c.fecha)} a las ${c.hora} quedó cancelada. Si quieres reagendar, respóndenos y te buscamos un nuevo horario.`;
+  return`Hola ${nom}! Te escribimos de ${local} para confirmar tu hora: ${fechaLarga(c.fecha)} a las ${c.hora}, ${sv} con ${c.profNombre}. ¿Nos confirmas tu asistencia? Responde SÍ, o avísanos si necesitas cambiarla.`}
+async function enviarWsp(c,k){const t=telNorm(c.telefono);if(!t){toast("Esta clienta no tiene WhatsApp registrado");return}
+  window.open("https://wa.me/"+t+"?text="+encodeURIComponent(msjWsp(c,k)),"_blank","noopener");
+  const up={modificado:new Date().toISOString()};if(k==="recordatorio")up.recordado=up.modificado;if(k==="confirmacion")up.avisado=up.modificado;
+  try{await S.db.doc("citas/"+c.id).update(up)}catch(e){fail(e)}}
+function citaPorId(id){return S.citasSem.find(c=>c.id===id)||S.citasMan.find(c=>c.id===id)||(S.cli.hist||[]).find(c=>c.id===id)}
+function vDet(){const c=citaPorId(S.det);if(!c){S.det=null;return""}
+  const e=estTxt(c.estado);const cli=S.clientas.find(x=>x.id===c.clientaId);
+  if(c.tipo==="bloqueo")return`<div class="sheet-top"><h3>Horario bloqueado</h3><button class="x" data-act="sheet-close" aria-label="Cerrar">×</button></div>
+    <dl class="kv"><dt>Profesional</dt><dd>${esc(c.profNombre)}</dd><dt>Fecha</dt><dd>${esc(fechaLarga(c.fecha))}</dd><dt>Horario</dt><dd class="num">${esc(c.hora)} – ${fromMin(toMin(c.hora)+(Number(c.dur)||0))}</dd><dt>Motivo</dt><dd>${esc(c.motivo||"—")}</dd></dl>
+    <div class="row-btns"><button class="btn sec" data-act="c-editar" data-id="${esc(c.id)}">Editar</button><button class="btn sec" data-act="c-borrar" data-id="${esc(c.id)}">Quitar bloqueo</button></div>`;
+  return`<div class="sheet-top"><div><h3>${esc(c.clientaNombre||"Clienta")}</h3><p class="muted">${esc(fechaLarga(c.fecha))}, ${esc(c.hora)} – ${fromMin(toMin(c.hora)+(Number(c.dur)||0))}</p></div><button class="x" data-act="sheet-close" aria-label="Cerrar">×</button></div>
+  <dl class="kv"><dt>Profesional</dt><dd>${esc(c.profNombre)}</dd><dt>Servicios</dt><dd>${esc((c.servicios||[]).map(s=>s.nombre).join(", "))}</dd><dt>Valor de lista</dt><dd class="num">${clp(c.precio)}</dd>
+  <dt>WhatsApp</dt><dd class="num">${esc(c.telefono||"—")}</dd><dt>Reservó por</dt><dd>${esc((ORIGENES.find(o=>o[0]===c.origen)||["","—"])[1])}</dd>${c.nota?`<dt>Nota</dt><dd>${esc(c.nota)}</dd>`:""}
+  ${cli&&cli.notas?`<dt>Ficha</dt><dd>${esc(cli.notas)}</dd>`:""}
+  <dt>Estado</dt><dd><span class="pill ${e[2]}">${esc(e[1])}</span>${c.registroId?` <span class="muted" style="font-size:13px">cobrada ${clp(c.venta)}</span>`:""}</dd></dl>
+  <div class="step" style="gap:8px"><h2>Cambiar estado</h2><div class="chips">${ESTADOS.filter(x=>x[0]!=="atendida").map(x=>`<button class="chip" style="min-height:40px;padding:6px 12px;font-size:14px" data-act="c-estado" data-k="${x[0]}" data-id="${esc(c.id)}" aria-pressed="${c.estado===x[0]}">${x[1]}</button>`).join("")}</div></div>
+  <div class="step" style="gap:8px"><h2>Avisar por WhatsApp</h2><div class="row-btns">
+    <button class="btn wsp" data-act="c-wsp" data-k="confirmacion" data-id="${esc(c.id)}">Pedir confirmación</button>
+    <button class="btn wsp" data-act="c-wsp" data-k="recordatorio" data-id="${esc(c.id)}">Recordatorio</button>
+    ${c.estado==="cancelada"?`<button class="btn wsp" data-act="c-wsp" data-k="cancelada" data-id="${esc(c.id)}">Avisar cancelación</button>`:""}</div>
+    <p class="status">${c.avisado?"Confirmación enviada "+esc(new Date(c.avisado).toLocaleString("es-CL"))+". ":""}${c.recordado?"Recordatorio enviado "+esc(new Date(c.recordado).toLocaleString("es-CL"))+".":""}${!c.avisado&&!c.recordado?"Se abre WhatsApp con el mensaje listo; solo hay que tocar enviar.":""}</p></div>
+  <div class="row-btns">${c.registroId?"":`<button class="btn" data-act="c-cobrar" data-id="${esc(c.id)}">Cobrar en caja</button>`}<button class="btn sec" data-act="c-editar" data-id="${esc(c.id)}">Editar o mover</button>${c.clientaId?`<button class="btn sec" data-act="cli-abrir" data-id="${esc(c.clientaId)}">Ver ficha</button>`:""}</div>`}
+function vSheet(){if(!S.form&&!S.det)return"";return`<div class="sheet-bg" data-act="sheet-bg"><div class="sheet" role="dialog" aria-modal="true">${S.form?vForm():vDet()}</div></div>`}
+function cobrarCita(c){const items={};(c.servicios||[]).forEach(s=>{if(S.servs.find(x=>x.id===s.id))items[s.id]=(items[s.id]||0)+1});
+  S.sel={pro:c.profId,items,cobrado:null,manual:false,propina:"",medio:"tarjeta",op:"",nota:"",citaId:c.id,clientaId:c.clientaId||"",clientaNombre:c.clientaNombre||""};
+  S.det=null;S.tab="registrar";render();window.scrollTo(0,0)}
+
+/* ---------- Clientas ---------- */
+function vClientas(){const C=S.cli;const q=C.q.trim().toLowerCase(),dq=q.replace(/\D/g,"");
+  const lista=S.clientas.filter(c=>!q||String(c.nombre||"").toLowerCase().includes(q)||(dq.length>=3&&String(c.telefono||"").replace(/\D/g,"").includes(dq)));
+  const sel=S.clientas.find(c=>c.id===C.sel);
+  if(sel){const h=(C.hist||[]).slice().sort((a,b)=>(b.fecha+b.hora).localeCompare(a.fecha+a.hora));
+    const at=h.filter(c=>c.estado==="atendida"),na=h.filter(c=>c.estado==="noasistio").length;
+    const gasto=at.reduce((a,c)=>a+(Number(c.venta)||Number(c.precio)||0),0);
+    const fut=h.filter(c=>c.fecha>=hoy()&&activa(c)&&c.estado!=="atendida");
+    return`<div class="row-btns" style="justify-content:space-between;align-items:end"><div><h1>${esc(sel.nombre)}</h1><p class="muted">Clienta desde ${esc(sel.creado?new Date(sel.creado).toLocaleDateString("es-CL"):"—")}</p></div>
+      <div class="row-btns"><button class="btn sec" data-act="cli-cerrar">← Todas las clientas</button><button class="btn" data-act="cli-agendar" data-id="${esc(sel.id)}">Agendar</button></div></div>
+    <div class="kpis"><div class="kpi"><span>Visitas atendidas</span><b>${C.hist?at.length:"…"}</b></div><div class="kpi"><span>Total cobrado</span><b>${C.hist?clp(gasto):"…"}</b></div><div class="kpi"><span>Inasistencias</span><b>${C.hist?na:"…"}</b></div><div class="kpi"><span>Última visita</span><b style="font-size:16px">${esc(at[0]?fechaCorta(at[0].fecha):"—")}</b></div></div>
+    <div class="two"><div class="panel"><h2>Datos</h2><div class="fields">
+      <label for="cl-nom">Nombre<input id="cl-nom" value="${esc(sel.nombre)}"></label>
+      <label for="cl-tel">WhatsApp<input id="cl-tel" class="m" inputmode="tel" value="${esc(sel.telefono||"")}"></label>
+      <label for="cl-mail">Correo<input id="cl-mail" type="email" value="${esc(sel.correo||"")}"></label>
+      <label for="cl-cumple">Cumpleaños (día y mes)<input id="cl-cumple" value="${esc(sel.cumple||"")}" placeholder="Ej. 14-03"></label></div>
+      <label for="cl-notas">Notas de atención<textarea id="cl-notas" rows="3" placeholder="Ej. preferencias de color, forma de uña, sensibilidad de la piel">${esc(sel.notas||"")}</textarea></label>
+      <button class="btn" data-act="cli-guardar" data-id="${esc(sel.id)}">Guardar ficha</button></div>
+    <div class="panel"><h2>Historial</h2>${!C.hist?`<p class="muted">Cargando…</p>`:h.length?`<div class="sel-list">${h.map(c=>{const e=estTxt(c.estado);return`<button class="pick" style="all:unset;cursor:pointer;display:grid;gap:2px;border-bottom:1px solid var(--line);padding:6px 0" data-act="ag-abrir" data-id="${esc(c.id)}"><span class="line"><b>${esc(fechaCorta(c.fecha))} ${esc(c.hora)}</b><span class="pill ${e[2]}">${esc(e[1])}</span></span><span class="muted" style="font-size:13px">${esc((c.servicios||[]).map(s=>s.nombre).join(", "))} · ${esc(c.profNombre)}</span></button>`}).join("")}</div>`:`<p class="muted">Sin citas aún.</p>`}
+    ${fut.length?`<div class="note info">Próxima: ${esc(fechaCorta(fut[fut.length-1].fecha))} ${esc(fut[fut.length-1].hora)}</div>`:""}</div></div>`}
+  return`<div class="row-btns" style="justify-content:space-between;align-items:end"><div><h1>Clientas</h1><p class="muted">${S.clientas.length} registradas. Se crean solas al agendar.</p></div>
+    <label for="cli-q" style="min-width:240px">Buscar<input id="cli-q" value="${esc(C.q)}" placeholder="Nombre o teléfono"></label></div>
+  ${C.nuevo?`<div class="panel"><h2>Nueva clienta</h2><div class="fields"><label for="nc-nom">Nombre<input id="nc-nom"></label><label for="nc-tel">WhatsApp<input id="nc-tel" class="m" inputmode="tel"></label><div style="display:grid;align-items:end"><button class="btn" data-act="cli-crear">Crear</button></div></div></div>`:`<div><button class="btn sec" data-act="cli-nueva">+ Nueva clienta</button></div>`}
+  ${lista.length?`<div class="tbl"><table style="min-width:520px"><thead><tr><th>Nombre</th><th>WhatsApp</th><th>Cumpleaños</th><th>Notas</th></tr></thead><tbody>${lista.map(c=>`<tr class="cli-row" data-act="cli-abrir" data-id="${esc(c.id)}"><td><b>${esc(c.nombre)}</b></td><td class="num">${esc(c.telefono||"—")}</td><td>${esc(c.cumple||"—")}</td><td class="muted">${esc(String(c.notas||"").slice(0,60))}</td></tr>`).join("")}</tbody></table></div>`
+  :`<div class="empty"><strong>${q?"Sin resultados":"Aún no hay clientas"}</strong><span>${q?"Prueba con otro nombre o parte del teléfono.":"Al agendar la primera cita, la clienta queda registrada aquí con su historial."}</span></div>`}`}
+async function abrirClienta(id){S.cli.sel=id;S.cli.hist=null;S.det=null;S.form=null;S.tab="clientas";render();window.scrollTo(0,0);
+  try{const q=await S.db.collection("citas").where("clientaId","==",id).get();if(S.cli.sel===id){S.cli.hist=q.docs.map(d=>({id:d.id,...d.data()}));render()}}catch(e){fail(e)}}
+
+/* ---------- Acciones ---------- */
+document.addEventListener("click",async ev=>{
+  const nb=ev.target.closest("#nav button");if(nb){if(S.sel&&S.sel.editId&&nb.dataset.tab!=="registrar")S.sel={pro:null,items:{},cobrado:null,manual:false,propina:"",medio:"tarjeta",op:"",nota:""};S.tab=nb.dataset.tab;render();window.scrollTo(0,0);return}
+  const b=ev.target.closest("[data-act]");if(!b)return;
+  const a=b.dataset.act, id=b.dataset.id, sel=S.sel;
+  try{
+  if(a==="goto"){S.tab=b.dataset.tab;render();return}
+  /* agenda */
+  if(a==="sheet-bg"){if(ev.target===b){S.form=null;S.det=null;render()}return}
+  if(a==="sheet-close"){S.form=null;S.det=null;render();return}
+  if(a==="ag-dia"){S.agDia=b.dataset.f;render();return}
+  if(a==="ag-hoy"){const w=lunesDe(S.agDia)!==lunesDe(hoy());S.agDia=hoy();S._agScrolled=false;if(w)subAgenda();render();return}
+  if(a==="ag-mover"){S.agDia=masDias(S.agDia,Number(b.dataset.n));subAgenda();render();return}
+  if(a==="ag-nueva"){nuevaForm({pro:b.dataset.pro||undefined,hora:b.dataset.hora||""});return}
+  if(a==="ag-abrir"){S.det=id;S.form=null;render();return}
+  if(a==="f-tipo"){S.form.tipo=b.dataset.k;S.form.forzar=false;if(b.dataset.k==="bloqueo"&&!S.form.hasta&&S.form.hora)S.form.hasta=fromMin(toMin(S.form.hora)+60);render();return}
+  if(a==="f-pro"){S.form.pro=id;S.form.forzar=false;render();return}
+  if(a==="f-svc-del"){S.form.items.splice(Number(b.dataset.i),1);render();return}
+  if(a==="f-cli-pick"){S.form.cliId=id;render();return}
+  if(a==="f-cli-quitar"){S.form.cliId=null;render();return}
+  if(a==="f-forzar"){S.form.forzar=true;render();return}
+  if(a==="f-guardar")return guardarCita();
+  if(a==="c-estado"){const k=b.dataset.k;await S.db.doc("citas/"+id).update({estado:k,modificado:new Date().toISOString()});
+    const c=citaPorId(id);if(c&&S.cli.hist){const h=S.cli.hist.find(x=>x.id===id);if(h)h.estado=k}
+    toast("Estado: "+estTxt(k)[1]+(k==="cancelada"&&c&&c.telefono?". Puedes avisarle por WhatsApp.":""));render();return}
+  if(a==="c-wsp"){const c=citaPorId(id);if(c)await enviarWsp(c,b.dataset.k);return}
+  if(a==="c-cobrar"){const c=citaPorId(id);if(c)cobrarCita(c);return}
+  if(a==="c-editar"){const c=citaPorId(id);if(!c)return;
+    nuevaForm({id:c.id,tipo:c.tipo||"cita",pro:c.profId,fecha:c.fecha,hora:c.hora,dur:c.dur,durManual:true,items:(c.servicios||[]).map(x=>x.id).filter(x=>S.servs.find(s=>s.id===x)),cliId:c.clientaId||null,cliNom:c.clientaNombre||"",cliTel:c.telefono||"",origen:c.origen||"presencial",nota:c.nota||"",motivo:c.motivo||"",hasta:fromMin(toMin(c.hora)+(Number(c.dur)||0))});return}
+  if(a==="c-borrar"){await S.db.doc("citas/"+id).delete();S.det=null;toast("Bloqueo quitado");render();return}
+  /* clientas */
+  if(a==="cli-abrir")return abrirClienta(id);
+  if(a==="cli-cerrar"){S.cli.sel=null;S.cli.hist=null;render();return}
+  if(a==="cli-nueva"){S.cli.nuevo=true;render();return}
+  if(a==="cli-crear"){const n=$("#nc-nom").value.trim();if(!n){toast("Escribe el nombre");return}
+    const r=await S.db.collection("clientas").add({nombre:n,telefono:$("#nc-tel").value.trim(),creado:new Date().toISOString(),origen:"presencial"});S.cli.nuevo=false;toast("Clienta creada");abrirClienta(r.id);return}
+  if(a==="cli-guardar"){const n=$("#cl-nom").value.trim();if(!n){toast("El nombre no puede quedar vacío");return}
+    await S.db.doc("clientas/"+id).update({nombre:n,telefono:$("#cl-tel").value.trim(),correo:$("#cl-mail").value.trim(),cumple:$("#cl-cumple").value.trim(),notas:$("#cl-notas").value.trim(),modificado:new Date().toISOString()});toast("Ficha guardada");return}
+  if(a==="cli-agendar"){const c=S.clientas.find(x=>x.id===id);S.tab="agenda";nuevaForm({cliId:id,fecha:S.agDia});window.scrollTo(0,0);return}
+  if(a==="cfg-agenda"){const v=k=>$(k).value.trim();
+    await S.db.doc("config/general").set(Object.assign({},S.cfg,{local:v("#cf-local")||"NÚASPA",direccion:v("#cf-dir"),whatsapp:v("#cf-wsp"),abre:v("#cf-abre")||"10:00",cierra:v("#cf-cierra")||"20:00"}));toast("Datos de la agenda guardados");return}
+  if(a==="sel-limpiar"){S.sel={pro:null,items:{},cobrado:null,manual:false,propina:"",medio:"tarjeta",op:"",nota:""};render();return}
+  if(a==="pro"){sel.pro=sel.pro===id?null:id;render();return}
+  if(a==="svc"){sel.items[id]=(sel.items[id]||0)+1;render();return}
+  if(a==="menos"){sel.items[id]=Math.max(0,(sel.items[id]||0)-1);if(!sel.items[id])delete sel.items[id];render();return}
+  if(a==="medio"){sel.medio=b.dataset.k;render();return}
+  if(a==="reset-cobrado"){sel.manual=false;sel.cobrado=null;render();return}
+  if(a==="guardar")return guardar();
+  if(a==="editar"){const r=S.regsDia.find(x=>x.id===id);if(!r)return;
+    S.sel={pro:r.profId,items:Object.fromEntries((r.servicios||[]).map(s=>[s.id,s.cantidad||1])),cobrado:r.venta,manual:r.venta!==r.precioLista,propina:r.propina?String(r.propina):"",medio:r.medio||"tarjeta",op:r.operacion||"",nota:r.nota||"",fecha:r.fecha,hora:r.hora,editId:r.id,orig:r,citaId:r.citaId||"",clientaId:r.clientaId||"",clientaNombre:r.clientaNombre||""};
+    S.tab="registrar";render();window.scrollTo(0,0);toast("Editando el servicio de "+r.profNombre+" de las "+r.hora);return}
+  if(a==="cancelar-edicion"){S.sel={pro:null,items:{},cobrado:null,manual:false,propina:"",medio:"tarjeta",op:"",nota:""};S.tab="hoy";render();return}
+  if(a==="anular"||a==="restaurar"){await S.db.doc("registros/"+id).update({estado:a==="anular"?"anulado":"ok",modificado:new Date().toISOString()});toast(a==="anular"?"Servicio anulado":"Servicio restaurado");return}
+  if(a==="cerrar")return cerrar();
+  if(a==="mp-guardar")return mpGuardar();
+  if(a==="mp-cancelar"){S.mpImp=null;render();return}
+  if(a==="mp-usar")return mpUsar();
+  if(a==="liquidar")return liquidar();
+  if(a==="liq-pro"){S.liq.pro=id||"";render();return}
+  if(a==="liq-pro-xlsx")return liqProXlsx(id);
+  if(a==="recibo")return reciboTrans(id);
+  if(a==="rep-cargar")return repCargar();
+  if(a==="rep-vista"){S.rep.vista=b.dataset.k;render();return}
+  if(a==="rep-xlsx")return repXlsx();
+  if(a==="csv-liq")return csvLiq();
+  if(a==="csv-det")return csvDet();
+  if(a==="base"){await S.db.doc("config/general").set(Object.assign({},S.cfg,{base:b.dataset.k}));toast("Cálculo de comisión actualizado");return}
+  if(a==="add-pro"){const n=$("#np-nombre").value.trim();if(!n){toast("Escribe el nombre");return}
+    await S.db.collection("profesionales").add({nombre:n,modelo:$("#np-modelo").value,comision:Math.min(100,int($("#np-pct").value)),activo:true,creado:new Date().toISOString()});toast("Profesional agregada");return}
+  if(a==="add-svc"){const n=$("#ns-nombre").value.trim(),p=int($("#ns-precio").value);if(!n||!p){toast("Escribe el servicio y su precio");return}
+    await S.db.collection("servicios").add({nombre:n,categoria:$("#ns-cat").value.trim()||"Servicios",precio:p,activo:true,creado:new Date().toISOString()});toast("Servicio agregado");return}
+  if(a==="toggle-pro"){const p=S.pros.find(x=>x.id===id);await S.db.doc("profesionales/"+id).update({activo:p.activo===false});return}
+  if(a==="toggle-svc"){const s=S.servs.find(x=>x.id===id);await S.db.doc("servicios/"+id).update({activo:s.activo===false});return}
+  }catch(e){fail(e)}
+});
+function fail(e){console.warn(e);const c=e&&e.code;toast(c==="invalid_argument"?"No tienes permiso para guardar esto. Pídele acceso a Francisca.":c==="quota_exceeded"?"La base de datos está llena. Avisa a Surtax.":"No se pudo guardar. Intenta de nuevo.")}
+
+document.addEventListener("input",ev=>{
+  const t=ev.target, sel=S.sel;
+  if(S.form){const F=S.form;
+    if(t.id==="f-cli-q"){F.cliQ=t.value;const el=$("#f-cli-pick");if(el)el.innerHTML=pickClientas(F.cliQ);return}
+    if(t.id==="f-cli-nom"){F.cliNom=t.value;return}
+    if(t.id==="f-cli-tel"){F.cliTel=t.value;return}
+    if(t.id==="f-nota"){F.nota=t.value;return}
+    if(t.id==="f-motivo"){F.motivo=t.value;return}
+    if(t.id==="f-dur"){F.dur=t.value;F.durManual=true;return}
+  }
+  if(t.id==="cli-q"){S.cli.q=t.value;render();return}
+  if(t.id==="f-cobrado"){sel.manual=true;sel.cobrado=t.value;refreshPreview();return}
+  if(t.id==="f-propina"){sel.propina=t.value;refreshPreview();return}
+  if(t.id==="f-fecha"){sel.fecha=t.value&&t.value<=hoy()?t.value:hoy();if(sel.fecha===hoy())sel.hora="";render();return}
+  if(t.id==="f-hora"){sel.hora=t.value;return}
+  if(t.id==="f-op"){sel.op=t.value;return}
+  if(t.id==="f-nota"){sel.nota=t.value;return}
+  if(t.id==="l-desde"){S.liq.desde=t.value;return}
+  if(t.id==="l-hasta"){S.liq.hasta=t.value;return}
+});
+document.addEventListener("change",async ev=>{
+  if(ev.target.id==="sx-import"&&ev.target.files&&ev.target.files[0]){try{const j=JSON.parse(await ev.target.files[0].text());const cols=j.colecciones||{};let n=0;
+    for(const [c,docs] of Object.entries(cols)){for(let i=0;i<docs.length;i+=400){const bt=S.db.batch();docs.slice(i,i+400).forEach(d=>bt.set(S.db.collection(c).doc(d.id),d.data));await bt.commit();n+=Math.min(400,docs.length-i)}}
+    toast("Respaldo cargado: "+n+" registros");ev.target.value=""}catch(e){fail(e)}return}
+  const t=ev.target;
+  if(t.id==="mp-file"&&t.files&&t.files[0]){mpLeer(t.files[0]);return}
+  if(t.dataset.mpk&&S.mpImp){S.mpImp.map[t.dataset.mpk]=Number(t.value);render();return}
+  if(t.id==="mp-incl"&&S.mpImp){S.mpImp.incl=t.value==="1";render();return}
+  if(t.id==="f-dia"&&t.value){S.dia=t.value;subDia();render();return}
+  if(t.id==="r-desde"||t.id==="r-hasta"){S.rep[t.id==="r-desde"?"desde":"hasta"]=t.value;S.rep.regs=null;render();return}
+  if(t.id==="r-pro"){S.rep.pro=t.value;render();return}
+  if(t.id==="r-cat"){S.rep.cat=t.value;render();return}
+  if(t.id==="r-medio"){S.rep.medio=t.value;render();return}
+  if(t.id==="ag-fecha"&&t.value){const w=lunesDe(t.value)!==lunesDe(S.agDia);S.agDia=t.value;if(w)subAgenda();render();return}
+  if(S.form){const F=S.form;
+    if(t.id==="f-svc-add"&&t.value){F.items.push(t.value);F.durManual=false;F.forzar=false;render();return}
+    if(t.id==="f-fecha"&&t.value){F.fecha=t.value;F.forzar=false;if(lunesDe(t.value)!==lunesDe(S.agDia)){S.agDia=t.value;subAgenda()}render();return}
+    if(t.id==="f-hora"){F.hora=t.value;F.forzar=false;if(F.tipo==="bloqueo"&&(!F.hasta||toMin(F.hasta)<=toMin(F.hora)))F.hasta=fromMin(toMin(F.hora)+60);render();return}
+    if(t.id==="f-hasta"){F.hasta=t.value;F.forzar=false;render();return}
+    if(t.id==="f-origen"){F.origen=t.value;return}
+    if(t.id==="f-dur"){render();return}
+  }
+  try{
+  if(t.dataset.urol){await S.db.doc("usuarios/"+t.dataset.urol).update({rol:t.value});toast("Rol actualizado");return}
+  if(t.dataset.upro){await S.db.doc("usuarios/"+t.dataset.upro).update({profId:t.value});toast("Profesional asignada");return}
+  if(t.dataset.modelo){await S.db.doc("profesionales/"+t.dataset.modelo).update({modelo:t.value});toast("Modelo actualizado");return}
+  if(t.dataset.limite){await S.db.doc("profesionales/"+t.dataset.limite).update({limite:t.value});toast("Plazo actualizado");return}
+  if(t.dataset.pct){await S.db.doc("profesionales/"+t.dataset.pct).update({comision:Math.min(100,int(t.value))});toast("Porcentaje actualizado");return}
+  if(t.dataset.dur){const d=int(t.value);if(!d){toast("Duración inválida");return}await S.db.doc("servicios/"+t.dataset.dur).update({duracion:d});toast("Duración actualizada");return}
+  if(t.dataset.precio){const p=int(t.value);if(!p){toast("Precio inválido");return}await S.db.doc("servicios/"+t.dataset.precio).update({precio:p});toast("Precio actualizado");return}
+  }catch(e){fail(e)}
+});
+
+async function guardar(){
+  const sel=S.sel, pro=S.pros.find(p=>p.id===sel.pro);
+  const items=Object.entries(sel.items).map(([id,q])=>{const s=S.servs.find(x=>x.id===id);return s?{id,nombre:s.nombre,categoria:s.categoria||"",precioLista:Number(s.precio)||0,cantidad:q}:null}).filter(Boolean);
+  const lista=items.reduce((a,x)=>a+x.precioLista*x.cantidad,0);
+  const venta=sel.manual?int(sel.cobrado):lista;
+  if(!pro||!venta){toast("Elige profesional y servicio");return}
+  const mismoOp=sel.editId&&sel.orig&&String(sel.orig.operacion||"")===String(sel.op||"").trim();
+  const dupOp=!mismoOp&&sel.medio==="tarjeta"&&sel.op&&S.regsDia.some(r=>r.id!==sel.editId&&r.operacion===sel.op.trim()&&r.profId===pro.id&&r.estado!=="anulado");
+  if(dupOp&&!sel.okOp){sel.okOp=true;toast("Ese voucher ya tiene un servicio de "+pro.nombre+". Si es otro servicio suyo con el mismo voucher, toca Guardar de nuevo");return}
+  const now=new Date();
+  if(sel.editId){const o=sel.orig||{};
+    const upd={servicios:items,precioLista:lista,venta,propina:int(sel.propina),medio:sel.medio,operacion:sel.medio==="tarjeta"?sel.op.trim():"",nota:sel.nota.trim(),
+      profId:pro.id,profNombre:pro.nombre,fecha:(S.admin&&sel.fecha&&sel.fecha<=ymd(now))?sel.fecha:o.fecha,hora:sel.hora||o.hora,
+      modificado:now.toISOString(),editado:true,antes:{servicios:o.servicios||[],venta:o.venta,propina:o.propina||0,profNombre:o.profNombre||""}};
+    S.saving=true;refreshPreview();
+    try{await S.db.doc("registros/"+sel.editId).update(upd);toast("Cambios guardados: "+pro.nombre);
+      S.sel={pro:null,items:{},cobrado:null,manual:false,propina:"",medio:"tarjeta",op:"",nota:""};S.tab="hoy"}catch(e){fail(e)}
+    S.saving=false;render();return}
+  const pasada=!!(S.admin&&sel.fecha&&sel.fecha<ymd(now));
+  if(pasada&&!sel.hora){toast("Indica la hora del cobro (la del voucher)");return}
+  const doc={fecha:pasada?sel.fecha:ymd(now),hora:pasada?sel.hora:now.toTimeString().slice(0,5),creado:now.toISOString(),atrasado:pasada,
+    profId:pro.id,profNombre:pro.nombre,modelo:pro.modelo||"",comisionPct:Number(pro.comision)||0,base:S.cfg.base==="bruto"?"bruto":"neto",
+    servicios:items,precioLista:lista,venta,propina:int(sel.propina),medio:sel.medio,operacion:sel.medio==="tarjeta"?sel.op.trim():"",nota:sel.nota.trim(),estado:"ok",
+    citaId:sel.citaId||"",clientaId:sel.clientaId||"",clientaNombre:sel.clientaNombre||""};
+  S.saving=true;refreshPreview();
+  try{const ref=await S.db.collection("registros").add(doc);
+    if(sel.citaId){try{await S.db.doc("citas/"+sel.citaId).update({estado:"atendida",registroId:ref.id,venta,modificado:now.toISOString()})}catch(e){console.warn(e)}}
+    if(sel.clientaId){try{await S.db.doc("clientas/"+sel.clientaId).update({ultimaVisita:doc.fecha})}catch(e){console.warn(e)}}
+    const c=calc(venta,doc.comisionPct,doc.base);
+    toast(`Guardado: ${pro.nombre}, comisión ${clp(c.com)}${doc.propina?" + propina "+clp(doc.propina):""}`);
+    const fk=S.sel.fecha;S.sel={pro:null,items:{},cobrado:null,manual:false,propina:"",medio:"tarjeta",op:"",nota:"",fecha:fk};
+  }catch(e){fail(e)}
+  S.saving=false;render();
+}
+async function cerrar(){
+  const t=resumen(S.regsDia), tj=t.porMedio.tarjeta;
+  const g=id=>{const v=$(id).value.trim();return v===""?null:int(v)};
+  const d={fecha:S.dia,totalPoint:g("#c-total"),ventasPoint:g("#c-ventas"),cantPoint:g("#c-cant"),propinasPoint:g("#c-prop"),efectivoContado:g("#c-ef"),obs:$("#c-obs").value.trim(),
+    registrado:{ventasTarjeta:tj.v,cantTarjeta:tj.n,propinasTarjeta:tj.p,efectivo:t.porMedio.efectivo.v+t.porMedio.efectivo.p,transferencia:t.porMedio.transferencia.v+t.porMedio.transferencia.p,servicios:t.n},
+    ts:new Date().toISOString()};
+  const cuadra=(d.totalPoint==null||d.totalPoint===tj.v+tj.p)&&d.ventasPoint===tj.v&&d.propinasPoint===tj.p&&(d.cantPoint==null||d.cantPoint===tj.n)&&(d.efectivoContado==null||d.efectivoContado===d.registrado.efectivo);
+  d.estado=cuadra?"cuadra":"diferencia";
+  try{await S.db.doc("cierres/"+S.dia).set(d);toast(cuadra?"Cierre guardado: la caja cuadra":"Cierre guardado con diferencias")}catch(e){fail(e)}
+}
+async function liquidar(){
+  const L=S.liq;if(!L.desde||!L.hasta||L.desde>L.hasta){toast("Revisa las fechas");return}
+  L.cargando=true;render();
+  try{const q=S.myPro?await S.db.collection("registros").where("profId","==",S.myPro).get().then(r=>({docs:r.docs.filter(d=>{const f=d.data().fecha;return f>=L.desde&&f<=L.hasta})})):await S.db.collection("registros").where("fecha",">=",L.desde).where("fecha","<=",L.hasta).get();
+    L.regs=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.creado).localeCompare(String(b.creado)));
+    L.rows=resumen(L.regs);
+  }catch(e){fail(e);L.rows=null}
+  L.cargando=false;render();
+}
+function csv(rows){return"﻿"+rows.map(r=>r.map(v=>{const s=String(v==null?"":v);return/[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}).join(";")).join("\r\n")}
+async function save(name,data){try{await S.dl.save({filename:name,data});}catch(e){if(e&&e.code!=="declined")toast("No se pudo descargar")}}
+function csvLiq(){const L=S.liq;if(!L.rows)return;
+  const rows=[["Desde","Hasta","Profesional","Modelo","Servicios","Venta con IVA","IVA","Venta sin IVA","Comisión","Propinas","Total a pagar","Queda al salón"]];
+  Object.values(L.rows.porPro).forEach(p=>rows.push([L.desde,L.hasta,p.nombre,MODELOS[p.modelo]||"",p.n,p.venta,p.iva,p.neto,p.com,p.prop,p.com+p.prop,p.neto-p.com]));
+  save(`Liquidacion Nua ${L.desde} a ${L.hasta}.csv`,csv(rows));}
+function csvDet(){const L=S.liq;if(!L.regs)return;
+  const rows=[["Fecha","Hora","Profesional","Modelo","Servicios","Precio lista","Venta con IVA","IVA","Venta sin IVA","% comisión","Base","Comisión","Propina","Medio","N° operación","Estado","Nota","Id registro"]];
+  L.regs.forEach(r=>{const c=calc(r.venta,r.comisionPct,r.base);rows.push([r.fecha,r.hora,r.profNombre,MODELOS[r.modelo]||"",(r.servicios||[]).map(s=>(s.cantidad>1?s.cantidad+"x ":"")+s.nombre).join(" + "),r.precioLista,r.venta,c.iva,c.neto,r.comisionPct,r.base==="bruto"?"con IVA":"sin IVA",r.estado==="anulado"?0:c.com,r.estado==="anulado"?0:(r.propina||0),medioTxt(r.medio),r.operacion,r.estado,r.nota,r.id])});
+  save(`Detalle servicios Nua ${L.desde} a ${L.hasta}.csv`,csv(rows));}
+
+/* ---------- Reportes ---------- */
+function repLineas(regs){
+  const out=[];
+  regs.filter(r=>r.estado!=="anulado").forEach(r=>{
+    const sv=(r.servicios&&r.servicios.length)?r.servicios:[{nombre:"(sin servicio)",categoria:"",precioLista:r.venta,cantidad:1}];
+    const pesos=sv.map(x=>(Number(x.precioLista)||0)*(Number(x.cantidad)||1));const tot=pesos.reduce((a,b)=>a+b,0);
+    let restV=r.venta,restP=r.propina||0;
+    sv.forEach((x,i)=>{const w=tot>0?pesos[i]/tot:1/sv.length;const ult=i===sv.length-1;
+      const v=ult?restV:Math.round(r.venta*w),pr=ult?restP:Math.round((r.propina||0)*w);restV-=v;restP-=pr;
+      const c=calc(v,r.comisionPct,r.base);
+      out.push({fecha:r.fecha,hora:r.hora,pro:r.profNombre||"",profId:r.profId,cat:x.categoria||"Sin categoría",svc:x.nombre,cant:Number(x.cantidad)||1,medio:r.medio,op:r.operacion||"",
+        venta:v,iva:c.iva,neto:c.neto,com:c.com,prop:pr})});
+  });
+  return out;
+}
+function repFiltrar(lin){const R=S.rep;return lin.filter(l=>(!R.pro||l.profId===R.pro)&&(!R.cat||l.cat===R.cat)&&(!R.medio||l.medio===R.medio))}
+function repAgrupar(lin,key){const g={};lin.forEach(l=>{const k=key(l);const a=g[k]||(g[k]={k,n:0,venta:0,iva:0,neto:0,com:0,prop:0});a.n+=l.cant;a.venta+=l.venta;a.iva+=l.iva;a.neto+=l.neto;a.com+=l.com;a.prop+=l.prop});return Object.values(g)}
+function repTot(lin){return repAgrupar(lin,()=>"t")[0]||{n:0,venta:0,iva:0,neto:0,com:0,prop:0}}
+const REP_VISTAS=[["detalle","Detalle"],["pro","Por profesional"],["svc","Por servicio"],["cat","Por categoría"],["dia","Por día"]];
+function repTabla(lin,vista){
+  const cols=`<th class="n">Servicios</th><th class="n">Venta con IVA</th><th class="n">IVA</th><th class="n">Venta sin IVA</th><th class="n">Comisión</th><th class="n">Propinas</th><th class="n">Queda al salón</th>`;
+  const nums=a=>`<td class="n">${a.n}</td><td class="n">${clp(a.venta)}</td><td class="n">${clp(a.iva)}</td><td class="n">${clp(a.neto)}</td><td class="n">${clp(a.com)}</td><td class="n">${clp(a.prop)}</td><td class="n">${clp(a.neto-a.com)}</td>`;
+  const T=repTot(lin);
+  if(vista==="detalle"){const ord=[...lin].sort((a,b)=>(a.fecha+a.hora).localeCompare(b.fecha+b.hora));
+    return `<div class="tbl"><table><thead><tr><th>Fecha</th><th>Hora</th><th>Profesional</th><th>Categoría</th><th>Servicio</th><th>Medio</th><th class="n">Venta con IVA</th><th class="n">IVA</th><th class="n">Comisión</th><th class="n">Propina</th></tr></thead><tbody>
+    ${ord.map(l=>`<tr><td class="num">${esc(l.fecha)}</td><td class="num">${esc(l.hora)}</td><td>${esc(l.pro)}</td><td>${esc(l.cat)}</td><td>${l.cant>1?l.cant+"× ":""}${esc(l.svc)}</td><td>${esc(medioTxt(l.medio))}</td><td class="n">${clp(l.venta)}</td><td class="n">${clp(l.iva)}</td><td class="n">${clp(l.com)}</td><td class="n">${clp(l.prop)}</td></tr>`).join("")}
+    <tr class="tot"><td colspan="6">Total</td><td class="n">${clp(T.venta)}</td><td class="n">${clp(T.iva)}</td><td class="n">${clp(T.com)}</td><td class="n">${clp(T.prop)}</td></tr></tbody></table></div>`}
+  const key={pro:l=>l.pro,svc:l=>l.svc,cat:l=>l.cat,dia:l=>l.fecha}[vista];
+  const tit={pro:"Profesional",svc:"Servicio",cat:"Categoría",dia:"Día"}[vista];
+  let g=repAgrupar(lin,key);
+  if(vista==="dia")g.sort((a,b)=>a.k.localeCompare(b.k));else if(vista==="cat")g.sort((a,b)=>catOrd(a.k)-catOrd(b.k)||a.k.localeCompare(b.k,"es"));else g.sort((a,b)=>b.venta-a.venta);
+  return `<div class="tbl"><table><thead><tr><th>${tit}</th>${cols}</tr></thead><tbody>
+  ${g.map(a=>`<tr><td>${esc(vista==="dia"?fechaLarga(a.k):a.k)}</td>${nums(a)}</tr>`).join("")}
+  <tr class="tot"><td>Total</td>${nums(T)}</tr></tbody></table></div>`;
+}
+function vReportes(){
+  if(!S.admin)return`<div class="empty"><strong>Solo Francisca puede ver los reportes</strong></div>`;
+  const R=S.rep;const cats=[...new Set(S.servs.map(s=>s.categoria).filter(Boolean))].sort((a,b)=>catOrd(a)-catOrd(b)||a.localeCompare(b,"es"));
+  let body="";
+  if(R.cargando)body=`<div class="empty"><strong>Cargando…</strong></div>`;
+  else if(R.regs){const lin=repFiltrar(repLineas(R.regs));const T=repTot(lin);
+    body=lin.length?`<div class="kpis">
+      <div class="kpi"><span>Servicios</span><b>${T.n}</b></div><div class="kpi"><span>Ventas con IVA</span><b>${clp(T.venta)}</b></div>
+      <div class="kpi"><span>IVA</span><b>${clp(T.iva)}</b></div><div class="kpi"><span>Comisiones</span><b>${clp(T.com)}</b></div>
+      <div class="kpi"><span>Propinas</span><b>${clp(T.prop)}</b></div><div class="kpi"><span>Queda al salón (sin IVA)</span><b>${clp(T.neto-T.com)}</b></div></div>
+    <div class="chips">${REP_VISTAS.map(([k,l])=>`<button class="chip" style="font-size:14px;padding:10px 14px;min-height:44px" data-act="rep-vista" data-k="${k}" aria-pressed="${R.vista===k}">${l}</button>`).join("")}</div>
+    ${repTabla(lin,R.vista)}
+    ${S.dl&&window.XLSX?`<div class="row-btns"><button class="btn" data-act="rep-xlsx">Descargar en Excel</button></div><p class="status">El Excel trae una hoja por cada vista y una hoja por profesional.</p>`:""}
+    <p class="status">Cuando una atención tiene varios servicios, el monto cobrado se reparte entre ellos según su precio de lista. Los servicios anulados no se cuentan.</p>`
+    :`<div class="empty"><strong>No hay servicios con esos filtros</strong><span>Prueba con otras fechas u otra profesional.</span></div>`}
+  return `<div><h1>Reportes</h1><p class="muted">Ventas por profesional, servicio, categoría y día.</p></div>
+  <div class="panel"><div class="fields">
+    <label for="r-desde">Desde<input id="r-desde" type="date" value="${R.desde}"></label>
+    <label for="r-hasta">Hasta<input id="r-hasta" type="date" value="${R.hasta}"></label>
+    <label for="r-pro">Profesional<select id="r-pro"><option value="">Todas</option>${S.pros.map(p=>`<option value="${esc(p.id)}" ${R.pro===p.id?"selected":""}>${esc(p.nombre)}</option>`).join("")}</select></label>
+    <label for="r-cat">Categoría<select id="r-cat"><option value="">Todas</option>${cats.map(c=>`<option value="${esc(c)}" ${R.cat===c?"selected":""}>${esc(c)}</option>`).join("")}</select></label>
+    <label for="r-medio">Medio de pago<select id="r-medio"><option value="">Todos</option>${MEDIOS.map(([k,l])=>`<option value="${k}" ${R.medio===k?"selected":""}>${l}</option>`).join("")}</select></label>
+    <div style="display:grid;align-items:end"><button class="btn" data-act="rep-cargar">Ver reporte</button></div>
+  </div></div>${body}`;
+}
+async function repCargar(){const R=S.rep;if(!R.desde||!R.hasta||R.desde>R.hasta){toast("Revisa las fechas");return}
+  R.cargando=true;render();
+  try{const q=await S.db.collection("registros").where("fecha",">=",R.desde).where("fecha","<=",R.hasta).get();R.regs=q.docs.map(d=>({id:d.id,...d.data()}))}catch(e){fail(e);R.regs=null}
+  R.cargando=false;render();
+}
+async function repXlsx(){const R=S.rep;if(!R.regs||!window.XLSX||!S.dl)return;
+  const lin=repFiltrar(repLineas(R.regs));const wb=XLSX.utils.book_new();
+  const head=["Servicios","Venta con IVA","IVA","Venta sin IVA","Comisión","Propinas","Queda al salón"];
+  const fila=a=>[a.n,a.venta,a.iva,a.neto,a.com,a.prop,a.neto-a.com];
+  const add=(name,aoa,w)=>{const ws=XLSX.utils.aoa_to_sheet(aoa);ws["!cols"]=w.map(x=>({wch:x}));XLSX.utils.book_append_sheet(wb,ws,name.slice(0,31))};
+  const ord=[...lin].sort((a,b)=>(a.fecha+a.hora).localeCompare(b.fecha+b.hora));
+  add("Detalle",[["Fecha","Hora","Profesional","Categoría","Servicio","Cantidad","Medio","N° operación","Venta con IVA","IVA","Venta sin IVA","Comisión","Propina"],...ord.map(l=>[l.fecha,l.hora,l.pro,l.cat,l.svc,l.cant,medioTxt(l.medio),l.op,l.venta,l.iva,l.neto,l.com,l.prop])],[11,6,14,13,34,9,20,14,13,10,13,11,10]);
+  [["Por profesional","Profesional",l=>l.pro],["Por servicio","Servicio",l=>l.svc],["Por categoría","Categoría",l=>l.cat],["Por día","Día",l=>l.fecha]].forEach(([n,t,k])=>{
+    const g=repAgrupar(lin,k).sort((a,b)=>t==="Día"?a.k.localeCompare(b.k):b.venta-a.venta);const T=repTot(lin);
+    add(n,[[t,...head],...g.map(a=>[a.k,...fila(a)]),["Total",...fila(T)]],[34,10,14,11,14,12,11,14])});
+  [...new Set(ord.map(l=>l.pro))].forEach(p=>{const L=ord.filter(l=>l.pro===p);const T=repTot(L);
+    add(p||"Sin nombre",[["Fecha","Servicio","Monto","Propina","Comisión"],...L.map(l=>[l.fecha,(l.cant>1?l.cant+"x ":"")+l.svc,l.venta,l.prop,l.com]),["Total","",T.venta,T.prop,T.com]],[11,40,12,10,12])});
+  const buf=XLSX.write(wb,{type:"array",bookType:"xlsx"});
+  save(`Reporte NUASPA ${R.desde} a ${R.hasta}.xlsx`,new Uint8Array(buf));
+}
+
+document.addEventListener("keydown",ev=>{if(ev.key==="Escape"&&(S.form||S.det)){S.form=null;S.det=null;render()}});
+render();
+init();
+})();
+</script>
+
+</body></html>
