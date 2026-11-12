@@ -200,7 +200,7 @@ const $=s=>document.querySelector(s);
 const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const clp=n=>"$"+Math.round(Number(n)||0).toLocaleString("es-CL");
 const int=v=>{const n=Math.round(Number(String(v).replace(/[^\d-]/g,"")));return isFinite(n)&&n>0?n:0};
-function calc(venta,pct,base){const neto=Math.round(venta/(1+IVA));const iva=venta-neto;const b=base==="bruto"?venta:neto;const com=Math.round(b*(pct||0)/100);return{neto,iva,com,salon:neto-com}}
+function calc(venta,pct,base,medio){const neto=Math.round(venta/(1+IVA));const iva=medio==="giftcard"?0:venta-neto;const b=base==="bruto"?venta:neto;const com=Math.round(b*(pct||0)/100);return{neto,iva,com,salon:neto-com}}
 function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>{t.hidden=true},3200)}
 
 /* ---------- Conexión ---------- */
@@ -332,7 +332,7 @@ function refreshPreview(){
 function resumen(regs){
   const ok=regs.filter(r=>r.estado!=="anulado");
   const t={n:ok.length,venta:0,prop:0,neto:0,iva:0,com:0,porMedio:{tarjeta:{n:0,v:0,p:0},efectivo:{n:0,v:0,p:0},transferencia:{n:0,v:0,p:0}},porPro:{}};
-  ok.forEach(r=>{const c=calc(r.venta,r.comisionPct,r.base);t.venta+=r.venta;t.prop+=r.propina||0;t.neto+=c.neto;t.iva+=c.iva;t.com+=c.com;
+  ok.forEach(r=>{const c=calc(r.venta,r.comisionPct,r.base,r.medio);t.venta+=r.venta;t.prop+=r.propina||0;t.neto+=c.neto;t.iva+=c.iva;t.com+=c.com;
     const m=t.porMedio[r.medio]||(t.porMedio[r.medio]={n:0,v:0,p:0});const op=String(r.operacion||"").trim();if(!m.ops)m.ops=new Set();if(op){if(!m.ops.has(op)){m.ops.add(op);m.n++}}else m.n++;m.v+=r.venta;m.p+=r.propina||0;
     const k=r.profId;const pp=t.porPro[k]||(t.porPro[k]={nombre:r.profNombre,modelo:r.modelo,n:0,venta:0,neto:0,iva:0,com:0,prop:0});
     pp.n++;pp.venta+=r.venta;pp.neto+=c.neto;pp.iva+=c.iva;pp.com+=c.com;pp.prop+=r.propina||0});
@@ -354,7 +354,7 @@ function vDia(){
     <div class="kpi"><span>Queda al salón (sin IVA)</span><b>${clp(t.neto-t.com)}</b></div>
   </div>
   ${S.regsDia.length?`<div class="tbl"><table><thead><tr><th>Hora</th><th>Profesional</th><th>Servicio</th><th>Medio</th><th>Operación</th><th class="n">Compra</th><th class="n">IVA 19%</th><th class="n">Propina</th><th class="n">Total ticket</th><th class="n">Comisión</th><th></th></tr></thead><tbody>
-  ${S.regsDia.map(r=>{const c=calc(r.venta,r.comisionPct,r.base);const an=r.estado==="anulado";return`<tr class="${an?"void":""}"><td class="num">${esc(r.hora)}</td><td>${esc(r.profNombre)}</td><td>${esc((r.servicios||[]).map(s=>(s.cantidad>1?s.cantidad+"× ":"")+s.nombre).join(", "))}${r.nota?`<br><span class="muted" style="font-size:12px">${esc(r.nota)}</span>`:""}</td><td>${esc(medioTxt(r.medio))}</td><td class="num">${esc(r.operacion||"—")}</td><td class="n">${clp(c.neto)}</td><td class="n">${clp(c.iva)}</td><td class="n">${clp(r.propina)}</td><td class="n"><b>${clp(r.venta+(r.propina||0))}</b></td><td class="n">${clp(c.com)}</td><td>${S.admin?`${an?"":`<button class="mini" data-act="editar" data-id="${esc(r.id)}">Editar</button> `}<button class="mini" data-act="${an?"restaurar":"anular"}" data-id="${esc(r.id)}">${an?"Restaurar":"Anular"}</button>`:(an?`<span class="pill n">Anulado</span>`:"")}</td></tr>`}).join("")}
+  ${S.regsDia.map(r=>{const c=calc(r.venta,r.comisionPct,r.base,r.medio);const an=r.estado==="anulado";return`<tr class="${an?"void":""}"><td class="num">${esc(r.hora)}</td><td>${esc(r.profNombre)}</td><td>${esc((r.servicios||[]).map(s=>(s.cantidad>1?s.cantidad+"× ":"")+s.nombre).join(", "))}${r.nota?`<br><span class="muted" style="font-size:12px">${esc(r.nota)}</span>`:""}</td><td>${esc(medioTxt(r.medio))}</td><td class="num">${esc(r.operacion||"—")}</td><td class="n">${clp(c.neto)}</td><td class="n">${clp(c.iva)}</td><td class="n">${clp(r.propina)}</td><td class="n"><b>${clp(r.venta+(r.propina||0))}</b></td><td class="n">${clp(c.com)}</td><td>${S.admin?`${an?"":`<button class="mini" data-act="editar" data-id="${esc(r.id)}">Editar</button> `}<button class="mini" data-act="${an?"restaurar":"anular"}" data-id="${esc(r.id)}">${an?"Restaurar":"Anular"}</button>`:(an?`<span class="pill n">Anulado</span>`:"")}</td></tr>`}).join("")}
   </tbody></table></div>`:`<div class="empty"><strong>No hay servicios registrados este día</strong><span>Los servicios aparecen aquí apenas se guardan en Registrar.</span></div>`}`;
 }
 const medioTxt=k=>(MEDIOS.find(m=>m[0]===k)||[k,k])[1];
@@ -512,7 +512,7 @@ function liqPro(L,id){
   ${hon?`<div class="note info"><b>Boleta de honorarios de ${esc(p.nombre)}</b><span>Monto bruto ${clp(p.com)} a nombre de LUZIA SpA, con retención. El salón le paga ${clp(liq)} de comisión más ${clp(p.prop)} de propinas, y entera ${clp(ret)} de retención en el F29 del mes del pago.</span></div>`
     :`<div class="note warn"><b>${esc(p.nombre)} no tiene modelo definido</b><span>No se calcula retención. Define su forma de trabajo antes de pagarle.</span></div>`}
   <div class="tbl"><table><thead><tr><th>Fecha</th><th>Hora</th><th>Servicio</th><th>Medio</th><th class="n">Venta con IVA</th><th class="n">Comisión</th><th class="n">Propina</th></tr></thead><tbody>
-  ${regs.map(r=>{const c=calc(r.venta,r.comisionPct,r.base);return`<tr><td class="num">${esc(r.fecha)}</td><td class="num">${esc(r.hora)}</td><td>${esc((r.servicios||[]).map(s=>(s.cantidad>1?s.cantidad+"× ":"")+s.nombre).join(", "))}</td><td>${esc(medioTxt(r.medio))}</td><td class="n">${clp(r.venta)}</td><td class="n">${clp(c.com)}</td><td class="n">${clp(r.propina||0)}</td></tr>`}).join("")}
+  ${regs.map(r=>{const c=calc(r.venta,r.comisionPct,r.base,r.medio);return`<tr><td class="num">${esc(r.fecha)}</td><td class="num">${esc(r.hora)}</td><td>${esc((r.servicios||[]).map(s=>(s.cantidad>1?s.cantidad+"× ":"")+s.nombre).join(", "))}</td><td>${esc(medioTxt(r.medio))}</td><td class="n">${clp(r.venta)}</td><td class="n">${clp(c.com)}</td><td class="n">${clp(r.propina||0)}</td></tr>`}).join("")}
   <tr class="tot"><td colspan="4">Total</td><td class="n">${clp(p.venta)}</td><td class="n">${clp(p.com)}</td><td class="n">${clp(p.prop)}</td></tr></tbody></table></div>
   ${S.dl&&window.XLSX?`<div class="row-btns"><button class="btn" data-act="liq-pro-xlsx" data-id="${esc(id)}">Descargar liquidación de ${esc(p.nombre)} (Excel)</button></div>`:""}`;
 }
@@ -525,13 +525,13 @@ function liqTrans(L,id,p,pf,regs){const dl=diasHasta(pf.limite);
     <div class="kpi"><span>Propinas</span><b>${clp(p.prop)}</b></div>
     <div class="kpi"><span>Total a transferir</span><b>${clp(p.com+p.prop)}</b></div></div>
   <div class="tbl"><table><thead><tr><th>Fecha</th><th>Hora</th><th>Servicio</th><th>Medio</th><th class="n">Total cobrado</th><th class="n">Comisión</th><th class="n">Propina</th></tr></thead><tbody>
-  ${regs.map(r=>{const c=calc(r.venta,r.comisionPct,r.base);return`<tr><td class="num">${esc(r.fecha)}</td><td class="num">${esc(r.hora)}</td><td>${esc((r.servicios||[]).map(s=>(s.cantidad>1?s.cantidad+"× ":"")+s.nombre).join(", "))}</td><td>${esc(medioTxt(r.medio))}</td><td class="n">${clp(r.venta)}</td><td class="n">${clp(c.com)}</td><td class="n">${clp(r.propina||0)}</td></tr>`}).join("")}
+  ${regs.map(r=>{const c=calc(r.venta,r.comisionPct,r.base,r.medio);return`<tr><td class="num">${esc(r.fecha)}</td><td class="num">${esc(r.hora)}</td><td>${esc((r.servicios||[]).map(s=>(s.cantidad>1?s.cantidad+"× ":"")+s.nombre).join(", "))}</td><td>${esc(medioTxt(r.medio))}</td><td class="n">${clp(r.venta)}</td><td class="n">${clp(c.com)}</td><td class="n">${clp(r.propina||0)}</td></tr>`}).join("")}
   <tr class="tot"><td colspan="4">Total</td><td class="n">${clp(p.venta)}</td><td class="n">${clp(p.com)}</td><td class="n">${clp(p.prop)}</td></tr></tbody></table></div>
   ${S.dl?`<div class="row-btns"><button class="btn" data-act="recibo" data-id="${esc(id)}">Descargar recibo interno de pago</button></div><p class="status">El recibo se imprime, lo firma ${esc(p.nombre)} al recibir la transferencia y se guarda junto al comprobante bancario.</p>`:""}`}
 async function reciboTrans(id){const L=S.liq;const p=L.rows&&L.rows.porPro[id];if(!p)return;const pf=S.pros.find(x=>x.id===id)||{};
   const regs=(L.regs||[]).filter(r=>r.profId===id&&r.estado!=="anulado").sort((a,b)=>(a.fecha+a.hora).localeCompare(b.fecha+b.hora));
   const f=s=>{const [y,m,d]=String(s).split("-");return d+"-"+m+"-"+y};const nom=pf.nombreCompleto||p.nombre;
-  const filas=regs.map(r=>{const c=calc(r.venta,r.comisionPct,r.base);return`<tr><td>${esc(f(r.fecha))}</td><td>${esc((r.servicios||[]).map(s=>(s.cantidad>1?s.cantidad+"x ":"")+s.nombre).join(", "))}</td><td class="n">${clp(r.venta)}</td><td class="n">${clp(c.com)}</td><td class="n">${clp(r.propina||0)}</td></tr>`}).join("");
+  const filas=regs.map(r=>{const c=calc(r.venta,r.comisionPct,r.base,r.medio);return`<tr><td>${esc(f(r.fecha))}</td><td>${esc((r.servicios||[]).map(s=>(s.cantidad>1?s.cantidad+"x ":"")+s.nombre).join(", "))}</td><td class="n">${clp(r.venta)}</td><td class="n">${clp(c.com)}</td><td class="n">${clp(r.propina||0)}</td></tr>`}).join("");
   const html=`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Recibo interno ${esc(nom)}</title><style>body{font:14px/1.5 Arial,sans-serif;color:#111;max-width:760px;margin:32px auto;padding:0 24px}h1{font-size:18px;margin:0 0 4px}p{margin:6px 0}table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13px}th,td{border:1px solid #999;padding:5px 7px;text-align:left}td.n,th.n{text-align:right}.tot td{font-weight:bold}.firma{display:flex;gap:48px;margin-top:64px}.firma div{flex:1;border-top:1px solid #111;padding-top:6px;text-align:center}.nota{border:1px solid #999;padding:8px 10px;font-size:12px;margin-top:12px}</style></head><body>
 <h1>Recibo interno de pago · Período de transición</h1>
 <p><b>Pagador:</b> LUZIA SpA, RUT 78.520.581-2 (NÚASPA), Av. Cristóbal Colón 6555, local 9, Las Condes.</p>
@@ -549,7 +549,7 @@ async function liqProXlsx(id){const L=S.liq;const p=L.rows&&L.rows.porPro[id];if
   const regs=(L.regs||[]).filter(r=>r.profId===id&&r.estado!=="anulado").sort((a,b)=>(a.fecha+a.hora).localeCompare(b.fecha+b.hora));
   const hon=p.modelo==="honorarios";const ret=hon?Math.round(p.com*RET):0;
   const aoa=[["Liquidación "+p.nombre,"",L.desde+" a "+L.hasta],[],["Fecha","Hora","Servicio","Medio","Venta con IVA","Comisión","Propina"],
-    ...regs.map(r=>{const c=calc(r.venta,r.comisionPct,r.base);return[r.fecha,r.hora,(r.servicios||[]).map(s=>(s.cantidad>1?s.cantidad+"x ":"")+s.nombre).join(" + "),medioTxt(r.medio),r.venta,c.com,r.propina||0]}),
+    ...regs.map(r=>{const c=calc(r.venta,r.comisionPct,r.base,r.medio);return[r.fecha,r.hora,(r.servicios||[]).map(s=>(s.cantidad>1?s.cantidad+"x ":"")+s.nombre).join(" + "),medioTxt(r.medio),r.venta,c.com,r.propina||0]}),
     ["Total","","","",p.venta,p.com,p.prop],[],
     ["Comisión (monto de la boleta)","","","","",p.com],["Retención 15,25%","","","","",hon?-ret:0],["Comisión líquida","","","","",p.com-ret],["Propinas","","","","",p.prop],["Total a transferir","","","","",p.com-ret+p.prop]];
   const wb=XLSX.utils.book_new();const ws=XLSX.utils.aoa_to_sheet(aoa);ws["!cols"]=[{wch:24},{wch:7},{wch:40},{wch:20},{wch:14},{wch:13},{wch:11}];XLSX.utils.book_append_sheet(wb,ws,"Liquidación");
@@ -1001,7 +1001,7 @@ function csvLiq(){const L=S.liq;if(!L.rows)return;
   save(`Liquidacion Nua ${L.desde} a ${L.hasta}.csv`,csv(rows));}
 function csvDet(){const L=S.liq;if(!L.regs)return;
   const rows=[["Fecha","Hora","Profesional","Modelo","Servicios","Precio lista","Venta con IVA","IVA","Venta sin IVA","% comisión","Base","Comisión","Propina","Medio","N° operación","Estado","Nota","Id registro"]];
-  L.regs.forEach(r=>{const c=calc(r.venta,r.comisionPct,r.base);rows.push([r.fecha,r.hora,r.profNombre,MODELOS[r.modelo]||"",(r.servicios||[]).map(s=>(s.cantidad>1?s.cantidad+"x ":"")+s.nombre).join(" + "),r.precioLista,r.venta,c.iva,c.neto,r.comisionPct,r.base==="bruto"?"con IVA":"sin IVA",r.estado==="anulado"?0:c.com,r.estado==="anulado"?0:(r.propina||0),medioTxt(r.medio),r.operacion,r.estado,r.nota,r.id])});
+  L.regs.forEach(r=>{const c=calc(r.venta,r.comisionPct,r.base,r.medio);rows.push([r.fecha,r.hora,r.profNombre,MODELOS[r.modelo]||"",(r.servicios||[]).map(s=>(s.cantidad>1?s.cantidad+"x ":"")+s.nombre).join(" + "),r.precioLista,r.venta,c.iva,c.neto,r.comisionPct,r.base==="bruto"?"con IVA":"sin IVA",r.estado==="anulado"?0:c.com,r.estado==="anulado"?0:(r.propina||0),medioTxt(r.medio),r.operacion,r.estado,r.nota,r.id])});
   save(`Detalle servicios Nua ${L.desde} a ${L.hasta}.csv`,csv(rows));}
 
 /* ---------- Reportes ---------- */
@@ -1013,7 +1013,7 @@ function repLineas(regs){
     let restV=r.venta,restP=r.propina||0;
     sv.forEach((x,i)=>{const w=tot>0?pesos[i]/tot:1/sv.length;const ult=i===sv.length-1;
       const v=ult?restV:Math.round(r.venta*w),pr=ult?restP:Math.round((r.propina||0)*w);restV-=v;restP-=pr;
-      const c=calc(v,r.comisionPct,r.base);
+      const c=calc(v,r.comisionPct,r.base,r.medio);
       out.push({fecha:r.fecha,hora:r.hora,pro:r.profNombre||"",profId:r.profId,cat:x.categoria||"Sin categoría",svc:x.nombre,cant:Number(x.cantidad)||1,medio:r.medio,op:r.operacion||"",
         venta:v,iva:c.iva,neto:c.neto,com:c.com,prop:pr})});
   });
@@ -1039,6 +1039,8 @@ function repTabla(lin,vista){
   ${g.map(a=>`<tr><td>${esc(vista==="dia"?fechaLarga(a.k):a.k)}</td>${nums(a)}</tr>`).join("")}
   <tr class="tot"><td>Total</td>${nums(T)}</tr></tbody></table></div>`;
 }
+function gcTot(gcs){const v=gcs.reduce((a,g)=>a+(+g.valorVenta||0),0);const neto=Math.round(v/(1+IVA));return{n:gcs.length,v,neto,iva:v-neto}}
+function gcPanel(gcs,T){const G=gcTot(gcs);const cj=T&&T.gcN;return`<div class="note info"><b>IVA de gift cards: se declara en la venta</b><span>Gift cards vendidas en el período: ${G.n} por ${clp(G.v)} (IVA ${clp(G.iva)}). Los servicios pagados con gift card muestran IVA $0 porque ese IVA ya se declaró cuando se vendió la gift card. <b>IVA total del período (servicios + gift cards): ${clp((T?T.iva:0)+G.iva)}</b>.</span></div>`}
 function vReportes(){
   if(!S.admin)return`<div class="empty"><strong>Solo Francisca puede ver los reportes</strong></div>`;
   const R=S.rep;const cats=[...new Set(S.servs.map(s=>s.categoria).filter(Boolean))].sort((a,b)=>catOrd(a)-catOrd(b)||a.localeCompare(b,"es"));
@@ -1047,9 +1049,10 @@ function vReportes(){
   else if(R.regs){const lin=repFiltrar(repLineas(R.regs));const T=repTot(lin);
     body=lin.length?`<div class="kpis">
       <div class="kpi"><span>Servicios</span><b>${T.n}</b></div><div class="kpi"><span>Ventas con IVA</span><b>${clp(T.venta)}</b></div>
-      <div class="kpi"><span>IVA</span><b>${clp(T.iva)}</b></div><div class="kpi"><span>Comisiones</span><b>${clp(T.com)}</b></div>
+      <div class="kpi"><span>IVA servicios</span><b>${clp(T.iva)}</b></div><div class="kpi"><span>Comisiones</span><b>${clp(T.com)}</b></div>
       <div class="kpi"><span>Propinas</span><b>${clp(T.prop)}</b></div><div class="kpi"><span>Queda al salón (sin IVA)</span><b>${clp(T.neto-T.com)}</b></div></div>
     <div class="chips">${REP_VISTAS.map(([k,l])=>`<button class="chip" style="font-size:14px;padding:10px 14px;min-height:44px" data-act="rep-vista" data-k="${k}" aria-pressed="${R.vista===k}">${l}</button>`).join("")}</div>
+    ${gcPanel(R.gcs||[],T)}
     ${repTabla(lin,R.vista)}
     ${S.dl&&window.XLSX?`<div class="row-btns"><button class="btn" data-act="rep-xlsx">Descargar en Excel</button></div><p class="status">El Excel trae una hoja por cada vista y una hoja por profesional.</p>`:""}
     <p class="status">Cuando una atención tiene varios servicios, el monto cobrado se reparte entre ellos según su precio de lista. Los servicios anulados no se cuentan.</p>`
@@ -1066,7 +1069,8 @@ function vReportes(){
 }
 async function repCargar(){const R=S.rep;if(!R.desde||!R.hasta||R.desde>R.hasta){toast("Revisa las fechas");return}
   R.cargando=true;render();
-  try{const q=await S.db.collection("registros").where("fecha",">=",R.desde).where("fecha","<=",R.hasta).get();R.regs=q.docs.map(d=>({id:d.id,...d.data()}))}catch(e){fail(e);R.regs=null}
+  try{const q=await S.db.collection("registros").where("fecha",">=",R.desde).where("fecha","<=",R.hasta).get();R.regs=q.docs.map(d=>({id:d.id,...d.data()}));
+    try{const g=await S.db.collection("giftcards").where("fechaVenta",">=",R.desde).where("fechaVenta","<=",R.hasta).get();R.gcs=g.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.estado!=="anulada")}catch(e){console.warn(e);R.gcs=[]}}catch(e){fail(e);R.regs=null}
   R.cargando=false;render();
 }
 async function repXlsx(){const R=S.rep;if(!R.regs||!window.XLSX||!S.dl)return;
@@ -1081,6 +1085,8 @@ async function repXlsx(){const R=S.rep;if(!R.regs||!window.XLSX||!S.dl)return;
     add(n,[[t,...head],...g.map(a=>[a.k,...fila(a)]),["Total",...fila(T)]],[34,10,14,11,14,12,11,14])});
   [...new Set(ord.map(l=>l.pro))].forEach(p=>{const L=ord.filter(l=>l.pro===p);const T=repTot(L);
     add(p||"Sin nombre",[["Fecha","Servicio","Monto","Propina","Comisión"],...L.map(l=>[l.fecha,(l.cant>1?l.cant+"x ":"")+l.svc,l.venta,l.prop,l.com]),["Total","",T.venta,T.prop,T.com]],[11,40,12,10,12])});
+  {const gcs=(R.gcs||[]).slice().sort((a,b)=>String(a.fechaVenta).localeCompare(String(b.fechaVenta)));const G=gcTot(gcs);const Tt=repTot(lin);
+    add("Gift cards vendidas",[["Fecha venta","Código","Tipo","Empresa","Medio","N° operación","Valor venta","IVA (se declara en la venta)","Venta sin IVA","Saldo por atender"],...gcs.map(g=>{const v=+g.valorVenta||0,n=Math.round(v/(1+IVA));return[g.fechaVenta,g.id,g.tipo==="empresa"?"Corporativa":"Persona",g.empresa||"",medioTxt(g.medioVenta),g.opVenta||"",v,v-n,n,+g.saldo||0]}),["Total","","","","","",G.v,G.iva,G.neto,gcs.reduce((a,g)=>a+(+g.saldo||0),0)],[],["IVA servicios del período","","","","","",Tt.iva],["IVA gift cards vendidas","","","","","",G.iva],["IVA total del período","","","","","",Tt.iva+G.iva],[],["Los servicios pagados con gift card llevan IVA $0: su IVA se declaró al vender la gift card."]],[11,11,11,18,16,14,12,14,12,14])}
   const buf=XLSX.write(wb,{type:"array",bookType:"xlsx"});
   save(`Reporte NUASPA ${R.desde} a ${R.hasta}.xlsx`,new Uint8Array(buf));
 }
