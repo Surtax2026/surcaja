@@ -106,14 +106,17 @@ function dur(){return sel().reduce((a,s)=>a+(Number(s.duracion)||60),0)}
 function total(){return sel().reduce((a,s)=>a+(Number(s.precio)||0),0)}
 function abierto(f){const[y,m,d]=f.split("-").map(Number);const dow=new Date(y,m-1,d).getDay();return!(R.cat.cerrados||[]).includes(dow)}
 function dias(){const o=[];const t=new Date();for(let i=0;o.length<DIAS&&i<DIAS+10;i++){const d=new Date(t.getFullYear(),t.getMonth(),t.getDate()+i);const f=ymd(d);if(abierto(f))o.push(f)}return o}
+function horDe(p,f){const[yy,mm,dd]=f.split("-").map(Number);const dw=new Date(yy,mm-1,dd).getDay();
+  if(p&&p.horario){const h=p.horario[String(dw)];return h&&h.a&&h.b?{a:toMin(h.a),b:toMin(h.b)}:null}
+  return{a:toMin(R.cat.abre||"10:00"),b:toMin((dw===6&&R.cat.cierraSab)||R.cat.cierra||"20:00")}}
 function libres(f){
-  const[yy,mm,dd]=f.split("-").map(Number);const sab=new Date(yy,mm-1,dd).getDay()===6;
-  const a=toMin(R.cat.abre||"10:00"),b=toMin((sab&&R.cat.cierraSab)||R.cat.cierra||"20:00"),D=dur();
-  const pros=R.pro?[R.pro]:(R.cat.profesionales||[]).map(p=>p.id);
+  const D=dur();const P=(R.cat.profesionales||[]).filter(p=>!R.pro||p.id===R.pro);
   const ocup=R.ocup[f]||[];const now=new Date();const min=f===ymd(now)?now.getHours()*60+now.getMinutes()+ANTICIPO_MIN:0;
+  const hs=P.map(p=>({p:p.id,h:horDe(p,f)})).filter(x=>x.h);if(!hs.length)return[];
+  const a=Math.min(...hs.map(x=>x.h.a)),b=Math.max(...hs.map(x=>x.h.b));
   const out=[];
   for(let m=a;m+D<=b;m+=PASO){if(m<min)continue;
-    const ok=pros.some(p=>!ocup.some(x=>x.p===p&&toMin(x.h)<m+D&&toMin(x.h)+(+x.d||0)>m));
+    const ok=hs.some(({p,h})=>m>=h.a&&m+D<=h.b&&!ocup.some(x=>x.p===p&&toMin(x.h)<m+D&&toMin(x.h)+(+x.d||0)>m));
     if(ok)out.push(fromMin(m))}
   return out}
 async function cargarDia(f){
