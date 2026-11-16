@@ -112,6 +112,9 @@ tr:last-child td{border-bottom:0}
 .ag .cita.l0{justify-self:stretch;margin-right:50%} .ag .cita.l1{margin-left:50%}
 .ag .cell{border:0;border-top:1px solid transparent;border-left:1px solid var(--line);background:transparent;cursor:pointer;padding:0;min-height:0}
 .ag .cell.h{border-top-color:var(--line)}
+.ag .cell.fuera{background:repeating-linear-gradient(135deg,transparent,transparent 5px,var(--line) 5px,var(--line) 6px);cursor:not-allowed}
+.ag .th .mini{display:block;margin:4px auto 0;font-weight:600}
+.hor-row{display:grid;grid-template-columns:110px 1fr 1fr;gap:8px;align-items:center}
 .ag .cell:hover{background:var(--plum-soft)}
 .ag .cita{z-index:1;margin:1px 3px;border-radius:8px;padding:4px 7px;font-size:12px;line-height:1.25;text-align:left;border:0;border-left:4px solid var(--plum);background:var(--plum-soft);color:var(--ink);cursor:pointer;overflow:hidden;font-family:var(--f-body)}
 .ag .cita b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -559,6 +562,10 @@ async function liqProXlsx(id){const L=S.liq;const p=L.rows&&L.rows.porPro[id];if
 }
 
 function vAjustes(){return vAjustesBase()+vUsuarios()}
+function vHorarioEdit(){const p=S.pros.find(x=>x.id===S.horEdit);if(!p)return"";const H=p.horario||null;const loc={a:S.cfg.abre||"10:00",b:S.cfg.cierra||"20:00"};
+  return`<div class="panel" id="hor-panel"><h2>Horario de ${esc(p.nombre)}</h2><p class="muted">Marca los días que atiende y su horario. Fuera de esto, su columna en la Agenda queda rayada y la reserva web no ofrece esas horas. ${H?"":"Hoy usa el horario del local."}</p>
+  ${DIAS_SEM.map((d,i)=>{const h=H?H[String(i)]:((S.cfg.cerrados||[]).includes(i)?null:{a:loc.a,b:i===6&&S.cfg.cierraSab?S.cfg.cierraSab:loc.b});return`<div class="hor-row"><label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="hd-${i}" ${h?"checked":""}> ${d}</label><label for="ha-${i}" class="sr">Desde<input id="ha-${i}" type="time" step="900" value="${esc(h?h.a:loc.a)}" aria-label="${d} desde"></label><label for="hb-${i}" class="sr">Hasta<input id="hb-${i}" type="time" step="900" value="${esc(h?h.b:loc.b)}" aria-label="${d} hasta"></label></div>`}).join("")}
+  <div class="row-btns"><button class="btn" data-act="hor-guardar" data-id="${esc(p.id)}">Guardar horario</button>${H?`<button class="btn sec" data-act="hor-local" data-id="${esc(p.id)}">Usar horario del local</button>`:""}<button class="btn sec" data-act="hor-abrir" data-id="${esc(p.id)}">Cerrar</button></div></div>`}
 function vUsuarios(){const us=S.usuarios||[];const pros=S.pros||[];
   const R={pendiente:"Por habilitar",profesional:"Profesional",caja:"Caja del local",admin:"Administradora"};
   return `<div class="panel"><h2>Usuarios</h2><p class="muted">Quien crea su cuenta queda "Por habilitar". Elige su rol: <b>Profesional</b> registra y ve solo lo suyo; <b>Caja del local</b> registra para todas y hace el cierre; <b>Administradora</b> ve y ajusta todo.</p>
@@ -590,7 +597,7 @@ function vAjustesBase(){
     <div class="fields" hidden></div><div><button class="btn" data-act="cfg-agenda">Guardar</button></div></div>
   <div class="panel"><h2>Profesionales</h2>
     ${S.pros.length?`<div class="tbl"><table style="min-width:560px"><thead><tr><th>Nombre</th><th>Modelo</th><th class="n">% comisión</th><th>Estado</th><th></th></tr></thead><tbody>
-    ${S.pros.map(p=>`<tr><td>${esc(p.nombre)}</td><td><select id="pm-${esc(p.id)}" data-modelo="${esc(p.id)}" style="min-width:190px"><option value="">Sin definir</option>${Object.entries(MODELOS).map(([k,v])=>`<option value="${k}" ${p.modelo===k?"selected":""}>${v}</option>`).join("")}</select>${p.modelo==="transicion"?`<label for="pl-${esc(p.id)}" style="margin-top:6px">Plazo para presentar la solicitud<input id="pl-${esc(p.id)}" type="date" value="${esc(p.limite||"")}" data-limite="${esc(p.id)}"></label>`:""}</td><td class="n"><input id="pc-${esc(p.id)}" class="m" style="width:80px;text-align:right" inputmode="numeric" value="${esc(p.comision)}" data-pct="${esc(p.id)}"></td><td>${p.activo===false?`<span class="pill n">Inactiva</span>`:`<span class="pill g">Activa</span>`}</td><td><button class="mini" data-act="toggle-pro" data-id="${esc(p.id)}">${p.activo===false?"Activar":"Desactivar"}</button></td></tr>`).join("")}
+    ${S.pros.map(p=>`<tr><td>${esc(p.nombre)}</td><td><select id="pm-${esc(p.id)}" data-modelo="${esc(p.id)}" style="min-width:190px"><option value="">Sin definir</option>${Object.entries(MODELOS).map(([k,v])=>`<option value="${k}" ${p.modelo===k?"selected":""}>${v}</option>`).join("")}</select>${p.modelo==="transicion"?`<label for="pl-${esc(p.id)}" style="margin-top:6px">Plazo para presentar la solicitud<input id="pl-${esc(p.id)}" type="date" value="${esc(p.limite||"")}" data-limite="${esc(p.id)}"></label>`:""}</td><td class="n"><input id="pc-${esc(p.id)}" class="m" style="width:80px;text-align:right" inputmode="numeric" value="${esc(p.comision)}" data-pct="${esc(p.id)}"></td><td>${p.activo===false?`<span class="pill n">Inactiva</span>`:`<span class="pill g">Activa</span>`}</td><td><span class="row-btns"><button class="mini" data-act="hor-abrir" data-id="${esc(p.id)}">Horario</button><button class="mini" data-act="toggle-pro" data-id="${esc(p.id)}">${p.activo===false?"Activar":"Desactivar"}</button></span></td></tr>`).join("")}
     </tbody></table></div>`:`<p class="muted">Aún no hay profesionales.</p>`}
     <div class="fields">
       <label for="np-nombre">Nombre<input id="np-nombre" placeholder="Ej. Sara"></label>
@@ -598,6 +605,7 @@ function vAjustesBase(){
       <label for="np-pct">% comisión<input id="np-pct" class="m" inputmode="numeric" value="50"></label>
       <div style="display:grid;align-items:end"><button class="btn" data-act="add-pro">Agregar</button></div>
     </div></div>
+  ${vHorarioEdit()}
   <div class="panel"><h2>Servicios y precios</h2>
     ${S.servs.length?`<div class="tbl"><table style="min-width:560px"><thead><tr><th>Categoría</th><th>Servicio</th><th class="n">Precio con IVA</th><th class="n">Minutos</th><th>Estado</th><th></th></tr></thead><tbody>
     ${S.servs.map(s=>`<tr><td>${esc(s.categoria||"—")}</td><td>${esc(s.nombre)}</td><td class="n"><input id="sp-${esc(s.id)}" class="m" style="width:110px;text-align:right" inputmode="numeric" value="${esc(s.precio)}" data-precio="${esc(s.id)}"></td><td class="n"><input id="sd-${esc(s.id)}" class="m" style="width:70px;text-align:right" inputmode="numeric" value="${esc(s.duracion||"")}" placeholder="60" data-dur="${esc(s.id)}"></td><td>${s.activo===false?`<span class="pill n">Oculto</span>`:`<span class="pill g">Visible</span>`}</td><td><button class="mini" data-act="toggle-svc" data-id="${esc(s.id)}">${s.activo===false?"Mostrar":"Ocultar"}</button></td></tr>`).join("")}
@@ -626,19 +634,27 @@ function citasDe(f){return S.citasSem.filter(c=>c.fecha===f)}
 function choques(c,lista){const a=toMin(c.hora),b=a+(Number(c.dur)||0);return lista.filter(x=>x.id!==c.id&&x.profId===c.profId&&x.fecha===c.fecha&&activa(x)&&toMin(x.hora)<b&&toMin(x.hora)+(Number(x.dur)||0)>a)}
 function fechaCorta(s){const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString("es-CL",{weekday:"short",day:"numeric",month:"short"})}
 
+const DIAS_SEM=["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+const dowDe=f=>{const [y,m,d]=f.split("-").map(Number);return new Date(y,m-1,d).getDay()};
+function horLocal(f){const dw=dowDe(f);if((S.cfg.cerrados||[]).includes(dw))return null;const a=toMin(S.cfg.abre||"10:00");let b=toMin((dw===6&&S.cfg.cierraSab)||S.cfg.cierra||"20:00");if(b<=a)b=a+600;return{a,b}}
+function horPro(p,f){if(!p)return null;if(p.horario&&typeof p.horario==="object"){const h=p.horario[String(dowDe(f))];if(!h||!h.a||!h.b)return null;return{a:toMin(h.a),b:toMin(h.b)}}return horLocal(f)}
+function bloqueadoTodoDia(pid,f){const h=horPro(S.pros.find(p=>p.id===pid),f);if(!h)return false;return citasDe(f).some(c=>c.tipo==="bloqueo"&&c.profId===pid&&activa(c)&&toMin(c.hora)<=h.a&&toMin(c.hora)+(Number(c.dur)||0)>=h.b)}
 function vAgenda(){
   const vacio=sinCatalogo();if(vacio)return vacio;
-  const pros=S.pros.filter(p=>p.activo!==false);
   const L=lunesDe(S.agDia),H=horario(),dia=citasDe(S.agDia);
+  const activas=S.pros.filter(p=>p.activo!==false);
+  const trabajan=activas.filter(p=>(horPro(p,S.agDia)&&!bloqueadoTodoDia(p.id,S.agDia))||dia.some(c=>c.profId===p.id&&c.tipo!=="bloqueo"&&activa(c)));
+  const pros=S.agTodas||S.myPro?activas:(trabajan.length?trabajan:activas);
+  const ocultas=activas.length-pros.length;
   const week=Array.from({length:7},(_,i)=>{const f=masDias(L,i);const n=citasDe(f).filter(c=>c.tipo!=="bloqueo"&&activa(c)).length;const [y,m,d]=f.split("-").map(Number);
     return`<button class="wd ${f===hoy()?"today":""}" data-act="ag-dia" data-f="${f}" aria-pressed="${f===S.agDia}"><small>${new Date(y,m-1,d).toLocaleDateString("es-CL",{weekday:"short"})}</small><b>${d}</b><i>${n?n+" cita"+(n>1?"s":""):"&nbsp;"}</i></button>`}).join("");
   const filas=(H.b-H.a)/PASO;
   const cols=`56px repeat(${pros.length},minmax(150px,1fr))`;
-  let g=`<div class="th tl" style="grid-row:1;grid-column:1"></div>`+pros.map((p,i)=>`<div class="th" style="grid-row:1;grid-column:${i+2}">${esc(p.nombre)}</div>`).join("");
+  let g=`<div class="th tl" style="grid-row:1;grid-column:1"></div>`+pros.map((p,i)=>{const hp=horPro(p,S.agDia);const bl=bloqueadoTodoDia(p.id,S.agDia);return`<div class="th" style="grid-row:1;grid-column:${i+2}">${esc(p.nombre)}<small style="display:block;font-weight:500;color:var(--muted);font-size:11px">${bl?"No viene":hp?fromMin(hp.a)+"–"+fromMin(hp.b):"No trabaja"}</small>${!S.myPro&&hp&&!bl?`<button class="mini" data-act="ag-noviene" data-pro="${esc(p.id)}">No viene</button>`:""}</div>`}).join("");
   const ahora=new Date(),nowMin=ahora.getHours()*60+ahora.getMinutes();
   for(let r=0;r<filas;r++){const m=H.a+r*PASO,row=r+2,hh=m%30===0;
     if(hh)g+=`<div class="tl ${S.agDia===hoy()&&nowMin>=m&&nowMin<m+30?"now":""}" style="grid-row:${row};grid-column:1">${fromMin(m)}</div>`;
-    pros.forEach((p,i)=>{g+=`<button class="cell ${hh?"h":""}" style="grid-row:${row};grid-column:${i+2}" data-act="ag-nueva" data-pro="${esc(p.id)}" data-hora="${fromMin(m)}" aria-label="Nueva cita ${esc(p.nombre)} ${fromMin(m)}"></button>`})}
+    pros.forEach((p,i)=>{const hp=horPro(p,S.agDia);const out=!hp||m<hp.a||m>=hp.b;g+=`<button class="cell ${hh?"h":""} ${out?"fuera":""}" style="grid-row:${row};grid-column:${i+2}" data-act="ag-nueva" data-pro="${esc(p.id)}" data-hora="${fromMin(m)}" data-fuera="${out?1:""}" aria-label="${out?"Fuera de horario":"Nueva cita"} ${esc(p.nombre)} ${fromMin(m)}"></button>`})}
   const lane={};pros.forEach(p=>{const ends=[];dia.filter(c=>c.profId===p.id).sort((a,b)=>toMin(a.hora)-toMin(b.hora)).forEach(c=>{const a=toMin(c.hora);let k=ends.findIndex(e=>e<=a);if(k<0){k=ends.length;ends.push(0)}ends[k]=a+(Number(c.dur)||PASO);lane[c.id]=k})});
   dia.forEach(c=>{const i=pros.findIndex(p=>p.id===c.profId);if(i<0)return;
     const st=Math.max(0,Math.round((toMin(c.hora)-H.a)/PASO)),span=Math.max(1,Math.round((Number(c.dur)||PASO)/PASO));
@@ -664,9 +680,10 @@ function vAgenda(){
   </div>
   ${vSols()}
   ${pend.length?`<div class="note warn"><b>Recordatorios de mañana: ${pend.length} sin enviar</b><span>${pend.map(c=>`${esc(c.hora)} ${esc(c.clientaNombre)} (${esc(c.profNombre)}) <button class="mini wsp" data-act="c-wsp" data-k="recordatorio" data-id="${esc(c.id)}">Enviar</button>`).join(" · ")}</span></div>`:man.length?`<div class="note ok">Los ${man.length} recordatorios de mañana ya se enviaron.</div>`:""}
+  ${!S.myPro&&(ocultas>0||S.agTodas)?`<div class="row-btns" style="justify-content:space-between;align-items:center"><span class="muted" style="font-size:13px">${S.agTodas?"Mostrando a todas las profesionales.":`Se muestran solo las que atienden este día (${ocultas} oculta${ocultas>1?"s":""}).`}</span><button class="mini" data-act="ag-todas">${S.agTodas?"Solo las que atienden":"Ver todas"}</button></div>`:""}
   <div class="grid-wrap"><div class="ag" style="grid-template-columns:${cols};grid-template-rows:auto repeat(${filas},14px)">${g}</div></div>
   <div class="legend">${ESTADOS.map(e=>`<span class="pill ${e[2]}">${e[1]}</span>`).join("")}<span class="pill n">Rayado = bloqueo</span><span class="pill r">Borde rojo = tope de horario</span></div>
-  <p class="status">Toca un espacio libre para agendar, o una cita para confirmarla, avisar por WhatsApp o cobrarla.</p>`;
+  <p class="status">Toca un espacio libre para agendar, o una cita para confirmarla, avisar por WhatsApp o cobrarla. Lo rayado está fuera del horario de la profesional; “No viene” bloquea su día completo.</p>`;
 }
 
 /* --- Formulario de cita --- */
@@ -703,11 +720,12 @@ function vForm(){const {F,pro,items,dur,precio,cli}=formCita();const pros=S.pros
   <div class="fields">
     <label for="f-fecha">Fecha<input id="f-fecha" type="date" value="${esc(F.fecha)}"></label>
     <label for="f-hora">${F.tipo==="bloqueo"?"Desde":"Hora"}<select id="f-hora">${opcHoras(F.hora)}</select></label>
-    ${F.tipo==="bloqueo"?`<label for="f-hasta">Hasta<select id="f-hasta">${opcHoras(F.hasta)}</select></label>`:`<label for="f-dur">Duración (min)<input id="f-dur" class="m" inputmode="numeric" value="${dur}"></label>`}
+    ${F.tipo==="bloqueo"?`<div style="display:grid;align-items:end"><button class="mini" data-act="f-tododia">Todo el día</button></div><label for="f-hasta">Hasta<select id="f-hasta">${opcHoras(F.hasta)}</select></label>`:`<label for="f-dur">Duración (min)<input id="f-dur" class="m" inputmode="numeric" value="${dur}"></label>`}
     ${F.tipo==="cita"?`<label for="f-origen">Cómo reservó<select id="f-origen">${ORIGENES.map(([k,l])=>`<option value="${k}" ${F.origen===k?"selected":""}>${l}</option>`).join("")}</select></label>`:""}
   </div>
   ${F.tipo==="cita"?`<label for="f-nota">Nota<input id="f-nota" value="${esc(F.nota)}" placeholder="Ej. viene con su hija, prefiere tonos nude"></label>`:""}
   ${ch.length?`<div class="note risk"><b>Tope de horario con ${esc(pro?pro.nombre:"la profesional")}</b><span>${ch.map(c=>`${esc(c.hora)} ${esc(c.tipo==="bloqueo"?(c.motivo||"Bloqueo"):c.clientaNombre)}`).join(", ")}.</span>${F.forzar?"":`<span><button class="mini" data-act="f-forzar">Agendar igual</button></span>`}</div>`:""}
+  ${F.tipo==="cita"&&pro&&F.hora&&(()=>{const hp=horPro(pro,F.fecha);return !hp||toMin(F.hora)<hp.a||toMin(F.hora)+dur>hp.b})()?`<div class="note warn">${esc(pro.nombre)} no atiende a esa hora según su horario. Puedes agendar igual si lo conversaron.</div>`:""}
   ${fuera?`<div class="note warn">Termina después del cierre (${esc(S.cfg.cierra||"20:00")}).</div>`:""}
   ${F.tipo==="cita"&&precio?`<div class="line"><span class="muted">Valor de lista · ${dur} min</span><b>${clp(precio)}</b></div>`:""}
   <button class="btn" data-act="f-guardar">${F.id?"Guardar cambios":F.tipo==="bloqueo"?"Bloquear":"Agendar"}</button>`}
@@ -750,7 +768,7 @@ let _pubT=null,_pubH=null;
 function pubCatDeb(){clearTimeout(_pubT);_pubT=setTimeout(pubCat,1500)}
 async function pubCat(){if(!S.admin||!S.db||!S.servs.length||!S.pros.length)return;
   const cat={local:S.cfg.local||"NÚASPA",direccion:S.cfg.direccion||"",whatsapp:S.cfg.whatsapp||"",instagram:S.cfg.instagram||"",abre:S.cfg.abre||"10:00",cierra:S.cfg.cierra||"20:00",cierraSab:S.cfg.cierraSab||"",cerrados:S.cfg.cerrados||[],
-    profesionales:S.pros.filter(p=>p.activo!==false&&p.web!==false).map(p=>({id:p.id,nombre:p.nombre})),
+    profesionales:S.pros.filter(p=>p.activo!==false&&p.web!==false).map(p=>Object.assign({id:p.id,nombre:p.nombre},p.horario?{horario:p.horario}:{})),
     servicios:S.servs.filter(s=>s.activo!==false&&s.web!==false).map(s=>({id:s.id,nombre:s.nombre,categoria:s.categoria||"Servicios",precio:Number(s.precio)||0,duracion:durDe(s)}))};
   const h=stable(cat);if(h===_pubH)return;
   try{const cur=await S.db.doc("publico/catalogo").get();if(cur.exists){const c=Object.assign({},cur.data());delete c.actualizado;if(stable(c)===h){_pubH=h;return}}
@@ -834,7 +852,14 @@ document.addEventListener("click",async ev=>{
   if(a==="ag-dia"){S.agDia=b.dataset.f;render();return}
   if(a==="ag-hoy"){const w=lunesDe(S.agDia)!==lunesDe(hoy());S.agDia=hoy();S._agScrolled=false;if(w)subAgenda();render();return}
   if(a==="ag-mover"){S.agDia=masDias(S.agDia,Number(b.dataset.n));subAgenda();render();return}
-  if(a==="ag-nueva"){nuevaForm({pro:b.dataset.pro||undefined,hora:b.dataset.hora||""});return}
+  if(a==="ag-nueva"){if(b.dataset.fuera&&S.myPro){toast("Ese horario está fuera de tu jornada");return}nuevaForm({pro:b.dataset.pro||undefined,hora:b.dataset.hora||""});return}
+  if(a==="ag-todas"){S.agTodas=!S.agTodas;render();return}
+  if(a==="ag-noviene"){const p=S.pros.find(x=>x.id===b.dataset.pro);const hp=horPro(p,S.agDia)||horario();nuevaForm({tipo:"bloqueo",pro:p.id,hora:fromMin(hp.a),hasta:fromMin(hp.b),motivo:"No viene"});return}
+  if(a==="f-tododia"){const p=S.pros.find(x=>x.id===S.form.pro);const hp=(p&&horPro(p,S.form.fecha))||horario();S.form.hora=fromMin(hp.a);S.form.hasta=fromMin(hp.b);if(!S.form.motivo)S.form.motivo="No viene";S.form.forzar=true;render();return}
+  if(a==="hor-abrir"){S.horEdit=S.horEdit===id?null:id;render();return}
+  if(a==="hor-guardar"){const h={};for(let i=0;i<7;i++){if($("#hd-"+i).checked){const x=$("#ha-"+i).value,y=$("#hb-"+i).value;if(!x||!y||toMin(y)<=toMin(x)){toast("Revisa el horario del "+DIAS_SEM[i]);return}h[String(i)]={a:x,b:y}}}
+    await S.db.doc("profesionales/"+id).update({horario:h});S.horEdit=null;toast("Horario guardado");return}
+  if(a==="hor-local"){await S.db.doc("profesionales/"+id).update({horario:firebase.firestore.FieldValue.delete()});S.horEdit=null;toast("Usa el horario del local");return}
   if(a==="ag-abrir"){S.det=id;S.form=null;render();return}
   if(a==="f-tipo"){S.form.tipo=b.dataset.k;S.form.forzar=false;if(b.dataset.k==="bloqueo"&&!S.form.hasta&&S.form.hora)S.form.hasta=fromMin(toMin(S.form.hora)+60);render();return}
   if(a==="f-pro"){S.form.pro=id;S.form.forzar=false;render();return}
