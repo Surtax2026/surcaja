@@ -188,7 +188,7 @@ const S={db:null,user:null,dl:null,admin:false,ready:false,offline:false,
   rep:{desde:hoy().slice(0,8)+"01",hasta:hoy(),pro:"",cat:"",medio:"",vista:"detalle",regs:null,cargando:false},
   saving:false,mpDia:null,unsubMp:null,mpImp:null,
   agDia:hoy(),citasSem:[],citasMan:[],unsubSem:null,unsubMan:null,clientas:[],form:null,det:null,
-  cli:{q:"",sel:null,hist:null,nuevo:false}};
+  cli:{q:"",sel:null,hist:null,nuevo:false},sols:[]};
 
 function hoy(){const d=new Date();return ymd(d)}
 function ymd(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
@@ -221,6 +221,7 @@ async function init(){
   db.doc("config/general").onSnapshot(s=>{S.cfg=Object.assign({base:"neto"},s.exists?s.data():{});render()},err);
   if(!S.myPro)db.collection("clientas").onSnapshot(q=>{S.clientas=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre),"es"));render()},err);
   try{(S.myPro?db.collection("firmas").where("profId","==",S.myPro).where("estado","==","enviado"):S.admin?db.collection("firmas").where("estado","==","firmado_pro"):null)?.onSnapshot(q=>{S.firmasPend=q.docs.length;render()},()=>{})}catch(e){}
+  if(!S.myPro)db.collection("solicitudes").where("estado","==","nueva").onSnapshot(q=>{S.sols=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.fecha+a.hora).localeCompare(String(b.fecha+b.hora)));render()},e=>console.warn(e));
   subDia();subAgenda();
 }
 function subAgenda(){
@@ -228,7 +229,7 @@ function subAgenda(){
   if(S.unsubSem)S.unsubSem();if(S.unsubMan)S.unsubMan();
   if(S.myPro){const a=lunesDe(S.agDia),b=masDias(a,6),m=masDias(hoy(),1);S.unsubMan=null;S.unsubSem=S.db.collection("citas").where("profId","==",S.myPro).onSnapshot(q=>{const all=q.docs.map(d=>({id:d.id,...d.data()}));S.citasSem=all.filter(c=>c.fecha>=a&&c.fecha<=b);S.citasMan=all.filter(c=>c.fecha===m);render()},err);return}
   const a=lunesDe(S.agDia),b=masDias(a,6);
-  S.unsubSem=S.db.collection("citas").where("fecha",">=",a).where("fecha","<=",b).onSnapshot(q=>{S.citasSem=q.docs.map(d=>({id:d.id,...d.data()}));render()},err);
+  S.unsubSem=S.db.collection("citas").where("fecha",">=",a).where("fecha","<=",b).onSnapshot(q=>{S.citasSem=q.docs.map(d=>({id:d.id,...d.data()}));syncOcup(a,b);render()},err);
   S.unsubMan=S.db.collection("citas").where("fecha","==",masDias(hoy(),1)).onSnapshot(q=>{S.citasMan=q.docs.map(d=>({id:d.id,...d.data()}));render()},err);
 }
 function err(e){console.warn(e);if(e&&e.code==="revoked"){S.offline=true;render()}}
@@ -243,6 +244,7 @@ function subDia(){
 
 /* ---------- Render ---------- */
 function render(){
+  if(S.admin&&S.ready&&S.servs.length)pubCatDeb();
   document.querySelectorAll("#nav button").forEach(b=>{b.setAttribute("aria-current",b.dataset.tab===S.tab?"page":"false")});
   $("#tab-ajustes").hidden=!S.admin&&!S.offline;$("#tab-reportes").hidden=!S.admin&&!S.offline;
   ["cierre","clientas"].forEach(k=>{const b=document.querySelector('#nav button[data-tab="'+k+'"]');if(b)b.hidden=!!S.myPro});
@@ -578,7 +580,14 @@ function vAjustesBase(){
       <label for="cf-wsp">WhatsApp del local<input id="cf-wsp" class="m" inputmode="tel" value="${esc(S.cfg.whatsapp||"")}" placeholder="9 1234 5678"></label>
       <label for="cf-abre">Horario: abre a las<input id="cf-abre" type="time" step="900" value="${esc(S.cfg.abre||"10:00")}"></label>
       <label for="cf-cierra">Horario: cierra a las<input id="cf-cierra" type="time" step="900" value="${esc(S.cfg.cierra||"20:00")}"></label>
-    </div><div><button class="btn" data-act="cfg-agenda">Guardar</button></div></div>
+    
+      <label for="cf-cierra-sab">Sábado cierra a las (si es distinto)<input id="cf-cierra-sab" type="time" step="900" value="${esc(S.cfg.cierraSab||"")}"></label>
+      <label for="cf-ig">Instagram (opcional)<input id="cf-ig" value="${esc(S.cfg.instagram||"")}" placeholder="nuaspa.cl"></label>
+    </div>
+    <fieldset style="border:0;padding:0;margin:0;display:grid;gap:6px"><legend style="font-size:14px;font-weight:600;padding:0">Días cerrados (no aparecen en la reserva web)</legend>
+      <div class="chips">${["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"].map((d,i)=>`<label class="chip" style="min-height:40px;display:inline-flex;gap:6px;align-items:center"><input type="checkbox" id="cf-cd-${i}" ${(S.cfg.cerrados||[]).includes(i)?"checked":""}> ${d}</label>`).join("")}</div></fieldset>
+    <div class="note info"><b>Link de reserva para tus clientas</b><span><a href="${RESERVA_URL}" target="_blank" rel="noopener">${RESERVA_URL}</a> <button class="mini" data-act="copiar-reserva">Copiar</button></span><span>Muestra los servicios activos con su precio y duración, y las horas libres según esta agenda. Las solicitudes aparecen arriba de la Agenda para que las confirmes.</span></div>
+    <div class="fields" hidden></div><div><button class="btn" data-act="cfg-agenda">Guardar</button></div></div>
   <div class="panel"><h2>Profesionales</h2>
     ${S.pros.length?`<div class="tbl"><table style="min-width:560px"><thead><tr><th>Nombre</th><th>Modelo</th><th class="n">% comisión</th><th>Estado</th><th></th></tr></thead><tbody>
     ${S.pros.map(p=>`<tr><td>${esc(p.nombre)}</td><td><select id="pm-${esc(p.id)}" data-modelo="${esc(p.id)}" style="min-width:190px"><option value="">Sin definir</option>${Object.entries(MODELOS).map(([k,v])=>`<option value="${k}" ${p.modelo===k?"selected":""}>${v}</option>`).join("")}</select>${p.modelo==="transicion"?`<label for="pl-${esc(p.id)}" style="margin-top:6px">Plazo para presentar la solicitud<input id="pl-${esc(p.id)}" type="date" value="${esc(p.limite||"")}" data-limite="${esc(p.id)}"></label>`:""}</td><td class="n"><input id="pc-${esc(p.id)}" class="m" style="width:80px;text-align:right" inputmode="numeric" value="${esc(p.comision)}" data-pct="${esc(p.id)}"></td><td>${p.activo===false?`<span class="pill n">Inactiva</span>`:`<span class="pill g">Activa</span>`}</td><td><button class="mini" data-act="toggle-pro" data-id="${esc(p.id)}">${p.activo===false?"Activar":"Desactivar"}</button></td></tr>`).join("")}
@@ -653,6 +662,7 @@ function vAgenda(){
     <div class="kpi"><span>Atendidas</span><b>${act.filter(c=>c.estado==="atendida").length}</b></div>
     <div class="kpi"><span>Valor agendado (lista)</span><b>${clp(valor)}</b></div>
   </div>
+  ${vSols()}
   ${pend.length?`<div class="note warn"><b>Recordatorios de mañana: ${pend.length} sin enviar</b><span>${pend.map(c=>`${esc(c.hora)} ${esc(c.clientaNombre)} (${esc(c.profNombre)}) <button class="mini wsp" data-act="c-wsp" data-k="recordatorio" data-id="${esc(c.id)}">Enviar</button>`).join(" · ")}</span></div>`:man.length?`<div class="note ok">Los ${man.length} recordatorios de mañana ya se enviaron.</div>`:""}
   <div class="grid-wrap"><div class="ag" style="grid-template-columns:${cols};grid-template-rows:auto repeat(${filas},14px)">${g}</div></div>
   <div class="legend">${ESTADOS.map(e=>`<span class="pill ${e[2]}">${e[1]}</span>`).join("")}<span class="pill n">Rayado = bloqueo</span><span class="pill r">Borde rojo = tope de horario</span></div>
@@ -720,7 +730,7 @@ async function guardarCita(){const {F,pro,items,dur,precio,cli}=formCita();
       :{tipo:"cita",fecha:F.fecha,hora:F.hora,dur,profId:pro.id,profNombre:pro.nombre,clientaId:cId,clientaNombre:cNom,telefono:cTel,
         servicios:items.map(s=>({id:s.id,nombre:s.nombre,precio:Number(s.precio)||0,dur:durDe(s)})),precio,origen:F.origen,nota:F.nota.trim(),modificado:now};
     if(F.id){await S.db.doc("citas/"+F.id).update(doc);toast("Cita actualizada")}
-    else{doc.estado="reservada";doc.creado=now;await S.db.collection("citas").add(doc);toast(F.tipo==="bloqueo"?"Horario bloqueado":`Agendada: ${cNom}, ${fechaCorta(F.fecha)} ${F.hora}`)}
+    else{doc.estado="reservada";doc.creado=now;const ref=await S.db.collection("citas").add(doc);if(F.solId){try{await S.db.doc("solicitudes/"+F.solId).update({estado:"agendada",citaId:ref.id,modificado:now})}catch(e){console.warn(e)}}toast(F.tipo==="bloqueo"?"Horario bloqueado":`Agendada: ${cNom}, ${fechaCorta(F.fecha)} ${F.hora}`)}
     if(F.fecha!==S.agDia){S.agDia=F.fecha;subAgenda()}
     S.form=null;render();
   }catch(e){fail(e)}
@@ -733,6 +743,29 @@ function msjWsp(c,k){const nom=String(c.clientaNombre||"").split(" ")[0]||"";con
   if(k==="recordatorio")return`Hola ${nom}! Te recordamos tu hora en ${local}${dir}: ${fechaLarga(c.fecha)} a las ${c.hora}, ${sv} con ${c.profNombre}. Si no puedes asistir, avísanos por aquí para liberar el horario. ¡Te esperamos!`;
   if(k==="cancelada")return`Hola ${nom}, te escribimos de ${local}. Tu hora del ${fechaLarga(c.fecha)} a las ${c.hora} quedó cancelada. Si quieres reagendar, respóndenos y te buscamos un nuevo horario.`;
   return`Hola ${nom}! Te escribimos de ${local} para confirmar tu hora: ${fechaLarga(c.fecha)} a las ${c.hora}, ${sv} con ${c.profNombre}. ¿Nos confirmas tu asistencia? Responde SÍ, o avísanos si necesitas cambiarla.`}
+/* --- Reserva web: catálogo público, horas ocupadas y solicitudes --- */
+const RESERVA_URL="https://surtax2026.github.io/surcaja/reserva.html";
+function stable(o){if(Array.isArray(o))return"["+o.map(stable).join(",")+"]";if(o&&typeof o==="object")return"{"+Object.keys(o).sort().map(k=>JSON.stringify(k)+":"+stable(o[k])).join(",")+"}";return JSON.stringify(o)}
+let _pubT=null,_pubH=null;
+function pubCatDeb(){clearTimeout(_pubT);_pubT=setTimeout(pubCat,1500)}
+async function pubCat(){if(!S.admin||!S.db||!S.servs.length||!S.pros.length)return;
+  const cat={local:S.cfg.local||"NÚASPA",direccion:S.cfg.direccion||"",whatsapp:S.cfg.whatsapp||"",instagram:S.cfg.instagram||"",abre:S.cfg.abre||"10:00",cierra:S.cfg.cierra||"20:00",cierraSab:S.cfg.cierraSab||"",cerrados:S.cfg.cerrados||[],
+    profesionales:S.pros.filter(p=>p.activo!==false&&p.web!==false).map(p=>({id:p.id,nombre:p.nombre})),
+    servicios:S.servs.filter(s=>s.activo!==false&&s.web!==false).map(s=>({id:s.id,nombre:s.nombre,categoria:s.categoria||"Servicios",precio:Number(s.precio)||0,duracion:durDe(s)}))};
+  const h=stable(cat);if(h===_pubH)return;
+  try{const cur=await S.db.doc("publico/catalogo").get();if(cur.exists){const c=Object.assign({},cur.data());delete c.actualizado;if(stable(c)===h){_pubH=h;return}}
+    await S.db.doc("publico/catalogo").set(Object.assign({},cat,{actualizado:new Date().toISOString()}));_pubH=h}catch(e){console.warn("catálogo web",e)}}
+const _ocH={};
+function syncOcup(a,b){if(S.myPro||!S.db)return;const h0=hoy();
+  for(let f=a;f<=b;f=masDias(f,1)){if(f<h0)continue;
+    const slots=S.citasSem.filter(c=>c.fecha===f&&activa(c)&&c.profId&&c.hora).map(c=>({p:c.profId,h:c.hora,d:Number(c.dur)||PASO})).sort((x,y)=>(x.p+x.h).localeCompare(y.p+y.h));
+    const h=JSON.stringify(slots);if(_ocH[f]===h)continue;_ocH[f]=h;
+    S.db.doc("ocupado/"+f).set({slots,act:new Date().toISOString()}).catch(e=>{console.warn("ocupado",e);delete _ocH[f]})}}
+function solServs(s){return(s.servicios||[]).map(id=>{const x=S.servs.find(v=>v.id===id);return x?x.nombre:"(servicio)"}).join(", ")}
+function vSols(){const L=S.sols||[];if(!L.length)return"";
+  return`<div class="panel" style="border-color:var(--amber)"><h2>Solicitudes de la reserva web (${L.length})</h2><p class="muted">Llegaron desde el link de reserva. Agéndalas y confírmale a la clienta por WhatsApp.</p>
+  <div class="sel-list">${L.map(s=>{const pro=S.pros.find(p=>p.id===s.profId);return`<div class="sel-item" style="flex-wrap:wrap;gap:8px"><span style="display:grid;gap:2px"><b>${esc(s.nombre)} · ${esc(fechaCorta(s.fecha))} ${esc(s.hora)}</b><span class="muted" style="font-size:13px">${esc(solServs(s))} · ${esc(pro?pro.nombre:"Cualquier profesional")} · ${esc(s.telefono)}${s.nota?" · “"+esc(s.nota)+"”":""}</span></span>
+  <span class="row-btns"><button class="mini" data-act="sol-agendar" data-id="${esc(s.id)}">Agendar</button><button class="mini wsp" data-act="sol-wsp" data-id="${esc(s.id)}">WhatsApp</button><button class="mini" data-act="sol-desc" data-id="${esc(s.id)}">Descartar</button></span></div>`}).join("")}</div></div>`}
 async function enviarWsp(c,k){const t=telNorm(c.telefono);if(!t){toast("Esta clienta no tiene WhatsApp registrado");return}
   window.open("https://wa.me/"+t+"?text="+encodeURIComponent(msjWsp(c,k)),"_blank","noopener");
   const up={modificado:new Date().toISOString()};if(k==="recordatorio")up.recordado=up.modificado;if(k==="confirmacion")up.avisado=up.modificado;
@@ -827,8 +860,16 @@ document.addEventListener("click",async ev=>{
   if(a==="cli-guardar"){const n=$("#cl-nom").value.trim();if(!n){toast("El nombre no puede quedar vacío");return}
     await S.db.doc("clientas/"+id).update({nombre:n,telefono:$("#cl-tel").value.trim(),correo:$("#cl-mail").value.trim(),cumple:$("#cl-cumple").value.trim(),notas:$("#cl-notas").value.trim(),modificado:new Date().toISOString()});toast("Ficha guardada");return}
   if(a==="cli-agendar"){const c=S.clientas.find(x=>x.id===id);S.tab="agenda";nuevaForm({cliId:id,fecha:S.agDia});window.scrollTo(0,0);return}
+  if(a==="sol-agendar"){const s=(S.sols||[]).find(x=>x.id===id);if(!s)return;const cli=S.clientas.find(c=>telNorm(c.telefono)&&telNorm(c.telefono)===telNorm(s.telefono));
+    if(s.fecha&&lunesDe(s.fecha)!==lunesDe(S.agDia)){S.agDia=s.fecha;subAgenda()}else if(s.fecha)S.agDia=s.fecha;S.tab="agenda";
+    nuevaForm({pro:s.profId||undefined,fecha:s.fecha||S.agDia,hora:s.hora||"",items:(s.servicios||[]).filter(x=>S.servs.find(v=>v.id===x)),cliId:cli?cli.id:null,cliNom:cli?"":s.nombre,cliTel:cli?"":s.telefono,origen:"web",nota:s.nota||"",solId:s.id});return}
+  if(a==="sol-wsp"){const s=(S.sols||[]).find(x=>x.id===id);if(!s)return;const t=telNorm(s.telefono);if(!t){toast("El teléfono no es válido");return}
+    const nom=String(s.nombre||"").split(" ")[0];const m=`Hola ${nom}! Te escribimos de ${S.cfg.local||"NÚASPA"}. Recibimos tu solicitud de hora para el ${fechaLarga(s.fecha)} a las ${s.hora} (${solServs(s)}). `;
+    window.open("https://wa.me/"+t+"?text="+encodeURIComponent(m),"_blank","noopener");return}
+  if(a==="sol-desc"){await S.db.doc("solicitudes/"+id).update({estado:"descartada",modificado:new Date().toISOString()});toast("Solicitud descartada");return}
+  if(a==="copiar-reserva"){try{await navigator.clipboard.writeText(RESERVA_URL);toast("Link copiado")}catch(e){toast(RESERVA_URL)}return}
   if(a==="cfg-agenda"){const v=k=>$(k).value.trim();
-    await S.db.doc("config/general").set(Object.assign({},S.cfg,{local:v("#cf-local")||"NÚASPA",direccion:v("#cf-dir"),whatsapp:v("#cf-wsp"),abre:v("#cf-abre")||"10:00",cierra:v("#cf-cierra")||"20:00"}));toast("Datos de la agenda guardados");return}
+    await S.db.doc("config/general").set(Object.assign({},S.cfg,{local:v("#cf-local")||"NÚASPA",direccion:v("#cf-dir"),whatsapp:v("#cf-wsp"),abre:v("#cf-abre")||"10:00",cierra:v("#cf-cierra")||"20:00",instagram:v("#cf-ig").replace(/^@/,""),cierraSab:v("#cf-cierra-sab"),cerrados:[0,1,2,3,4,5,6].filter(i=>{const c=$("#cf-cd-"+i);return c&&c.checked})}));toast("Datos de la agenda guardados");return}
   if(a==="sel-limpiar"){S.sel={pro:null,items:{},cobrado:null,manual:false,propina:"",medio:"tarjeta",op:"",nota:""};render();return}
   if(a==="pro"){sel.pro=sel.pro===id?null:id;render();return}
   if(a==="svc"){sel.items[id]=(sel.items[id]||0)+1;render();return}
