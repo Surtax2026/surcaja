@@ -744,7 +744,7 @@ function msjWsp(c,k){const nom=String(c.clientaNombre||"").split(" ")[0]||"";con
   if(k==="cancelada")return`Hola ${nom}, te escribimos de ${local}. Tu hora del ${fechaLarga(c.fecha)} a las ${c.hora} quedó cancelada. Si quieres reagendar, respóndenos y te buscamos un nuevo horario.`;
   return`Hola ${nom}! Te escribimos de ${local} para confirmar tu hora: ${fechaLarga(c.fecha)} a las ${c.hora}, ${sv} con ${c.profNombre}. ¿Nos confirmas tu asistencia? Responde SÍ, o avísanos si necesitas cambiarla.`}
 /* --- Reserva web: catálogo público, horas ocupadas y solicitudes --- */
-const RESERVA_URL="https://surtax2026.github.io/surcaja/reserva.html";
+const RESERVA_URL="https://reserva.nuaspa.cl";
 function stable(o){if(Array.isArray(o))return"["+o.map(stable).join(",")+"]";if(o&&typeof o==="object")return"{"+Object.keys(o).sort().map(k=>JSON.stringify(k)+":"+stable(o[k])).join(",")+"}";return JSON.stringify(o)}
 let _pubT=null,_pubH=null;
 function pubCatDeb(){clearTimeout(_pubT);_pubT=setTimeout(pubCat,1500)}
