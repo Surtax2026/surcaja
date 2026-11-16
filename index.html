@@ -251,6 +251,7 @@ function render(){
   document.querySelectorAll("#nav button").forEach(b=>{b.setAttribute("aria-current",b.dataset.tab===S.tab?"page":"false")});
   $("#tab-ajustes").hidden=!S.admin&&!S.offline;$("#tab-reportes").hidden=!S.admin&&!S.offline;
   ["cierre","clientas"].forEach(k=>{const b=document.querySelector('#nav button[data-tab="'+k+'"]');if(b)b.hidden=!!S.myPro});
+  {const bl=document.querySelector('#nav button[data-tab="liquidacion"]');if(bl)bl.hidden=S.rol==="caja";if(S.rol==="caja"&&S.tab==="liquidacion")S.tab="agenda";}
   {const nc=document.getElementById("nav-contratos");if(nc)nc.hidden=!S.admin;const ng=document.getElementById("nav-gastos");if(ng)ng.hidden=!S.admin;const ne=document.getElementById("nav-estad");if(ne)ne.hidden=!S.admin;const nq=document.getElementById("nav-gc");if(nq)nq.hidden=!S.admin;}
   const app=$("#app");
   if(S.offline){app.innerHTML=`<div class="empty"><strong>La caja no está conectada en esta vista</strong><span>Ábrela desde claude.ai con tu sesión iniciada para registrar y ver los servicios.</span></div>`;return}
@@ -322,7 +323,7 @@ function preview(cobrado,pro,r){
   const prop=int(S.sel.propina);
   return `<div class="line"><span class="muted">Compra (sin IVA)</span><b>${clp(r.neto)}</b></div>
   <div class="line"><span class="muted">IVA 19%</span><b>${clp(r.iva)}</b></div>
-  <div class="line"><span>Comisión ${pro?esc(pro.nombre)+" ("+(pro.comision||0)+"%)":"profesional"}</span><b>${clp(r.com)}</b></div>
+  ${S.rol==="caja"?"":`<div class="line"><span>Comisión ${pro?esc(pro.nombre)+" ("+(pro.comision||0)+"%)":"profesional"}</span><b>${clp(r.com)}</b></div>`}
   <div class="line"><span>Propina (100% de la profesional)</span><b>${clp(prop)}</b></div>
   <div class="line big"><span>Total del ticket</span><b>${clp(cobrado+prop)}</b></div>`;
 }
@@ -355,11 +356,11 @@ function vDia(){
     <div class="kpi"><span>IVA del día</span><b>${clp(t.iva)}</b></div>
     <div class="kpi"><span>Propinas</span><b>${clp(t.prop)}</b></div>
     <div class="kpi"><span>Total cobrado (con propinas)</span><b>${clp(t.venta+t.prop)}</b></div>
-    <div class="kpi"><span>Comisiones</span><b>${clp(t.com)}</b></div>
-    <div class="kpi"><span>Queda al salón (sin IVA)</span><b>${clp(t.neto-t.com)}</b></div>
+    ${S.rol==="caja"?"":`<div class="kpi"><span>Comisiones</span><b>${clp(t.com)}</b></div>
+    <div class="kpi"><span>Queda al salón (sin IVA)</span><b>${clp(t.neto-t.com)}</b></div>`}
   </div>
-  ${S.regsDia.length?`<div class="tbl"><table><thead><tr><th>Hora</th><th>Profesional</th><th>Servicio</th><th>Medio</th><th>Operación</th><th class="n">Compra</th><th class="n">IVA 19%</th><th class="n">Propina</th><th class="n">Total ticket</th><th class="n">Comisión</th><th></th></tr></thead><tbody>
-  ${S.regsDia.map(r=>{const c=calc(r.venta,r.comisionPct,r.base,r.medio);const an=r.estado==="anulado";return`<tr class="${an?"void":""}"><td class="num">${esc(r.hora)}</td><td>${esc(r.profNombre)}</td><td>${esc((r.servicios||[]).map(s=>(s.cantidad>1?s.cantidad+"× ":"")+s.nombre).join(", "))}${r.nota?`<br><span class="muted" style="font-size:12px">${esc(r.nota)}</span>`:""}</td><td>${esc(medioTxt(r.medio))}</td><td class="num">${esc(r.operacion||"—")}</td><td class="n">${clp(c.neto)}</td><td class="n">${clp(c.iva)}</td><td class="n">${clp(r.propina)}</td><td class="n"><b>${clp(r.venta+(r.propina||0))}</b></td><td class="n">${clp(c.com)}</td><td>${S.admin?`${an?"":`<button class="mini" data-act="editar" data-id="${esc(r.id)}">Editar</button> `}<button class="mini" data-act="${an?"restaurar":"anular"}" data-id="${esc(r.id)}">${an?"Restaurar":"Anular"}</button>`:(an?`<span class="pill n">Anulado</span>`:"")}</td></tr>`}).join("")}
+  ${S.regsDia.length?`<div class="tbl"><table><thead><tr><th>Hora</th><th>Profesional</th><th>Servicio</th><th>Medio</th><th>Operación</th><th class="n">Compra</th><th class="n">IVA 19%</th><th class="n">Propina</th><th class="n">Total ticket</th>${S.rol==="caja"?"":`<th class="n">Comisión</th>`}<th></th></tr></thead><tbody>
+  ${S.regsDia.map(r=>{const c=calc(r.venta,r.comisionPct,r.base,r.medio);const an=r.estado==="anulado";return`<tr class="${an?"void":""}"><td class="num">${esc(r.hora)}</td><td>${esc(r.profNombre)}</td><td>${esc((r.servicios||[]).map(s=>(s.cantidad>1?s.cantidad+"× ":"")+s.nombre).join(", "))}${r.nota?`<br><span class="muted" style="font-size:12px">${esc(r.nota)}</span>`:""}</td><td>${esc(medioTxt(r.medio))}</td><td class="num">${esc(r.operacion||"—")}</td><td class="n">${clp(c.neto)}</td><td class="n">${clp(c.iva)}</td><td class="n">${clp(r.propina)}</td><td class="n"><b>${clp(r.venta+(r.propina||0))}</b></td>${S.rol==="caja"?"":`<td class="n">${clp(c.com)}</td>`}<td>${S.admin?`${an?"":`<button class="mini" data-act="editar" data-id="${esc(r.id)}">Editar</button> `}<button class="mini" data-act="${an?"restaurar":"anular"}" data-id="${esc(r.id)}">${an?"Restaurar":"Anular"}</button>`:(an?`<span class="pill n">Anulado</span>`:"")}</td></tr>`}).join("")}
   </tbody></table></div>`:`<div class="empty"><strong>No hay servicios registrados este día</strong><span>Los servicios aparecen aquí apenas se guardan en Registrar.</span></div>`}`;
 }
 const medioTxt=k=>(MEDIOS.find(m=>m[0]===k)||[k,k])[1];
@@ -1032,7 +1033,7 @@ async function guardar(){
     if(sel.citaId){try{await S.db.doc("citas/"+sel.citaId).update({estado:"atendida",registroId:ref.id,venta,modificado:now.toISOString()})}catch(e){console.warn(e)}}
     if(sel.clientaId){try{await S.db.doc("clientas/"+sel.clientaId).update({ultimaVisita:doc.fecha})}catch(e){console.warn(e)}}
     const c=calc(venta,doc.comisionPct,doc.base);
-    toast(`Guardado: ${pro.nombre}, comisión ${clp(c.com)}${doc.propina?" + propina "+clp(doc.propina):""}`);
+    toast(S.rol==="caja"?`Guardado: ${pro.nombre}`:`Guardado: ${pro.nombre}, comisión ${clp(c.com)}${doc.propina?" + propina "+clp(doc.propina):""}`);
     const fk=S.sel.fecha;S.sel={pro:null,items:{},cobrado:null,manual:false,propina:"",medio:"tarjeta",op:"",nota:"",fecha:fk};
   }catch(e){const m=String(e&&e.message||"");if(m.startsWith("gc-saldo:"))toast("Saldo insuficiente: a la gift card le quedan "+clp(+m.split(":")[1])+". No se guardó el servicio.");else if(m.startsWith("gc-estado:"))toast("La gift card está "+m.split(":")[1]+". No se guardó el servicio.");else fail(e)}
   S.saving=false;render();
