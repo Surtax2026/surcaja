@@ -112,7 +112,7 @@ body.wide .grid-wrap{max-height:calc(100vh - 130px)}
 .ag .th{position:sticky;top:0;z-index:3;background:var(--bg);border-bottom:1px solid var(--line);padding:8px;font-weight:700;font-size:14px;text-align:center}
 .ag .tl{position:sticky;left:0;z-index:2;background:var(--surface);font:500 11px var(--f-mono);color:var(--muted);padding:0 6px;border-right:1px solid var(--line);text-align:right;line-height:1;padding-top:2px}
 .ag .th.tl{z-index:4;background:var(--bg)}
-.ag .cita.l0{justify-self:stretch;margin-right:50%} .ag .cita.l1{margin-left:50%}
+.ag .cita.lado.uno{white-space:normal;display:block;line-height:1.15}.ag .cita.lado.uno span{display:none}
 .ag .cell{border:0;border-top:1px solid transparent;border-left:1px solid var(--line);background:transparent;cursor:pointer;padding:0;min-height:0}
 .ag .cell.h{border-top-color:var(--line)}
 .ag .cell.fuera{background:repeating-linear-gradient(135deg,transparent,transparent 5px,var(--line) 5px,var(--line) 6px);cursor:not-allowed}
@@ -665,19 +665,22 @@ function vAgenda(){
   const week=Array.from({length:7},(_,i)=>{const f=masDias(L,i);const n=citasDe(f).filter(c=>c.tipo!=="bloqueo"&&activa(c)).length;const [y,m,d]=f.split("-").map(Number);
     return`<button class="wd ${f===hoy()?"today":""}" data-act="ag-dia" data-f="${f}" aria-pressed="${f===S.agDia}"><small>${new Date(y,m-1,d).toLocaleDateString("es-CL",{weekday:"short"})}</small><b>${d}</b><i>${n?n+" cita"+(n>1?"s":""):"&nbsp;"}</i></button>`}).join("");
   const filas=(H.b-H.a)/PASO;
-  const cols=`56px repeat(${pros.length},minmax(170px,1fr))`;const SUB=5,ROWU=9,K=PASO/SUB;
+  const lane={},nl={},maxL={};pros.forEach(p=>{const L=dia.filter(c=>c.profId===p.id).sort((a,b)=>toMin(a.hora)-toMin(b.hora));let grp=[],ends=[],fin=-1;
+    const cerrar=()=>{const n=ends.length||1;grp.forEach(c=>nl[c.id]=n);maxL[p.id]=Math.max(maxL[p.id]||1,n);grp=[];ends=[]};
+    L.forEach(c=>{const a=toMin(c.hora),b=a+(Number(c.dur)||PASO);if(a>=fin)cerrar();let k=ends.findIndex(e=>e<=a);if(k<0){k=ends.length;ends.push(0)}ends[k]=b;lane[c.id]=k;grp.push(c);fin=Math.max(fin,b)});cerrar()});
+  const cols=`56px ${pros.map(p=>`minmax(${170*Math.min(3,maxL[p.id]||1)}px,${maxL[p.id]||1}fr)`).join(" ")}`;const SUB=5,ROWU=9,K=PASO/SUB;
   let g=`<div class="th tl" style="grid-row:1;grid-column:1"></div>`+pros.map((p,i)=>{const hp=horPro(p,S.agDia);const bl=bloqueadoTodoDia(p.id,S.agDia);return`<div class="th" style="grid-row:1;grid-column:${i+2}"><span class="av" style="background:${colorPro(p.id)}" aria-hidden="true">${esc(String(p.nombre||"?").charAt(0).toUpperCase())}</span>${esc(p.nombre)}<small style="display:block;font-weight:500;color:var(--muted);font-size:11px">${bl?"No viene":hp?fromMin(hp.a)+"–"+fromMin(hp.b):"No trabaja"}</small>${!S.myPro&&hp&&!bl?`<button class="mini" data-act="ag-noviene" data-pro="${esc(p.id)}">No viene</button>`:""}</div>`}).join("");
   const ahora=new Date(),nowMin=ahora.getHours()*60+ahora.getMinutes();
   for(let r=0;r<filas;r++){const m=H.a+r*PASO,row=r*K+2,hh=m%30===0;
     if(hh)g+=`<div class="tl ${S.agDia===hoy()&&nowMin>=m&&nowMin<m+30?"now":""}" style="grid-row:${row}/span ${K};grid-column:1">${fromMin(m)}</div>`;
     pros.forEach((p,i)=>{const hp=horPro(p,S.agDia);const out=!hp||m<hp.a||m>=hp.b;g+=`<button class="cell ${hh?"h":""} ${out?"fuera":""}" style="grid-row:${row}/span ${K};grid-column:${i+2}" data-act="ag-nueva" data-pro="${esc(p.id)}" data-hora="${fromMin(m)}" data-fuera="${out?1:""}" aria-label="${out?"Fuera de horario":"Nueva cita"} ${esc(p.nombre)} ${fromMin(m)}"></button>`})}
-  const lane={};pros.forEach(p=>{const ends=[];dia.filter(c=>c.profId===p.id).sort((a,b)=>toMin(a.hora)-toMin(b.hora)).forEach(c=>{const a=toMin(c.hora);let k=ends.findIndex(e=>e<=a);if(k<0){k=ends.length;ends.push(0)}ends[k]=a+(Number(c.dur)||PASO);lane[c.id]=k})});
+  
   dia.forEach(c=>{const i=pros.findIndex(p=>p.id===c.profId);if(i<0)return;
     const st=Math.max(0,Math.round((toMin(c.hora)-H.a)/SUB)),span=Math.max(2,Math.round((Number(c.dur)||PASO)/SUB));
     const ch=activa(c)&&choques(c,dia).length;
-    const ln=ch?" l"+Math.min(1,lane[c.id]||0):"";
+    const n=nl[c.id]||1,ln=n>1?" lado":"",pos=n>1?`;justify-self:start;width:calc(100% / ${n} - 4px);margin-left:calc(${lane[c.id]||0} * 100% / ${n} + 2px);margin-right:0`:"";
     const sv=esc((c.servicios||[]).map(x=>x.nombre).join(", ")),est=c.estado==="confirmada"?"✓":c.estado==="llego"?"Llegó":c.estado==="atendida"?"✔ Atendida":c.estado==="noasistio"?"No asistió":"";
-    g+=`<button class="cita ${c.tipo==="bloqueo"?"bloqueo":esc(c.estado)} ${ch?"choque":""}${ln} ${span<=4?"uno":""}" style="--pc:${colorPro(c.profId)};grid-row:${st+2}/span ${span};grid-column:${i+2}" data-act="ag-abrir" data-id="${esc(c.id)}" title="${esc(c.hora)} ${esc(c.clientaNombre||c.motivo||"")} · ${sv} · ${esc(estTxt(c.estado)[1])}">
+    g+=`<button class="cita ${c.tipo==="bloqueo"?"bloqueo":esc(c.estado)} ${ch?"choque":""}${ln} ${span<=4?"uno":""}" style="--pc:${colorPro(c.profId)};grid-row:${st+2}/span ${span};grid-column:${i+2}${pos}" data-act="ag-abrir" data-id="${esc(c.id)}" title="${esc(c.hora)} ${esc(c.clientaNombre||c.motivo||"")} · ${sv} · ${esc(estTxt(c.estado)[1])}">
       ${c.tipo!=="bloqueo"&&est&&span>K?`<i class="est">${est}</i>`:""}<b>${esc(c.hora)} ${c.tipo==="bloqueo"?esc(c.motivo||"Bloqueado"):esc(c.clientaNombre||"Sin nombre")}</b>
       ${c.tipo==="bloqueo"?"":`<span>${sv}</span>${span>=3*K?`<span>${esc(estTxt(c.estado)[1])}</span>`:""}`}</button>`});
   const act=dia.filter(c=>c.tipo!=="bloqueo"&&activa(c));
