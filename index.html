@@ -126,7 +126,7 @@ body.wide .grid-wrap{max-height:calc(100vh - 130px)}
 .ag .cita.confirmada{border-left-color:var(--pc);background:var(--pc);color:#fff}
 .ag .cita.confirmada span{color:rgba(255,255,255,.88)}
 .ag .cita.uno b{display:inline;font-size:12px}.ag .cita.uno span{display:inline;margin-left:6px}
-.ag .cita.uno{padding:2px 7px;white-space:nowrap;display:flex;align-items:center;gap:0}
+.ag .cita.uno{padding:0 7px;line-height:1.1;white-space:nowrap;display:flex;align-items:center;gap:0}
 .ag .cita .est{float:right;font-size:11px;font-weight:700;margin-left:6px}
 .ag .th .av{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;color:#fff;font-weight:700;font-size:13px;margin-right:6px;vertical-align:middle}
 .ag .cita.llego{border-left-color:var(--pc);background:var(--pc);color:#fff;outline:3px solid var(--amber);outline-offset:-3px}
@@ -597,6 +597,7 @@ function vAjustesBase(){
     <div class="fields">
       <label for="cf-local">Nombre en los mensajes<input id="cf-local" value="${esc(S.cfg.local||"NÚASPA")}"></label>
       <label for="cf-dir">Dirección (opcional)<input id="cf-dir" value="${esc(S.cfg.direccion||"")}" placeholder="Ej. Local 9, Puerto Varas"></label>
+      <label for="cf-wspmodo">En este computador, los avisos se abren en<select id="cf-wspmodo" data-act="wsp-modo"><option value="app" ${wspModo()==="app"?"selected":""}>WhatsApp instalado (app)</option><option value="web" ${wspModo()==="web"?"selected":""}>WhatsApp Web (pestaña del navegador)</option></select></label>
       <label for="cf-wsp">WhatsApp del local<input id="cf-wsp" class="m" inputmode="tel" value="${esc(S.cfg.whatsapp||"")}" placeholder="9 1234 5678"></label>
       <label for="cf-abre">Horario: abre a las<input id="cf-abre" type="time" step="900" value="${esc(S.cfg.abre||"10:00")}"></label>
       <label for="cf-cierra">Horario: cierra a las<input id="cf-cierra" type="time" step="900" value="${esc(S.cfg.cierra||"20:00")}"></label>
@@ -664,21 +665,21 @@ function vAgenda(){
   const week=Array.from({length:7},(_,i)=>{const f=masDias(L,i);const n=citasDe(f).filter(c=>c.tipo!=="bloqueo"&&activa(c)).length;const [y,m,d]=f.split("-").map(Number);
     return`<button class="wd ${f===hoy()?"today":""}" data-act="ag-dia" data-f="${f}" aria-pressed="${f===S.agDia}"><small>${new Date(y,m-1,d).toLocaleDateString("es-CL",{weekday:"short"})}</small><b>${d}</b><i>${n?n+" cita"+(n>1?"s":""):"&nbsp;"}</i></button>`}).join("");
   const filas=(H.b-H.a)/PASO;
-  const cols=`56px repeat(${pros.length},minmax(170px,1fr))`;const ROWH=24;
+  const cols=`56px repeat(${pros.length},minmax(170px,1fr))`;const SUB=5,ROWU=9,K=PASO/SUB;
   let g=`<div class="th tl" style="grid-row:1;grid-column:1"></div>`+pros.map((p,i)=>{const hp=horPro(p,S.agDia);const bl=bloqueadoTodoDia(p.id,S.agDia);return`<div class="th" style="grid-row:1;grid-column:${i+2}"><span class="av" style="background:${colorPro(p.id)}" aria-hidden="true">${esc(String(p.nombre||"?").charAt(0).toUpperCase())}</span>${esc(p.nombre)}<small style="display:block;font-weight:500;color:var(--muted);font-size:11px">${bl?"No viene":hp?fromMin(hp.a)+"–"+fromMin(hp.b):"No trabaja"}</small>${!S.myPro&&hp&&!bl?`<button class="mini" data-act="ag-noviene" data-pro="${esc(p.id)}">No viene</button>`:""}</div>`}).join("");
   const ahora=new Date(),nowMin=ahora.getHours()*60+ahora.getMinutes();
-  for(let r=0;r<filas;r++){const m=H.a+r*PASO,row=r+2,hh=m%30===0;
-    if(hh)g+=`<div class="tl ${S.agDia===hoy()&&nowMin>=m&&nowMin<m+30?"now":""}" style="grid-row:${row};grid-column:1">${fromMin(m)}</div>`;
-    pros.forEach((p,i)=>{const hp=horPro(p,S.agDia);const out=!hp||m<hp.a||m>=hp.b;g+=`<button class="cell ${hh?"h":""} ${out?"fuera":""}" style="grid-row:${row};grid-column:${i+2}" data-act="ag-nueva" data-pro="${esc(p.id)}" data-hora="${fromMin(m)}" data-fuera="${out?1:""}" aria-label="${out?"Fuera de horario":"Nueva cita"} ${esc(p.nombre)} ${fromMin(m)}"></button>`})}
+  for(let r=0;r<filas;r++){const m=H.a+r*PASO,row=r*K+2,hh=m%30===0;
+    if(hh)g+=`<div class="tl ${S.agDia===hoy()&&nowMin>=m&&nowMin<m+30?"now":""}" style="grid-row:${row}/span ${K};grid-column:1">${fromMin(m)}</div>`;
+    pros.forEach((p,i)=>{const hp=horPro(p,S.agDia);const out=!hp||m<hp.a||m>=hp.b;g+=`<button class="cell ${hh?"h":""} ${out?"fuera":""}" style="grid-row:${row}/span ${K};grid-column:${i+2}" data-act="ag-nueva" data-pro="${esc(p.id)}" data-hora="${fromMin(m)}" data-fuera="${out?1:""}" aria-label="${out?"Fuera de horario":"Nueva cita"} ${esc(p.nombre)} ${fromMin(m)}"></button>`})}
   const lane={};pros.forEach(p=>{const ends=[];dia.filter(c=>c.profId===p.id).sort((a,b)=>toMin(a.hora)-toMin(b.hora)).forEach(c=>{const a=toMin(c.hora);let k=ends.findIndex(e=>e<=a);if(k<0){k=ends.length;ends.push(0)}ends[k]=a+(Number(c.dur)||PASO);lane[c.id]=k})});
   dia.forEach(c=>{const i=pros.findIndex(p=>p.id===c.profId);if(i<0)return;
-    const st=Math.max(0,Math.round((toMin(c.hora)-H.a)/PASO)),span=Math.max(1,Math.round((Number(c.dur)||PASO)/PASO));
+    const st=Math.max(0,Math.round((toMin(c.hora)-H.a)/SUB)),span=Math.max(2,Math.round((Number(c.dur)||PASO)/SUB));
     const ch=activa(c)&&choques(c,dia).length;
     const ln=ch?" l"+Math.min(1,lane[c.id]||0):"";
     const sv=esc((c.servicios||[]).map(x=>x.nombre).join(", ")),est=c.estado==="confirmada"?"✓":c.estado==="llego"?"Llegó":c.estado==="atendida"?"✔ Atendida":c.estado==="noasistio"?"No asistió":"";
-    g+=`<button class="cita ${c.tipo==="bloqueo"?"bloqueo":esc(c.estado)} ${ch?"choque":""}${ln} ${span<=1?"uno":""}" style="--pc:${colorPro(c.profId)};grid-row:${st+2}/span ${span};grid-column:${i+2}" data-act="ag-abrir" data-id="${esc(c.id)}" title="${esc(c.hora)} ${esc(c.clientaNombre||c.motivo||"")} · ${sv} · ${esc(estTxt(c.estado)[1])}">
-      ${c.tipo!=="bloqueo"&&est&&span>1?`<i class="est">${est}</i>`:""}<b>${esc(c.hora)} ${c.tipo==="bloqueo"?esc(c.motivo||"Bloqueado"):esc(c.clientaNombre||"Sin nombre")}</b>
-      ${c.tipo==="bloqueo"?"":`<span>${sv}</span>${span>=3?`<span>${esc(estTxt(c.estado)[1])}</span>`:""}`}</button>`});
+    g+=`<button class="cita ${c.tipo==="bloqueo"?"bloqueo":esc(c.estado)} ${ch?"choque":""}${ln} ${span<=4?"uno":""}" style="--pc:${colorPro(c.profId)};grid-row:${st+2}/span ${span};grid-column:${i+2}" data-act="ag-abrir" data-id="${esc(c.id)}" title="${esc(c.hora)} ${esc(c.clientaNombre||c.motivo||"")} · ${sv} · ${esc(estTxt(c.estado)[1])}">
+      ${c.tipo!=="bloqueo"&&est&&span>K?`<i class="est">${est}</i>`:""}<b>${esc(c.hora)} ${c.tipo==="bloqueo"?esc(c.motivo||"Bloqueado"):esc(c.clientaNombre||"Sin nombre")}</b>
+      ${c.tipo==="bloqueo"?"":`<span>${sv}</span>${span>=3*K?`<span>${esc(estTxt(c.estado)[1])}</span>`:""}`}</button>`});
   const act=dia.filter(c=>c.tipo!=="bloqueo"&&activa(c));
   const valor=act.reduce((a,c)=>a+(Number(c.precio)||0),0);
   const man=S.citasMan.filter(c=>c.tipo!=="bloqueo"&&(c.estado==="reservada"||c.estado==="confirmada"));
@@ -697,14 +698,14 @@ function vAgenda(){
   ${vSols()}
   ${pend.length?`<div class="note warn"><b>Recordatorios de mañana: ${pend.length} sin enviar</b><span>${pend.map(c=>`${esc(c.hora)} ${esc(c.clientaNombre)} (${esc(c.profNombre)}) <button class="mini wsp" data-act="c-wsp" data-k="recordatorio" data-id="${esc(c.id)}">Enviar</button>`).join(" · ")}</span></div>`:man.length?`<div class="note ok">Los ${man.length} recordatorios de mañana ya se enviaron.</div>`:""}
   ${!S.myPro&&(ocultas>0||S.agTodas)?`<div class="row-btns" style="justify-content:space-between;align-items:center"><span class="muted" style="font-size:13px">${S.agTodas?"Mostrando a todas las profesionales.":`Se muestran solo las que atienden este día (${ocultas} oculta${ocultas>1?"s":""}).`}</span><button class="mini" data-act="ag-todas">${S.agTodas?"Solo las que atienden":"Ver todas"}</button></div>`:""}
-  <div class="grid-wrap"><div class="ag" style="grid-template-columns:${cols};grid-template-rows:auto repeat(${filas},${ROWH}px)">${g}</div></div>
+  <div class="grid-wrap"><div class="ag" style="grid-template-columns:${cols};grid-template-rows:auto repeat(${filas*K},${ROWU}px)">${g}</div></div>
   <div class="legend"><span class="pill n">Color claro = reservada</span><span class="pill n">Color fuerte ✓ = confirmada</span><span class="pill n">Borde amarillo = llegó</span><span class="pill n">Rayado = bloqueo o fuera de horario</span><span class="pill r">Borde rojo = tope de horario</span><span class="muted" style="font-size:12px">Cada profesional tiene su color.</span></div>
   <p class="status">Toca un espacio libre para agendar, o una cita para confirmarla, avisar por WhatsApp o cobrarla. Lo rayado está fuera del horario de la profesional; “No viene” bloquea su día completo.</p>`;
 }
 
 /* --- Formulario de cita --- */
 function nuevaForm(o){o=Object.fromEntries(Object.entries(o||{}).filter(([k,v])=>v!==undefined));const pros=S.pros.filter(p=>p.activo!==false);
-  S.form=Object.assign({id:null,tipo:"cita",pro:pros.length===1?pros[0].id:null,fecha:S.agDia,hora:"",dur:60,durManual:false,items:[],cliId:null,cliQ:"",cliNom:"",cliTel:"",origen:"presencial",nota:"",hasta:"",motivo:"",forzar:false},o||{});S.det=null;render()}
+  S.form=Object.assign({id:null,tipo:"cita",pro:pros.length===1?pros[0].id:null,fecha:S.agDia<hoy()?hoy():S.agDia,hora:"",dur:60,durManual:false,items:[],cliId:null,cliQ:"",cliNom:"",cliTel:"",origen:"presencial",nota:"",hasta:"",motivo:"",forzar:false},o||{});S.det=null;render()}
 function formCita(){const F=S.form,pro=S.pros.find(p=>p.id===F.pro);
   const items=F.items.map(id=>S.servs.find(s=>s.id===id)).filter(Boolean);
   const dur=F.tipo==="bloqueo"?Math.max(PASO,toMin(F.hasta)-toMin(F.hora)):(F.durManual?int(F.dur):(items.reduce((a,s)=>a+durDe(s),0)||60));
@@ -744,16 +745,20 @@ function vForm(){const {F,pro,items,dur,precio,cli}=formCita();const pros=S.pros
   ${F.tipo==="cita"&&pro&&F.hora&&(()=>{const hp=horPro(pro,F.fecha);return !hp||toMin(F.hora)<hp.a||toMin(F.hora)+dur>hp.b})()?`<div class="note warn">${esc(pro.nombre)} no atiende a esa hora según su horario. Puedes agendar igual si lo conversaron.</div>`:""}
   ${fuera?`<div class="note warn">Termina después del cierre (${esc(S.cfg.cierra||"20:00")}).</div>`:""}
   ${F.tipo==="cita"&&precio?`<div class="line"><span class="muted">Valor de lista · ${dur} min</span><b>${clp(precio)}</b></div>`:""}
+  ${!F.id&&F.fecha&&F.fecha<hoy()&&!F.err?`<div class="note warn">Ojo: estás agendando en una fecha pasada (${esc(fechaCorta(F.fecha))}).</div>`:""}
+  ${F.err?`<div class="note risk" id="f-err" role="alert"><b>Falta algo para guardar</b><span>${esc(F.err)}</span>${F.errK==="pasada"?`<span><button class="mini" data-act="f-pasada">Sí, es esa fecha</button></span>`:""}</div>`:""}
   <button class="btn" data-act="f-guardar">${F.id?"Guardar cambios":F.tipo==="bloqueo"?"Bloquear":"Agendar"}</button>`}
 
-async function guardarCita(){const {F,pro,items,dur,precio,cli}=formCita();
-  if(!pro){toast("Elige la profesional");return}
-  if(!F.fecha||!F.hora){toast("Elige fecha y hora");return}
-  if(F.tipo==="bloqueo"&&!(toMin(F.hasta)>toMin(F.hora))){toast("La hora de término debe ser posterior");return}
-  if(F.tipo==="cita"&&!cli&&!F.cliNom.trim()){toast("Indica la clienta");return}
-  if(F.tipo==="cita"&&!items.length){toast("Agrega al menos un servicio");return}
+function errForm(m,k){S.form.err=m;S.form.errK=k||"";render();setTimeout(()=>{const e=document.getElementById("f-err");if(e)e.scrollIntoView({block:"center",behavior:"smooth"})},30)}
+async function guardarCita(){if(S.form)S.form.err="";const {F,pro,items,dur,precio,cli}=formCita();
+  if(!pro){return errForm("Elige la profesional")}
+  if(!F.fecha||!F.hora){return errForm("Elige fecha y hora")}
+  if(F.tipo==="bloqueo"&&!(toMin(F.hasta)>toMin(F.hora))){return errForm("La hora de término debe ser posterior")}
+  if(F.tipo==="cita"&&!cli&&!F.cliNom.trim()){return errForm("Indica la clienta")}
+  if(F.tipo==="cita"&&!items.length){return errForm("Agrega al menos un servicio")}
   const ch=choques({id:F.id,profId:F.pro,fecha:F.fecha,hora:F.hora,dur},S.citasSem.filter(c=>c.fecha===F.fecha));
-  if(ch.length&&!F.forzar&&F.fecha>=lunesDe(S.agDia)&&F.fecha<=masDias(lunesDe(S.agDia),6)){toast("Hay un tope de horario. Revisa o toca “Agendar igual”.");render();return}
+  if(ch.length&&!F.forzar&&F.fecha>=lunesDe(S.agDia)&&F.fecha<=masDias(lunesDe(S.agDia),6)){return errForm("Hay un tope de horario con otra cita. Revisa o toca “Agendar igual”.")}
+  if(!F.id&&F.fecha<hoy()&&!F.pasadaOk)return errForm("La fecha "+fechaCorta(F.fecha)+" ya pasó. Si es correcta, toca “Sí, es esa fecha”; si no, cámbiala arriba.","pasada");
   const now=new Date().toISOString();
   try{
     let cId=cli?cli.id:null,cNom=cli?cli.nombre:"",cTel=cli?(cli.telefono||""):"";
@@ -800,8 +805,11 @@ function vSols(){const L=S.sols||[];if(!L.length)return"";
   return`<div class="panel" style="border-color:var(--amber)"><h2>Solicitudes de la reserva web (${L.length})</h2><p class="muted">Llegaron desde el link de reserva. Agéndalas y confírmale a la clienta por WhatsApp.</p>
   <div class="sel-list">${L.map(s=>{const pro=S.pros.find(p=>p.id===s.profId);return`<div class="sel-item" style="flex-wrap:wrap;gap:8px"><span style="display:grid;gap:2px"><b>${esc(s.nombre)} · ${esc(fechaCorta(s.fecha))} ${esc(s.hora)}</b><span class="muted" style="font-size:13px">${esc(solServs(s))} · ${esc(pro?pro.nombre:"Cualquier profesional")} · ${esc(s.telefono)}${s.nota?" · “"+esc(s.nota)+"”":""}</span></span>
   <span class="row-btns"><button class="mini" data-act="sol-agendar" data-id="${esc(s.id)}">Agendar</button><button class="mini wsp" data-act="sol-wsp" data-id="${esc(s.id)}">WhatsApp</button><button class="mini" data-act="sol-desc" data-id="${esc(s.id)}">Descartar</button></span></div>`}).join("")}</div></div>`}
+function wspModo(){try{return localStorage.getItem("wspModo")||"app"}catch(e){return"app"}}
+function abrirWsp(t,m){const u=wspModo()==="web"?"https://web.whatsapp.com/send?phone="+t+"&text="+encodeURIComponent(m):"https://wa.me/"+t+"?text="+encodeURIComponent(m);
+  if(wspModo()==="web"){window.open(u,"wspweb")}else window.open(u,"_blank","noopener")}
 async function enviarWsp(c,k){const t=telNorm(c.telefono);if(!t){toast("Esta clienta no tiene WhatsApp registrado");return}
-  window.open("https://wa.me/"+t+"?text="+encodeURIComponent(msjWsp(c,k)),"_blank","noopener");
+  abrirWsp(t,msjWsp(c,k));
   const up={modificado:new Date().toISOString()};if(k==="recordatorio")up.recordado=up.modificado;if(k==="confirmacion")up.avisado=up.modificado;
   try{await S.db.doc("citas/"+c.id).update(up)}catch(e){fail(e)}}
 function citaPorId(id){return S.citasSem.find(c=>c.id===id)||S.citasMan.find(c=>c.id===id)||(S.cli.hist||[]).find(c=>c.id===id)}
@@ -863,12 +871,12 @@ document.addEventListener("click",async ev=>{
   try{
   if(a==="goto"){S.tab=b.dataset.tab;render();return}
   /* agenda */
-  if(a==="sheet-bg"){if(ev.target===b){S.form=null;S.det=null;render()}return}
+  if(a==="sheet-bg"){if(ev.target===b&&!S.form){S.det=null;render()}return}
   if(a==="sheet-close"){S.form=null;S.det=null;render();return}
   if(a==="ag-dia"){S.agDia=b.dataset.f;S._agScrolled=false;S._agReset=true;render();return}
   if(a==="ag-hoy"){const w=lunesDe(S.agDia)!==lunesDe(hoy());S.agDia=hoy();S._agScrolled=false;S._agReset=true;if(w)subAgenda();render();return}
   if(a==="ag-mover"){S.agDia=masDias(S.agDia,Number(b.dataset.n));S._agScrolled=false;S._agReset=true;subAgenda();render();return}
-  if(a==="ag-nueva"){if(b.dataset.fuera&&S.myPro){toast("Ese horario está fuera de tu jornada");return}nuevaForm({pro:b.dataset.pro||undefined,hora:b.dataset.hora||""});return}
+  if(a==="ag-nueva"){if(b.dataset.fuera&&S.myPro){toast("Ese horario está fuera de tu jornada");return}nuevaForm({pro:b.dataset.pro||undefined,hora:b.dataset.hora||"",fecha:b.dataset.hora?S.agDia:undefined});return}
   if(a==="ag-todas"){S.agTodas=!S.agTodas;render();return}
   if(a==="ag-noviene"){const p=S.pros.find(x=>x.id===b.dataset.pro);const hp=horPro(p,S.agDia)||horario();nuevaForm({tipo:"bloqueo",pro:p.id,hora:fromMin(hp.a),hasta:fromMin(hp.b),motivo:"No viene"});return}
   if(a==="f-tododia"){const p=S.pros.find(x=>x.id===S.form.pro);const hp=(p&&horPro(p,S.form.fecha))||horario();S.form.hora=fromMin(hp.a);S.form.hasta=fromMin(hp.b);if(!S.form.motivo)S.form.motivo="No viene";S.form.forzar=true;render();return}
@@ -906,7 +914,7 @@ document.addEventListener("click",async ev=>{
     nuevaForm({pro:s.profId||undefined,fecha:s.fecha||S.agDia,hora:s.hora||"",items:(s.servicios||[]).filter(x=>S.servs.find(v=>v.id===x)),cliId:cli?cli.id:null,cliNom:cli?"":s.nombre,cliTel:cli?"":s.telefono,origen:"web",nota:s.nota||"",solId:s.id});return}
   if(a==="sol-wsp"){const s=(S.sols||[]).find(x=>x.id===id);if(!s)return;const t=telNorm(s.telefono);if(!t){toast("El teléfono no es válido");return}
     const nom=String(s.nombre||"").split(" ")[0];const m=`Hola ${nom}! Te escribimos de ${S.cfg.local||"NÚASPA"}. Recibimos tu solicitud de hora para el ${fechaLarga(s.fecha)} a las ${s.hora} (${solServs(s)}). `;
-    window.open("https://wa.me/"+t+"?text="+encodeURIComponent(m),"_blank","noopener");return}
+    abrirWsp(t,m);return}
   if(a==="sol-desc"){await S.db.doc("solicitudes/"+id).update({estado:"descartada",modificado:new Date().toISOString()});toast("Solicitud descartada");return}
   if(a==="copiar-reserva"){try{await navigator.clipboard.writeText(RESERVA_URL);toast("Link copiado")}catch(e){toast(RESERVA_URL)}return}
   if(a==="cfg-agenda"){const v=k=>$(k).value.trim();
@@ -933,6 +941,7 @@ document.addEventListener("click",async ev=>{
       catch(e){toast(String(e&&e.message||"").startsWith("gc-saldo:")?"La gift card ya no tiene saldo para restaurar este servicio":"No se pudo actualizar")}return}
     await S.db.doc("registros/"+id).update({estado:a==="anular"?"anulado":"ok",modificado:new Date().toISOString()});toast(a==="anular"?"Servicio anulado":"Servicio restaurado");return}
   if(a==="cerrar")return cerrar();
+  if(a==="f-pasada"){S.form.pasadaOk=true;S.form.err="";return guardarCita()}
   if(a==="mp-guardar")return mpGuardar();
   if(a==="mp-cancelar"){S.mpImp=null;render();return}
   if(a==="mp-usar")return mpUsar();
@@ -982,6 +991,7 @@ document.addEventListener("change",async ev=>{
     for(const [c,docs] of Object.entries(cols)){for(let i=0;i<docs.length;i+=400){const bt=S.db.batch();docs.slice(i,i+400).forEach(d=>bt.set(S.db.collection(c).doc(d.id),d.data));await bt.commit();n+=Math.min(400,docs.length-i)}}
     toast("Respaldo cargado: "+n+" registros");ev.target.value=""}catch(e){fail(e)}return}
   const t=ev.target;
+  if(t.id==="cf-wspmodo"){try{localStorage.setItem("wspModo",t.value)}catch(e){}toast(t.value==="web"?"Los avisos se abrirán en WhatsApp Web":"Los avisos se abrirán en la app de WhatsApp");return}
   if(t.id==="mp-file"&&t.files&&t.files[0]){mpLeer(t.files[0]);return}
   if(t.dataset.mpk&&S.mpImp){S.mpImp.map[t.dataset.mpk]=Number(t.value);render();return}
   if(t.id==="mp-incl"&&S.mpImp){S.mpImp.incl=t.value==="1";render();return}
@@ -993,7 +1003,7 @@ document.addEventListener("change",async ev=>{
   if(t.id==="ag-fecha"&&t.value){const w=lunesDe(t.value)!==lunesDe(S.agDia);S.agDia=t.value;S._agScrolled=false;S._agReset=true;if(w)subAgenda();render();return}
   if(S.form){const F=S.form;
     if(t.id==="f-svc-add"&&t.value){F.items.push(t.value);F.durManual=false;F.forzar=false;render();return}
-    if(t.id==="f-fecha"&&t.value){F.fecha=t.value;F.forzar=false;if(lunesDe(t.value)!==lunesDe(S.agDia)){S.agDia=t.value;subAgenda()}render();return}
+    if(t.id==="f-fecha"&&t.value){F.fecha=t.value;F.forzar=false;F.pasadaOk=false;F.err="";if(lunesDe(t.value)!==lunesDe(S.agDia)){S.agDia=t.value;subAgenda()}render();return}
     if(t.id==="f-hora"){F.hora=t.value;F.forzar=false;if(F.tipo==="bloqueo"&&(!F.hasta||toMin(F.hasta)<=toMin(F.hora)))F.hasta=fromMin(toMin(F.hora)+60);render();return}
     if(t.id==="f-hasta"){F.hasta=t.value;F.forzar=false;render();return}
     if(t.id==="f-origen"){F.origen=t.value;return}
