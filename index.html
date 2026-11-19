@@ -326,7 +326,7 @@ function vRegistrar(){
         <div class="chips">${MEDIOS.map(([k,l])=>`<button class="chip" style="font-size:14px;padding:10px 14px;min-height:44px" data-act="medio" data-k="${k}" aria-pressed="${sel.medio===k}">${l}</button>`).join("")}</div></div>
       ${sel.medio==="giftcard"?`<label for="f-gc">Código de la gift card<input id="f-gc" class="m" value="${esc(sel.gc||"")}" placeholder="Ej. NUA-7K2P" style="text-transform:uppercase"></label><p class="muted" style="font-size:12px">El monto se descuenta del saldo de la gift card. Tu comisión se calcula igual que siempre.</p>`:""}${sel.medio==="tarjeta"?`<label for="f-op">N° de operación o de boleta<input id="f-op" class="m" inputmode="numeric" value="${esc(sel.op)}" placeholder="Ej. 186263056396"></label><p class="muted" style="font-size:12px">Si dos profesionales atendieron a la misma clienta con un solo voucher, cada una registra solo sus servicios y su parte de la propina, con el mismo número de operación.</p>`:""}
       ${S.admin?`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px"><label for="f-fecha">Fecha del servicio<input id="f-fecha" type="date" max="${hoy()}" value="${esc(sel.fecha||hoy())}"></label>${sel.fecha&&sel.fecha!==hoy()?`<label for="f-hora">Hora del cobro<input id="f-hora" type="time" value="${esc(sel.hora||"")}"></label>`:""}</div>${sel.fecha&&sel.fecha!==hoy()?`<p class="muted" style="font-size:12px">Estás registrando un servicio de otro día. Usa la hora del voucher para que cuadre con Mercado Pago.</p>`:""}`:""}
-      ${sel.medio==="tarjeta"&&pointOn()?vPoint(cobrado+int(sel.propina),puede):""}
+      ${sel.medio==="tarjeta"&&pointOn()?vPoint(cobrado,puede):""}
       <label for="f-nota">Nota (opcional)<input id="f-nota" value="${esc(sel.nota)}" placeholder="Ej. descuento clienta frecuente"></label>
       <div id="preview" class="step" style="gap:6px;border-top:1px solid var(--line);padding-top:12px">${preview(cobrado,pro,r)}</div>
       ${sel.editId?`<div class="note info"><b>Estás editando un servicio ya registrado</b><span>${esc((sel.orig&&sel.orig.profNombre)||"")} · ${esc(sel.fecha||"")} ${esc(sel.hora||"")}. Agrega o quita servicios y revisa el monto cobrado; al guardar se reemplaza el registro anterior.</span></div>`:""}
@@ -348,7 +348,7 @@ function refreshPreview(){
   const cobrado=sel.manual?int(sel.cobrado):lista;
   const p=$("#preview");if(p)p.innerHTML=preview(cobrado,pro,calc(cobrado,pro?pro.comision:0,S.cfg.base));
   const b=document.querySelector('[data-act="guardar"]');if(b)b.disabled=!(pro&&cobrado>0&&!S.saving);
-  const pb=document.querySelector('[data-act="pt-cobrar"]');if(pb){const tot=cobrado+int(sel.propina);pb.textContent="Cobrar "+clp(tot)+" en la máquina";pb.disabled=!(pro&&cobrado>0&&tot>=100&&!S.saving)}const pf=$("#pt-falta");if(pf)pf.textContent=ptFalta();const rf=$("#reg-falta");if(rf){const m=regFalta();rf.textContent=m;rf.hidden=!m}
+  const pb=document.querySelector('[data-act="pt-cobrar"]');if(pb){const tot=cobrado;pb.textContent="Cobrar "+clp(cobrado)+" en la máquina";pb.disabled=!(pro&&cobrado>0&&tot>=100&&!S.saving)}const pf=$("#pt-falta");if(pf)pf.textContent=ptFalta();const rf=$("#reg-falta");if(rf){const m=regFalta();rf.textContent=m;rf.hidden=!m}
 }
 
 function resumen(regs){
@@ -1047,7 +1047,7 @@ async function ptSync(){if(S.ptSyncing||!S.cfg.pointTerminal)return;S.ptSyncing=
 function vPointMini(){if(!S.cfg.pointTerminal||!(S.admin||S.rol==="caja"))return"";if(!S.ptLive&&!S.ptSyncing)setTimeout(ptSync,50);const on=pointOn();
   return `<div class="note ${on?"info":""}" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span><b>Máquina: ${on?"modo integrado (cobra desde SurCaja)":"modo normal (cobro a mano)"}</b></span><span class="row-btns">${on?`<button class="mini" data-act="pt-modo" data-m="STANDALONE">Pasar a modo normal</button>`:`<button class="mini" data-act="pt-modo" data-m="PDV">Pasar a modo integrado</button>`}</span><span class="muted" style="font-size:12px;width:100%">Después de cambiar el modo, reinicia la máquina.</span></div>`}
 function vPoint(total,puede){const P=S.point;
-  if(!P)return `<div class="step" style="gap:6px"><button class="btn" data-act="pt-cobrar" ${puede&&total>=100&&!S.saving?"":"disabled"}>Cobrar ${clp(total)} en la máquina</button><p id="pt-falta" class="falta" ${ptFalta()?"":"hidden"}>${esc(ptFalta())}</p><p class="muted" style="font-size:12px">SurCaja envía el monto exacto a la máquina; la clienta solo paga con su tarjeta. Al aprobarse, el servicio se guarda solo.</p></div>`;
+  if(!P)return `<div class="step" style="gap:6px"><button class="btn" data-act="pt-cobrar" ${puede&&total>=100&&!S.saving?"":"disabled"}>Cobrar ${clp(total)} en la máquina</button><p id="pt-falta" class="falta" ${ptFalta()?"":"hidden"}>${esc(ptFalta())}</p><p class="muted" style="font-size:12px">SurCaja envía solo el valor del servicio. <b>La propina la agrega la clienta en la máquina</b> y SurCaja la anota sola: no la escribas aquí. Al aprobarse, el servicio se guarda solo.</p></div>`;
   if(P.estado==="enviando")return `<div class="note info"><b>Enviando ${clp(P.total)} a la máquina…</b></div>`;
   if(P.estado==="en_maquina"){const tomada=P.mpSt==="at_terminal",lento=!tomada&&P.t0&&Date.now()-P.t0>30e3;
     return `<div class="note ${lento?"risk":"info"}"><b>${tomada?"El cobro ya está en la máquina: "+clp(P.total):"Cobro enviado ("+clp(P.total)+"). Esperando que la máquina lo tome…"}</b><span>${tomada?"Pide a la clienta que pague en la máquina. No cierres esta pantalla.":lento?"La máquina aún no lo recibe. Toca <b>Actualizar</b> en la máquina; si sigue igual, reiníciala.":"No cierres esta pantalla."}${P.errN?` <span class="muted">(sin respuesta de Mercado Pago ${P.errN} ${P.errN===1?"vez":"veces"}: ${esc(P.errMsg||"")})</span>`:""} <button class="mini" data-act="pt-cancelar">Cancelar cobro</button></span></div>`}
@@ -1057,9 +1057,9 @@ function regFalta(){const sel=S.sel;const f=[];if(!S.pros.find(p=>p.id===sel.pro
   if(f.length)return"⚠ Para guardar falta elegir "+f.join(" y ")+".";if(!(ventaSel()>0))return"⚠ Falta el monto cobrado.";
   if(sel.medio==="giftcard"&&!String(sel.gc||"").trim())return"⚠ Falta el código de la gift card.";
   if(sel.medio==="tarjeta"&&!String(sel.op||"").trim()&&!pointOn())return"⚠ Falta el N° de operación o de boleta del voucher (puedes guardar igual, pero cuesta cuadrar la caja).";return""}
-function ptFalta(){const sel=S.sel;const f=[];if(!S.pros.find(p=>p.id===sel.pro))f.push("la profesional");if(!Object.keys(sel.items).length)f.push("el servicio");const t=ventaSel()+int(sel.propina);if(!f.length&&t<100)return"El monto mínimo para cobrar en la máquina es $100.";return f.length?"Para cobrar falta elegir "+f.join(" y ")+".":""}
+function ptFalta(){const sel=S.sel;const f=[];if(!S.pros.find(p=>p.id===sel.pro))f.push("la profesional");if(!Object.keys(sel.items).length)f.push("el servicio");const t=ventaSel();if(!f.length&&t<100)return"El monto mínimo para cobrar en la máquina es $100.";return f.length?"Para cobrar falta elegir "+f.join(" y ")+".":""}
 function ventaSel(){const sel=S.sel;const lista=Object.entries(sel.items).reduce((a,[id,q])=>{const s=S.servs.find(x=>x.id===id);return a+(s?(Number(s.precio)||0)*q:0)},0);return sel.manual?int(sel.cobrado):lista}
-async function cobrarPoint(){const sel=S.sel,pro=S.pros.find(p=>p.id===sel.pro);const venta=ventaSel(),total=venta+int(sel.propina);
+async function cobrarPoint(){const sel=S.sel,pro=S.pros.find(p=>p.id===sel.pro);const venta=ventaSel(),total=venta;
   if(!pro||!venta){toast("Elige profesional y servicio");return}if(S.point)return;
   const nombres=Object.keys(sel.items).map(id=>(S.servs.find(x=>x.id===id)||{}).nombre).filter(Boolean).join(", ");
   const ref="sc"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
@@ -1073,7 +1073,7 @@ async function pollPoint(id){const t0=Date.now();
     const st=o.status,pay=((o.transactions||{}).payments||[])[0]||{};
     if(S.point&&S.point.orderId===id){const cambio=S.point.mpSt!==st||S.point.errN;S.point.mpSt=st;S.point.errN=0;if(cambio||(st!=="at_terminal"&&Date.now()-S.point.t0>30e3&&!S.point.avisoLento)){if(st!=="at_terminal"&&Date.now()-S.point.t0>30e3)S.point.avisoLento=true;render()}}
     if(st==="processed"){S.point.estado="pagado";render();
-      S.sel.op=String(pay.reference_id||pay.id||id);S.sel.mp={mpOrderId:id,mpPaymentId:String(pay.id||""),mpEstado:st,cobroIntegrado:true,mpMonto:Number(S.point.total)};
+      S.sel.op=String(pay.reference_id||pay.id||id);S.sel.propina=String(Math.round(Number(pay.tip_amount)||0));S.sel.mp={mpOrderId:id,mpPaymentId:String(pay.id||""),mpEstado:st,cobroIntegrado:true,mpMonto:Number(S.point.total)};
       await guardar();S.point=null;render();return}
     if(["canceled","expired","failed","refunded","action_required"].includes(st)){
       const T={canceled:"Cobro cancelado",expired:"El cobro venció sin pago",failed:"El pago fue rechazado",refunded:"El pago fue devuelto",action_required:"La máquina pide revisar el pago"};
