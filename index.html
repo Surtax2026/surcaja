@@ -347,7 +347,7 @@ function refreshPreview(){
   const cobrado=sel.manual?int(sel.cobrado):lista;
   const p=$("#preview");if(p)p.innerHTML=preview(cobrado,pro,calc(cobrado,pro?pro.comision:0,S.cfg.base));
   const b=document.querySelector('[data-act="guardar"]');if(b)b.disabled=!(pro&&cobrado>0&&!S.saving);
-  const pb=document.querySelector('[data-act="pt-cobrar"]');if(pb){const tot=cobrado+int(sel.propina);pb.textContent="Cobrar "+clp(tot)+" en la máquina";pb.disabled=!(pro&&cobrado>0&&tot>=100&&!S.saving)}
+  const pb=document.querySelector('[data-act="pt-cobrar"]');if(pb){const tot=cobrado+int(sel.propina);pb.textContent="Cobrar "+clp(tot)+" en la máquina";pb.disabled=!(pro&&cobrado>0&&tot>=100&&!S.saving)}const pf=$("#pt-falta");if(pf)pf.textContent=ptFalta();
 }
 
 function resumen(regs){
@@ -1046,11 +1046,13 @@ async function ptSync(){if(S.ptSyncing||!S.cfg.pointTerminal)return;S.ptSyncing=
 function vPointMini(){if(!S.cfg.pointTerminal||!(S.admin||S.rol==="caja"))return"";if(!S.ptLive&&!S.ptSyncing)setTimeout(ptSync,50);const on=pointOn();
   return `<div class="note ${on?"info":""}" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span><b>Máquina: ${on?"modo integrado (cobra desde SurCaja)":"modo normal (cobro a mano)"}</b></span><span class="row-btns">${on?`<button class="mini" data-act="pt-modo" data-m="STANDALONE">Pasar a modo normal</button>`:`<button class="mini" data-act="pt-modo" data-m="PDV">Pasar a modo integrado</button>`}</span><span class="muted" style="font-size:12px;width:100%">Después de cambiar el modo, reinicia la máquina.</span></div>`}
 function vPoint(total,puede){const P=S.point;
-  if(!P)return `<div class="step" style="gap:6px"><button class="btn" data-act="pt-cobrar" ${puede&&total>=100&&!S.saving?"":"disabled"}>Cobrar ${clp(total)} en la máquina</button><p class="muted" style="font-size:12px">SurCaja envía el monto exacto a la máquina; la clienta solo paga con su tarjeta. Al aprobarse, el servicio se guarda solo.</p></div>`;
+  if(!P)return `<div class="step" style="gap:6px"><button class="btn" data-act="pt-cobrar" ${puede&&total>=100&&!S.saving?"":"disabled"}>Cobrar ${clp(total)} en la máquina</button><p id="pt-falta" style="font-size:12px;color:#b45309;margin:0">${ptFalta()}</p><p class="muted" style="font-size:12px">SurCaja envía el monto exacto a la máquina; la clienta solo paga con su tarjeta. Al aprobarse, el servicio se guarda solo.</p></div>`;
   if(P.estado==="enviando")return `<div class="note info"><b>Enviando ${clp(P.total)} a la máquina…</b></div>`;
-  if(P.estado==="en_maquina")return `<div class="note info"><b>Esperando el pago en la máquina: ${clp(P.total)}</b><span>Pide a la clienta que pague en la máquina. No cierres esta pantalla. <button class="mini" data-act="pt-cancelar">Cancelar cobro</button></span></div>`;
+  if(P.estado==="en_maquina"){const tomada=P.mpSt==="at_terminal",lento=!tomada&&P.t0&&Date.now()-P.t0>30e3;
+    return `<div class="note ${lento?"risk":"info"}"><b>${tomada?"El cobro ya está en la máquina: "+clp(P.total):"Cobro enviado ("+clp(P.total)+"). Esperando que la máquina lo tome…"}</b><span>${tomada?"Pide a la clienta que pague en la máquina. No cierres esta pantalla.":lento?"La máquina aún no lo recibe. Toca <b>Actualizar</b> en la máquina; si sigue igual, reiníciala.":"No cierres esta pantalla."}${P.errN?` <span class="muted">(sin respuesta de Mercado Pago ${P.errN} ${P.errN===1?"vez":"veces"}: ${esc(P.errMsg||"")})</span>`:""} <button class="mini" data-act="pt-cancelar">Cancelar cobro</button></span></div>`}
   if(P.estado==="pagado")return `<div class="note ok"><b>Pago aprobado: ${clp(P.total)}</b><span>Guardando el servicio…</span></div>`;
   return `<div class="note risk"><b>${esc(P.titulo||"No se completó el cobro")}</b><span>${esc(P.msg||"")} <button class="mini" data-act="pt-limpiar">Entendido</button></span></div>`}
+function ptFalta(){const sel=S.sel;const f=[];if(!S.pros.find(p=>p.id===sel.pro))f.push("la profesional");if(!Object.keys(sel.items).length)f.push("el servicio");const t=ventaSel()+int(sel.propina);if(!f.length&&t<100)return"El monto mínimo para cobrar en la máquina es $100.";return f.length?"Para cobrar falta elegir "+f.join(" y ")+".":""}
 function ventaSel(){const sel=S.sel;const lista=Object.entries(sel.items).reduce((a,[id,q])=>{const s=S.servs.find(x=>x.id===id);return a+(s?(Number(s.precio)||0)*q:0)},0);return sel.manual?int(sel.cobrado):lista}
 async function cobrarPoint(){const sel=S.sel,pro=S.pros.find(p=>p.id===sel.pro);const venta=ventaSel(),total=venta+int(sel.propina);
   if(!pro||!venta){toast("Elige profesional y servicio");return}if(S.point)return;
@@ -1058,20 +1060,25 @@ async function cobrarPoint(){const sel=S.sel,pro=S.pros.find(p=>p.id===sel.pro);
   const ref="sc"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   S.point={estado:"enviando",total,ref};render();
   try{const o=await mpApi("/orders",{method:"POST",body:JSON.stringify({amount:total,ref,terminal_id:S.cfg.pointTerminal,description:(pro.nombre+": "+nombres).slice(0,150),taxes:[{payer_condition:"payment_taxable_iva"}]})});
-    S.point=Object.assign(S.point,{estado:"en_maquina",orderId:o.id});render();pollPoint(o.id)}
+    S.point=Object.assign(S.point,{estado:"en_maquina",orderId:o.id,mpSt:o.status||"created",t0:Date.now()});render();pollPoint(o.id)}
   catch(e){S.point={estado:"error",titulo:"No se pudo enviar el cobro a la máquina",msg:(e.status===409?"La cuenta de Mercado Pago aún no está conectada. ":"")+e.message+". Puedes cobrar como siempre y registrar el voucher."};render()}}
 async function pollPoint(id){const t0=Date.now();
   while(S.point&&S.point.orderId===id&&Date.now()-t0<11*60e3){await new Promise(r=>setTimeout(r,2500));
-    let o;try{o=await mpApi("/orders/"+id)}catch(e){continue}
+    let o;try{o=await mpApi("/orders/"+id)}catch(e){if(S.point&&S.point.orderId===id){S.point.errN=(S.point.errN||0)+1;S.point.errMsg=String(e.message||e);render()}continue}
     const st=o.status,pay=((o.transactions||{}).payments||[])[0]||{};
+    if(S.point&&S.point.orderId===id){const cambio=S.point.mpSt!==st||S.point.errN;S.point.mpSt=st;S.point.errN=0;if(cambio||(st!=="at_terminal"&&Date.now()-S.point.t0>30e3&&!S.point.avisoLento)){if(st!=="at_terminal"&&Date.now()-S.point.t0>30e3)S.point.avisoLento=true;render()}}
     if(st==="processed"){S.point.estado="pagado";render();
       S.sel.op=String(pay.reference_id||pay.id||id);S.sel.mp={mpOrderId:id,mpPaymentId:String(pay.id||""),mpEstado:st,cobroIntegrado:true,mpMonto:Number(S.point.total)};
       await guardar();S.point=null;render();return}
     if(["canceled","expired","failed","refunded","action_required"].includes(st)){
       const T={canceled:"Cobro cancelado",expired:"El cobro venció sin pago",failed:"El pago fue rechazado",refunded:"El pago fue devuelto",action_required:"La máquina pide revisar el pago"};
-      S.point={estado:"error",titulo:T[st],msg:(pay.status_detail||o.status_detail||"")+". El servicio no se guardó; puedes intentar de nuevo."};render();return}}
+      S.point={estado:"error",titulo:T[st],msg:(pay.status_detail||o.status_detail||"")+". El servicio no se guardó; puedes intentar de nuevo."};render();return}
+    if(!["created","at_terminal","processed"].includes(st)){S.point={estado:"error",titulo:"Estado inesperado del cobro: "+st,msg:(o.status_detail||"")+". Revisa la máquina antes de cobrar de nuevo."};render();return}}
   if(S.point&&S.point.orderId===id){S.point={estado:"error",titulo:"No llegó la confirmación del pago",msg:"Revisa la máquina antes de cobrar de nuevo, para no cobrar dos veces."};render()}}
-async function cancelarPoint(){const P=S.point;if(!P||!P.orderId)return;try{await mpApi("/orders/"+P.orderId+"/cancel",{method:"POST"});toast("Cobro cancelado")}catch(e){toast("No se pudo cancelar: si la clienta ya pagó, espera la confirmación")}}
+async function cancelarPoint(){const P=S.point;if(!P||!P.orderId)return;
+  if(P.mpSt==="at_terminal"){toast("El cobro ya está en la máquina: cancélalo desde la máquina (botón Cancelar / X)");return}
+  try{await mpApi("/orders/"+P.orderId+"/cancel",{method:"POST"});toast("Cobro cancelado")}catch(e){let st="";try{st=(await mpApi("/orders/"+P.orderId)).status}catch(_){}
+    toast(st==="at_terminal"?"El cobro ya llegó a la máquina: cancélalo desde la máquina":"No se pudo cancelar: si la clienta ya pagó, espera la confirmación")}}
 function vPointAjustes(){const st=S.ptStatus;const terms=st&&st.terminales?((st.terminales.data||{}).terminals||st.terminales.terminals||[]):[];
   return `<div class="panel"><h2>Cobro integrado con Mercado Pago</h2><p class="muted">SurCaja envía el monto a la máquina Point. Mientras esté en modo integrado, la máquina no cobra a mano: si algo falla, vuélvela al modo normal aquí y reiníciala.</p>
   ${["jorge.sandoval@surtax.cl","sistemas@surtax.cl"].includes(String((firebase.auth().currentUser||{}).email||"").toLowerCase())?`<details style="margin:6px 0"><summary class="muted" style="cursor:pointer">Credenciales de la aplicación (solo Surtax)</summary><div class="fields"><label for="pt-cid">Client ID<input id="pt-cid" class="m" inputmode="numeric" autocomplete="off"></label><label for="pt-csec">Client Secret<input id="pt-csec" type="password" autocomplete="off"></label></div><button class="mini" data-act="pt-cred">Guardar credenciales</button></details>`:""}
