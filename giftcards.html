@@ -72,7 +72,7 @@ async function init(){const c=window.claude;S.db=await c.use("db");const u=await
 function valorUnit(F){if(F.modo==="servicio"){const s=S.servs.find(x=>x.id===F.servId);return s?int(s.precio):0}return int(F.monto)}
 function render(){const a=document.activeElement,k=a&&a.id?{id:a.id,s:a.selectionStart,e:a.selectionEnd}:null;$("#app").innerHTML=(S.sel?vDet():vForm()+vResumen()+vLista());if(k){const el=document.getElementById(k.id);if(el){el.focus();try{el.setSelectionRange(k.s,k.e)}catch(e){}}}}
 function vForm(){const F=S.F,emp=F.tipo==="empresa",u=valorUnit(F),n=emp?Math.max(1,int(F.cantidad)||1):1;
-  return`<div><h1>Gift cards</h1><p class="muted">Vende gift cards para una persona o como regalo corporativo para una empresa. No tienen vencimiento. Cada una tiene un código que la profesional ingresa al atender a la clienta.</p></div>
+  return`<div><h1>Gift cards</h1><p class="muted">Vende gift cards para una persona o como regalo corporativo para una empresa. Valen 30 días desde la venta. Cada una tiene un código que la profesional ingresa al atender a la clienta.</p></div>
   <div class="note info"><b>IVA: se declara al vender la gift card</b><span>Al venderla se entrega la boleta (o el comprobante de la máquina, que vale como boleta). Cuando la clienta la usa <b>no se emite otra boleta</b>: el servicio queda en SurCaja con IVA $0 porque ya se declaró. Si la empresa pide factura, se emite en el mes del pago. Criterio de Surtax, 11-11-2026.</span></div>
   <div class="panel"><h2>Nueva venta</h2>
   <div class="row"><span class="muted" style="font-size:13px;font-weight:600">¿Para quién?</span><div class="chips"><button class="chip" data-act="tipo" data-k="persona" aria-pressed="${!emp}">Persona</button><button class="chip" data-act="tipo" data-k="empresa" aria-pressed="${emp}">Empresa (regalo corporativo)</button></div></div>
@@ -104,7 +104,7 @@ function vDet(){const g=S.list.find(x=>x.id===S.sel);if(!g)return`<div class="em
     <label for="d-para">Para<input id="d-para" value="${esc(g.para||"")}"></label><label for="d-de">De<input id="d-de" value="${esc(g.de||"")}"></label>
     <label for="d-msg" style="grid-column:span 2">Mensaje<input id="d-msg" value="${esc(g.mensaje||"")}"></label></div>
     <div class="row"><button class="mini" data-act="guardar-datos">Guardar nombre y mensaje</button></div>
-    <p class="muted" style="margin:0;font-size:14px">${esc(g.descripcion)} · Valor ${clp(g.valor)} · Saldo <b>${clp(g.saldo)}</b> · Vendida el ${esc(g.fechaVenta)} con ${esc((MEDIOS.find(m=>m[0]===g.medioVenta)||["",g.medioVenta])[1])}${g.opVenta?" (op. "+esc(g.opVenta)+")":""}${g.empresa?` · Empresa: ${esc(g.empresa)} ${esc(g.rutEmpresa||"")}`:""}</p></div>
+    <p class="muted" style="margin:0;font-size:14px">${esc(g.descripcion)} · Valor ${clp(g.valor)} · Saldo <b>${clp(g.saldo)}</b> · Vendida el ${esc(g.fechaVenta)} · Vence el ${esc(fmtF(venceGC(g)))} con ${esc((MEDIOS.find(m=>m[0]===g.medioVenta)||["",g.medioVenta])[1])}${g.opVenta?" (op. "+esc(g.opVenta)+")":""}${g.empresa?` · Empresa: ${esc(g.empresa)} ${esc(g.rutEmpresa||"")}`:""}</p></div>
   <div class="panel"><h2>Tarjeta para enviar</h2>${S.img?`<img class="prev" src="${S.img}" alt="Gift card">`:""}
     <div class="row"><button class="btn" data-act="png">Descargar imagen</button><a class="mini wsp" target="_blank" rel="noopener" href="${esc(wsp(g.telefono,txt))}">Enviar por WhatsApp</a></div>
     <p class="muted" style="margin:0;font-size:13px">Descarga la imagen y adjúntala en WhatsApp junto al mensaje.</p></div>
@@ -114,16 +114,31 @@ function vDet(){const g=S.list.find(x=>x.id===S.sel);if(!g)return`<div class="em
     <div class="row"><label for="d-saldo" style="max-width:200px">Ajustar saldo<input id="d-saldo" class="m" inputmode="numeric" value="${int(g.saldo)}"></label><label for="d-motivo" style="flex:1;min-width:200px">Motivo (obligatorio)<input id="d-motivo" placeholder="Ej. devolución a la clienta"></label></div>
     <div class="row"><button class="mini" data-act="saldo">Guardar saldo</button>${g.estado!=="anulada"?`<button class="mini" data-act="anular">Anular gift card</button>`:""}</div>
     <p class="muted" style="margin:0;font-size:13px">Si se anula un servicio pagado con esta gift card, el saldo vuelve solo. Ajusta a mano solo casos especiales. Las gift cards no se borran: se anulan y queda el registro.</p></div>`}
+function venceGC(g){if(g.vence)return g.vence;const f=String(g.fechaVenta||"");if(!/^\d{4}-\d{2}-\d{2}$/.test(f))return "";const d=new Date(f+"T12:00:00");d.setDate(d.getDate()+30);return d.toISOString().slice(0,10)}
+function fmtF(f){const m=String(f||"").match(/^(\d{4})-(\d{2})-(\d{2})/);return m?m[3]+"/"+m[2]+"/"+m[1]:""}
+function loto(x,cx,cy,sc){x.save();x.translate(cx,cy);x.scale(sc,sc);x.strokeStyle="rgba(176,120,92,.75)";x.lineWidth=2.2;x.fillStyle="rgba(214,170,140,.28)";
+  const petalo=(ang,len,wid)=>{x.save();x.rotate(ang);x.beginPath();x.moveTo(0,0);x.bezierCurveTo(wid,-len*.35,wid*.8,-len*.85,0,-len);x.bezierCurveTo(-wid*.8,-len*.85,-wid,-len*.35,0,0);x.fill();x.stroke();
+    x.beginPath();x.moveTo(0,-len*.12);x.lineTo(0,-len*.9);x.lineWidth=1;x.stroke();x.lineWidth=2.2;x.restore()};
+  [-1.25,1.25,-.95,.95,-.6,.6,-.3,.3,0].forEach((a,i)=>petalo(a,i<2?150:i<4?210:i<6?260:i<8?290:300,i<2?55:i<4?70:80));x.restore()}
 function dibujar(g){const cv=document.createElement("canvas");cv.width=1080;cv.height=640;const x=cv.getContext("2d");
-  const gr=x.createLinearGradient(0,0,1080,640);gr.addColorStop(0,"#5b2a6e");gr.addColorStop(1,"#16325c");x.fillStyle=gr;x.fillRect(0,0,1080,640);
-  x.strokeStyle="rgba(255,255,255,.35)";x.lineWidth=3;x.strokeRect(30,30,1020,580);
-  x.fillStyle="#fff";x.font="700 64px Georgia,serif";x.fillText(S.cfg.local||"NÚASPA",70,130);
-  x.font="600 30px system-ui,Arial";x.fillStyle="rgba(255,255,255,.85)";x.fillText("GIFT CARD",72,180);
-  x.fillStyle="#fff";x.font="700 46px system-ui,Arial";const d=String(g.descripcion);x.fillText(d.length>38?d.slice(0,37)+"…":d,70,280);
-  x.font="400 30px system-ui,Arial";if(g.para)x.fillText("Para: "+g.para,70,350);if(g.de)x.fillText("De: "+g.de,70,395);
-  if(g.mensaje){x.font="italic 28px Georgia,serif";x.fillStyle="rgba(255,255,255,.9)";const m=String(g.mensaje);x.fillText("“"+(m.length>60?m.slice(0,59)+"…":m)+"”",70,455)}
-  x.fillStyle="#fff";x.fillRect(70,500,420,80);x.fillStyle="#16325c";x.font="700 44px ui-monospace,Menlo,monospace";x.fillText(g.id,95,556);
-  x.fillStyle="rgba(255,255,255,.85)";x.font="400 22px system-ui,Arial";x.fillText("Presenta este código al llegar. Sin vencimiento.",530,535);x.fillText(S.cfg.direccion||"",530,568);
+  const bg=x.createLinearGradient(0,0,1080,640);bg.addColorStop(0,"#efe9e3");bg.addColorStop(1,"#e3dbd2");x.fillStyle=bg;x.fillRect(0,0,1080,640);
+  loto(x,935,345,.95);
+  const ink="#5a4a46",tan="#a7795f";
+  x.textAlign="center";x.fillStyle=tan;x.font="600 34px Georgia,serif";x.fillText(S.cfg.local||"NÚASPA",160,95);
+  x.textAlign="left";x.fillStyle=ink;x.font="400 150px Georgia,'Times New Roman',serif";x.fillText("GIFT",95,300);
+  x.fillStyle=tan;x.font="italic 120px 'Brush Script MT','Segoe Script',cursive";x.fillText("Card",470,300);
+  x.fillStyle=ink;x.font="400 22px Georgia,serif";const lema="U N   M O M E N T O   P A R A   T I";x.fillText(lema,200,350);
+  x.fillStyle="rgba(239,233,227,.88)";x.fillRect(70,395,770,95);x.strokeStyle="rgba(90,74,70,.45)";x.lineWidth=1.5;x.strokeRect(70,395,770,95);
+  x.beginPath();x.moveTo(470,395);x.lineTo(470,490);x.moveTo(690,395);x.lineTo(690,490);x.stroke();
+  x.font="600 15px system-ui,Arial";x.fillStyle=ink;x.fillText("SERVICIO:",88,425);x.fillText("FECHA:",488,425);
+  x.font="400 24px Georgia,serif";const d=String(g.descripcion||"");x.fillText(d.length>26?d.slice(0,25)+"…":d,88,468);x.fillText(fmtF(g.fechaVenta),488,468);
+  x.textAlign="center";x.font="600 15px system-ui,Arial";x.fillText("VÁLIDA POR",765,428);x.font="700 30px Georgia,serif";x.fillText("30 DÍAS",765,466);
+  x.font="400 14px system-ui,Arial";const v=venceGC(g);if(v)x.fillText("hasta el "+fmtF(v),765,484);
+  x.textAlign="left";x.font="400 18px system-ui,Arial";x.fillStyle=ink;
+  const pd=[g.para?"Para: "+g.para:"",g.de?"De: "+g.de:""].filter(Boolean).join("   ·   ");if(pd)x.fillText(pd,88,530);
+  x.fillStyle="rgba(255,255,255,.75)";x.fillRect(70,548,300,52);x.fillStyle=ink;x.font="700 30px ui-monospace,Menlo,monospace";x.fillText(g.id,92,584);
+  x.font="400 15px system-ui,Arial";x.fillText("Presenta este código al agendar.",390,572);
+  x.fillStyle="rgba(90,74,70,.12)";x.fillRect(0,610,1080,30);x.fillStyle=ink;x.font="400 14px system-ui,Arial";x.textAlign="center";x.fillText(S.cfg.direccion||"",540,630);
   return cv.toDataURL("image/png")}
 async function nuevoCodigo(){const A="ABCDEFGHJKMNPQRSTUVWXYZ23456789";for(let i=0;i<20;i++){let c="NUA-";for(let j=0;j<4;j++)c+=A[Math.floor(Math.random()*A.length)];const s=await S.db.doc("giftcards/"+c).get();if(!s.exists)return c}throw new Error("sin código")}
 async function vender(){const F=S.F,emp=F.tipo==="empresa",u=valorUnit(F),n=emp?Math.max(1,int(F.cantidad)||1):1;
@@ -132,7 +147,7 @@ async function vender(){const F=S.F,emp=F.tipo==="empresa",u=valorUnit(F),n=emp?
   S.saving=true;render();const now=new Date();const lote=emp?"L"+now.getTime():"";const creados=[];
   try{for(let i=0;i<n;i++){const id=await nuevoCodigo();await S.db.doc("giftcards/"+id).set({tipo:F.tipo,modo:F.modo,servId:F.modo==="servicio"?F.servId:"",descripcion:desc,valor:u,saldo:u,para:emp?"":F.para.trim(),de:emp?F.empresa.trim():F.de.trim(),telefono:F.telefono.trim(),mensaje:F.mensaje.trim(),
       empresa:emp?F.empresa.trim():"",rutEmpresa:emp?F.rutEmpresa.trim():"",contacto:emp?F.contacto.trim():"",lote,fechaVenta:F.fecha,horaVenta:now.toTimeString().slice(0,5),medioVenta:F.medio,opVenta:F.medio==="tarjeta"?F.op.trim():"",
-      valorVenta:u,estado:"vigente",canjes:[],creado:now.toISOString(),por:S.email});creados.push(id)}
+      valorVenta:u,vence:(()=>{const d=new Date(F.fecha+"T12:00:00");d.setDate(d.getDate()+30);return d.toISOString().slice(0,10)})(),estado:"vigente",canjes:[],creado:now.toISOString(),por:S.email});creados.push(id)}
     toast(n>1?`${n} gift cards creadas`:`Gift card ${creados[0]} creada`);S.F=vacio();if(n===1){S.sel=creados[0]}}
   catch(e){console.warn(e);toast("No se pudo registrar la venta"+(creados.length?` (se crearon ${creados.length})`:""))}
   S.saving=false;render();if(S.sel){const g=S.list.find(x=>x.id===S.sel);if(g){S.img=dibujar(g);render()}}}
