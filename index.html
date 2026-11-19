@@ -73,6 +73,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .btn{font:700 16px var(--f-body);border:0;border-radius:12px;padding:14px 18px;cursor:pointer;background:var(--plum);color:var(--plum-ink);min-height:52px}
 .btn.sec{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
 .btn:disabled{opacity:.45;cursor:not-allowed}
+.falta{margin:4px 0 0;padding:6px 10px;border-radius:8px;background:#fff4e5;border:1px solid #f5c38a;color:#8a4b08;font-size:13px}
 .row-btns{display:flex;gap:10px;flex-wrap:wrap}
 .note{border-radius:10px;padding:12px 14px;font-size:14px;display:grid;gap:4px}
 .note.warn{background:var(--amber-soft);color:var(--ink)} .note.ok{background:var(--sage-soft)} .note.risk{background:var(--red-soft)} .note.info{background:var(--plum-soft)}
@@ -329,7 +330,7 @@ function vRegistrar(){
       <label for="f-nota">Nota (opcional)<input id="f-nota" value="${esc(sel.nota)}" placeholder="Ej. descuento clienta frecuente"></label>
       <div id="preview" class="step" style="gap:6px;border-top:1px solid var(--line);padding-top:12px">${preview(cobrado,pro,r)}</div>
       ${sel.editId?`<div class="note info"><b>Estás editando un servicio ya registrado</b><span>${esc((sel.orig&&sel.orig.profNombre)||"")} · ${esc(sel.fecha||"")} ${esc(sel.hora||"")}. Agrega o quita servicios y revisa el monto cobrado; al guardar se reemplaza el registro anterior.</span></div>`:""}
-      <button class="btn" data-act="guardar" ${puede?"":"disabled"}>${S.saving?"Guardando…":sel.editId?"Guardar cambios":"Guardar servicio"}</button>${sel.editId?` <button class="btn sec" data-act="cancelar-edicion">Cancelar edición</button>`:""}
+      <button class="btn" data-act="guardar" ${puede?"":"disabled"}>${S.saving?"Guardando…":sel.editId?"Guardar cambios":"Guardar servicio"}</button><p id="reg-falta" class="falta" ${regFalta()?"":"hidden"}>${esc(regFalta())}</p>${sel.editId?` <button class="btn sec" data-act="cancelar-edicion">Cancelar edición</button>`:""}
     </div>
   </div>`}`;
 }
@@ -347,7 +348,7 @@ function refreshPreview(){
   const cobrado=sel.manual?int(sel.cobrado):lista;
   const p=$("#preview");if(p)p.innerHTML=preview(cobrado,pro,calc(cobrado,pro?pro.comision:0,S.cfg.base));
   const b=document.querySelector('[data-act="guardar"]');if(b)b.disabled=!(pro&&cobrado>0&&!S.saving);
-  const pb=document.querySelector('[data-act="pt-cobrar"]');if(pb){const tot=cobrado+int(sel.propina);pb.textContent="Cobrar "+clp(tot)+" en la máquina";pb.disabled=!(pro&&cobrado>0&&tot>=100&&!S.saving)}const pf=$("#pt-falta");if(pf)pf.textContent=ptFalta();
+  const pb=document.querySelector('[data-act="pt-cobrar"]');if(pb){const tot=cobrado+int(sel.propina);pb.textContent="Cobrar "+clp(tot)+" en la máquina";pb.disabled=!(pro&&cobrado>0&&tot>=100&&!S.saving)}const pf=$("#pt-falta");if(pf)pf.textContent=ptFalta();const rf=$("#reg-falta");if(rf){const m=regFalta();rf.textContent=m;rf.hidden=!m}
 }
 
 function resumen(regs){
@@ -468,7 +469,7 @@ function vMP(){
     <div class="fields">${MPCOLS.map(([k,l])=>`<label for="mp-map-${k}">${l}<select id="mp-map-${k}" data-mpk="${k}"><option value="-1">(no está)</option>${imp.header.map((c,i)=>`<option value="${i}" ${imp.map[k]===i?"selected":""}>${esc(c||"Columna "+(i+1))}</option>`).join("")}</select></label>`).join("")}
     <label for="mp-incl">¿El monto incluye la propina?<select id="mp-incl"><option value="1" ${imp.incl?"selected":""}>Sí, es el total cobrado</option><option value="0" ${imp.incl?"":"selected"}>No, la propina viene aparte</option></select></label></div>
     ${ops.length?`<div class="tbl"><table style="min-width:560px"><thead><tr><th>Fecha</th><th>Hora</th><th>Operación</th><th class="n">Monto</th><th class="n">Propina</th><th class="n">Comisión</th><th>Estado</th></tr></thead><tbody>${ops.slice(0,6).map(o=>`<tr><td>${esc(o.fecha)}</td><td class="num">${esc(o.hora)}</td><td class="num">${esc(o.op)}</td><td class="n">${clp(o.monto)}</td><td class="n">${clp(o.propina)}</td><td class="n">${clp(o.comision)}</td><td>${o.valido?`<span class="pill g">${esc(o.estado||"Válida")}</span>`:`<span class="pill r">${esc(o.estado)}</span>`}</td></tr>`).join("")}</tbody></table></div><p class="status">Vista previa de las primeras 6 filas.</p>`:`<div class="note risk">No se pudo leer ninguna operación con estas columnas. Ajusta "N° de operación" y "Fecha".</div>`}
-    <div class="row-btns"><button class="btn" data-act="mp-guardar" ${ops.length?"":"disabled"}>Guardar ${fechas.length} día(s) en SurCaja</button><button class="btn sec" data-act="mp-cancelar">Cancelar</button></div>`}
+    <div class="row-btns"><button class="btn" data-act="mp-guardar" ${ops.length?"":"disabled"}>Guardar ${fechas.length} día(s) en SurCaja</button>${ops.length?"":`<span class="falta">⚠ No hay operaciones nuevas para guardar en el archivo cargado.</span>`}<button class="btn sec" data-act="mp-cancelar">Cancelar</button></div>`}
   const rows=concilia();
   if(rows){const mp=S.mpDia,T=mpTotales();const malos=rows.filter(r=>!String(r.est).startsWith("Cuadra")&&r.est!=="Anulado en Mercado Pago").length;
     h+=`<h2 style="margin-top:6px">Cruce del ${esc(fechaLarga(S.dia))}</h2>
@@ -997,8 +998,8 @@ document.addEventListener("input",ev=>{
   if(t.id==="f-propina"){sel.propina=t.value;refreshPreview();return}
   if(t.id==="f-fecha"){sel.fecha=t.value&&t.value<=hoy()?t.value:hoy();if(sel.fecha===hoy())sel.hora="";render();return}
   if(t.id==="f-hora"){sel.hora=t.value;return}
-  if(t.id==="f-op"){sel.op=t.value;return}
-  if(t.id==="f-gc"){sel.gc=t.value;return}
+  if(t.id==="f-op"){sel.op=t.value;refreshPreview();return}
+  if(t.id==="f-gc"){sel.gc=t.value;refreshPreview();return}
   if(t.id==="f-nota"){sel.nota=t.value;return}
   if(t.id==="l-desde"){S.liq.desde=t.value;return}
   if(t.id==="l-hasta"){S.liq.hasta=t.value;return}
@@ -1046,12 +1047,16 @@ async function ptSync(){if(S.ptSyncing||!S.cfg.pointTerminal)return;S.ptSyncing=
 function vPointMini(){if(!S.cfg.pointTerminal||!(S.admin||S.rol==="caja"))return"";if(!S.ptLive&&!S.ptSyncing)setTimeout(ptSync,50);const on=pointOn();
   return `<div class="note ${on?"info":""}" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span><b>Máquina: ${on?"modo integrado (cobra desde SurCaja)":"modo normal (cobro a mano)"}</b></span><span class="row-btns">${on?`<button class="mini" data-act="pt-modo" data-m="STANDALONE">Pasar a modo normal</button>`:`<button class="mini" data-act="pt-modo" data-m="PDV">Pasar a modo integrado</button>`}</span><span class="muted" style="font-size:12px;width:100%">Después de cambiar el modo, reinicia la máquina.</span></div>`}
 function vPoint(total,puede){const P=S.point;
-  if(!P)return `<div class="step" style="gap:6px"><button class="btn" data-act="pt-cobrar" ${puede&&total>=100&&!S.saving?"":"disabled"}>Cobrar ${clp(total)} en la máquina</button><p id="pt-falta" style="font-size:12px;color:#b45309;margin:0">${ptFalta()}</p><p class="muted" style="font-size:12px">SurCaja envía el monto exacto a la máquina; la clienta solo paga con su tarjeta. Al aprobarse, el servicio se guarda solo.</p></div>`;
+  if(!P)return `<div class="step" style="gap:6px"><button class="btn" data-act="pt-cobrar" ${puede&&total>=100&&!S.saving?"":"disabled"}>Cobrar ${clp(total)} en la máquina</button><p id="pt-falta" class="falta" ${ptFalta()?"":"hidden"}>${esc(ptFalta())}</p><p class="muted" style="font-size:12px">SurCaja envía el monto exacto a la máquina; la clienta solo paga con su tarjeta. Al aprobarse, el servicio se guarda solo.</p></div>`;
   if(P.estado==="enviando")return `<div class="note info"><b>Enviando ${clp(P.total)} a la máquina…</b></div>`;
   if(P.estado==="en_maquina"){const tomada=P.mpSt==="at_terminal",lento=!tomada&&P.t0&&Date.now()-P.t0>30e3;
     return `<div class="note ${lento?"risk":"info"}"><b>${tomada?"El cobro ya está en la máquina: "+clp(P.total):"Cobro enviado ("+clp(P.total)+"). Esperando que la máquina lo tome…"}</b><span>${tomada?"Pide a la clienta que pague en la máquina. No cierres esta pantalla.":lento?"La máquina aún no lo recibe. Toca <b>Actualizar</b> en la máquina; si sigue igual, reiníciala.":"No cierres esta pantalla."}${P.errN?` <span class="muted">(sin respuesta de Mercado Pago ${P.errN} ${P.errN===1?"vez":"veces"}: ${esc(P.errMsg||"")})</span>`:""} <button class="mini" data-act="pt-cancelar">Cancelar cobro</button></span></div>`}
   if(P.estado==="pagado")return `<div class="note ok"><b>Pago aprobado: ${clp(P.total)}</b><span>Guardando el servicio…</span></div>`;
   return `<div class="note risk"><b>${esc(P.titulo||"No se completó el cobro")}</b><span>${esc(P.msg||"")} <button class="mini" data-act="pt-limpiar">Entendido</button></span></div>`}
+function regFalta(){const sel=S.sel;const f=[];if(!S.pros.find(p=>p.id===sel.pro))f.push("la profesional");if(!Object.keys(sel.items).length)f.push("al menos un servicio");
+  if(f.length)return"⚠ Para guardar falta elegir "+f.join(" y ")+".";if(!(ventaSel()>0))return"⚠ Falta el monto cobrado.";
+  if(sel.medio==="giftcard"&&!String(sel.gc||"").trim())return"⚠ Falta el código de la gift card.";
+  if(sel.medio==="tarjeta"&&!String(sel.op||"").trim()&&!pointOn())return"⚠ Falta el N° de operación o de boleta del voucher (puedes guardar igual, pero cuesta cuadrar la caja).";return""}
 function ptFalta(){const sel=S.sel;const f=[];if(!S.pros.find(p=>p.id===sel.pro))f.push("la profesional");if(!Object.keys(sel.items).length)f.push("el servicio");const t=ventaSel()+int(sel.propina);if(!f.length&&t<100)return"El monto mínimo para cobrar en la máquina es $100.";return f.length?"Para cobrar falta elegir "+f.join(" y ")+".":""}
 function ventaSel(){const sel=S.sel;const lista=Object.entries(sel.items).reduce((a,[id,q])=>{const s=S.servs.find(x=>x.id===id);return a+(s?(Number(s.precio)||0)*q:0)},0);return sel.manual?int(sel.cobrado):lista}
 async function cobrarPoint(){const sel=S.sel,pro=S.pros.find(p=>p.id===sel.pro);const venta=ventaSel(),total=venta+int(sel.propina);
