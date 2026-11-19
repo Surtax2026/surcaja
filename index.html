@@ -300,6 +300,7 @@ function vRegistrar(){
   const puede=pro&&cobrado>0&&!S.saving;
   return `
   <div><h1>Registrar un servicio</h1><p class="muted">${esc(fechaLarga(hoy()))}. Registra cada atención al momento de cobrarla.</p></div>
+  ${vPointMini()}
   ${sel.citaId?`<div class="note ok"><b>Cobro de la cita de ${esc(sel.clientaNombre||"la clienta")}</b><span>Profesional y servicios vienen de la agenda; ajusta si cambió algo. Al guardar, la cita queda como atendida. <button class="mini" data-act="sel-limpiar">No es esta cita</button></span></div>`:""}
   ${vacio||`
   <div class="two">
@@ -359,12 +360,12 @@ function resumen(regs){
 }
 
 function vDia(){
-  const t=resumen(S.regsDia);
+  const gv=S.myPro?[]:gcPseudo();const t=resumen(S.regsDia.concat(gv));const tGc=gv.reduce((a,g)=>a+g.venta,0);
   return `<div class="row-btns" style="justify-content:space-between;align-items:end">
     <div><h1>Servicios del día</h1><p class="muted">${esc(fechaLarga(S.dia))}</p></div>
     <label for="f-dia" style="min-width:180px">Día<input id="f-dia" type="date" value="${S.dia}"></label></div>
   <div class="kpis">
-    <div class="kpi"><span>Servicios</span><b>${t.n}</b></div>
+    <div class="kpi"><span>Servicios</span><b>${t.n-gv.length}</b></div>${gv.length?`<div class="kpi"><span>Gift cards vendidas (${gv.length})</span><b>${clp(tGc)}</b></div>`:""}
     <div class="kpi"><span>Ventas con IVA</span><b>${clp(t.venta)}</b></div>
     <div class="kpi"><span>IVA del día</span><b>${clp(t.iva)}</b></div>
     <div class="kpi"><span>Propinas</span><b>${clp(t.prop)}</b></div>
@@ -372,8 +373,9 @@ function vDia(){
     ${S.rol==="caja"?"":`<div class="kpi"><span>Comisiones</span><b>${clp(t.com)}</b></div>
     <div class="kpi"><span>Queda al salón (sin IVA)</span><b>${clp(t.neto-t.com)}</b></div>`}
   </div>
-  ${S.regsDia.length?`<div class="tbl"><table><thead><tr><th>Hora</th><th>Profesional</th><th>Servicio</th><th>Medio</th><th>Operación</th><th class="n">Compra</th><th class="n">IVA 19%</th><th class="n">Propina</th><th class="n">Total ticket</th>${S.rol==="caja"?"":`<th class="n">Comisión</th>`}<th></th></tr></thead><tbody>
+  ${S.regsDia.length||gv.length?`<div class="tbl"><table><thead><tr><th>Hora</th><th>Profesional</th><th>Servicio</th><th>Medio</th><th>Operación</th><th class="n">Compra</th><th class="n">IVA 19%</th><th class="n">Propina</th><th class="n">Total ticket</th>${S.rol==="caja"?"":`<th class="n">Comisión</th>`}<th></th></tr></thead><tbody>
   ${S.regsDia.map(r=>{const c=calc(r.venta,r.comisionPct,r.base,r.medio);const an=r.estado==="anulado";return`<tr class="${an?"void":""}"><td class="num">${esc(r.hora)}</td><td>${esc(r.profNombre)}</td><td>${esc((r.servicios||[]).map(s=>(s.cantidad>1?s.cantidad+"× ":"")+s.nombre).join(", "))}${r.nota?`<br><span class="muted" style="font-size:12px">${esc(r.nota)}</span>`:""}</td><td>${esc(medioTxt(r.medio))}</td><td class="num">${esc(r.operacion||"—")}</td><td class="n">${clp(c.neto)}</td><td class="n">${clp(c.iva)}</td><td class="n">${clp(r.propina)}</td><td class="n"><b>${clp(r.venta+(r.propina||0))}</b></td>${S.rol==="caja"?"":`<td class="n">${clp(c.com)}</td>`}<td>${S.admin?`${an?"":`<button class="mini" data-act="editar" data-id="${esc(r.id)}">Editar</button> `}<button class="mini" data-act="${an?"restaurar":"anular"}" data-id="${esc(r.id)}">${an?"Restaurar":"Anular"}</button>`:(an?`<span class="pill n">Anulado</span>`:"")}</td></tr>`}).join("")}
+  ${gv.map(g=>{const c=calc(g.venta,0,g.base,g.medio);return`<tr><td class="num">${esc(g.hora||"—")}</td><td>Salón</td><td>${esc(g.profNombre)}</td><td>${esc(medioTxt(g.medio))}</td><td class="num">${esc(g.operacion||"—")}</td><td class="n">${clp(c.neto)}</td><td class="n">${clp(c.iva)}</td><td class="n">${clp(0)}</td><td class="n"><b>${clp(g.venta)}</b></td>${S.rol==="caja"?"":`<td class="n">${clp(0)}</td>`}<td><span class="pill">Gift card</span></td></tr>`}).join("")}
   </tbody></table></div>`:`<div class="empty"><strong>No hay servicios registrados este día</strong><span>Los servicios aparecen aquí apenas se guardan en Registrar.</span></div>`}`;
 }
 const medioTxt=k=>(MEDIOS.find(m=>m[0]===k)||[k,k])[1];
@@ -935,6 +937,8 @@ document.addEventListener("click",async ev=>{
   if(a==="pt-limpiar"){S.point=null;return render()}
   if(a==="pt-estado")return ptEstado();
   if(a==="pt-link")return ptLink();
+  if(a==="pt-cred"){const id=$("#pt-cid").value.trim(),sec=$("#pt-csec").value.trim();if(!id||!sec){toast("Pega el Client ID y el Client Secret");return}
+    try{await mpApi("/app-cred",{method:"POST",body:JSON.stringify({client_id:id,client_secret:sec})});$("#pt-csec").value="";toast("Credenciales guardadas en el servidor")}catch(e){toast("No se guardaron: "+e.message)}return}
   if(a==="pt-term"){try{await S.db.doc("config/general").set(Object.assign({},S.cfg,{pointTerminal:b.dataset.id}));toast("Máquina seleccionada")}catch(e){fail(e)}return}
   if(a==="pt-modo")return ptModo(b.dataset.m);
   if(a==="guardar")return guardar();
@@ -1036,7 +1040,10 @@ const MPAPI="https://surcaja-nuaspa.netlify.app/api";
 async function mpApi(path,opt={}){const u=firebase.auth().currentUser;if(!u)throw new Error("Sin sesión");const tk=await u.getIdToken();
   const r=await fetch(MPAPI+path,Object.assign({},opt,{headers:{"Content-Type":"application/json",Authorization:"Bearer "+tk}}));let d={};try{d=await r.json()}catch(e){}
   if(!r.ok){const er=new Error((d&&(d.message||d.error))||("Error "+r.status));er.data=d;er.status=r.status;throw er}return d}
-function pointOn(){return !!(S.cfg.pointTerminal&&S.cfg.pointIntegrado)}
+function pointOn(){if(!S.cfg.pointTerminal)return false;return S.ptLive?S.ptLive==="PDV":!!S.cfg.pointIntegrado}
+async function ptSync(){if(S.ptSyncing||!S.cfg.pointTerminal)return;S.ptSyncing=true;try{const d=await mpApi("/status");S.ptStatus=d;const ts=((d.terminales||{}).data||{}).terminals||(d.terminales||{}).terminals||[];const t=ts.find(x=>x.id===S.cfg.pointTerminal);if(t&&t.operating_mode)S.ptLive=t.operating_mode;render()}catch(e){}S.ptSyncing=false}
+function vPointMini(){if(!S.cfg.pointTerminal||!(S.admin||S.rol==="caja"))return"";if(!S.ptLive&&!S.ptSyncing)setTimeout(ptSync,50);const on=pointOn();
+  return `<div class="note ${on?"info":""}" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span><b>Máquina: ${on?"modo integrado (cobra desde SurCaja)":"modo normal (cobro a mano)"}</b></span><span class="row-btns">${on?`<button class="mini" data-act="pt-modo" data-m="STANDALONE">Pasar a modo normal</button>`:`<button class="mini" data-act="pt-modo" data-m="PDV">Pasar a modo integrado</button>`}</span><span class="muted" style="font-size:12px;width:100%">Después de cambiar el modo, reinicia la máquina.</span></div>`}
 function vPoint(total,puede){const P=S.point;
   if(!P)return `<div class="step" style="gap:6px"><button class="btn" data-act="pt-cobrar" ${puede&&total>=100&&!S.saving?"":"disabled"}>Cobrar ${clp(total)} en la máquina</button><p class="muted" style="font-size:12px">SurCaja envía el monto exacto a la máquina; la clienta solo paga con su tarjeta. Al aprobarse, el servicio se guarda solo.</p></div>`;
   if(P.estado==="enviando")return `<div class="note info"><b>Enviando ${clp(P.total)} a la máquina…</b></div>`;
@@ -1066,13 +1073,14 @@ async function pollPoint(id){const t0=Date.now();
 async function cancelarPoint(){const P=S.point;if(!P||!P.orderId)return;try{await mpApi("/orders/"+P.orderId+"/cancel",{method:"POST"});toast("Cobro cancelado")}catch(e){toast("No se pudo cancelar: si la clienta ya pagó, espera la confirmación")}}
 function vPointAjustes(){const st=S.ptStatus;const terms=st&&st.terminales?((st.terminales.data||{}).terminals||st.terminales.terminals||[]):[];
   return `<div class="panel"><h2>Cobro integrado con Mercado Pago</h2><p class="muted">SurCaja envía el monto a la máquina Point. Mientras esté en modo integrado, la máquina no cobra a mano: si algo falla, vuélvela al modo normal aquí y reiníciala.</p>
+  ${["jorge.sandoval@surtax.cl","sistemas@surtax.cl"].includes(String((firebase.auth().currentUser||{}).email||"").toLowerCase())?`<details style="margin:6px 0"><summary class="muted" style="cursor:pointer">Credenciales de la aplicación (solo Surtax)</summary><div class="fields"><label for="pt-cid">Client ID<input id="pt-cid" class="m" inputmode="numeric" autocomplete="off"></label><label for="pt-csec">Client Secret<input id="pt-csec" type="password" autocomplete="off"></label></div><button class="mini" data-act="pt-cred">Guardar credenciales</button></details>`:""}
   <div class="row-btns"><button class="btn sec" data-act="pt-estado">Revisar conexión</button><button class="btn sec" data-act="pt-link">Conectar cuenta de Mercado Pago</button></div>
   ${st?(st.conectado?`<p>Cuenta conectada (usuario ${esc(String(st.user_id))}).</p>${terms.length?`<div class="tbl"><table><thead><tr><th>Máquina</th><th>Modo</th><th></th></tr></thead><tbody>${terms.map(t=>`<tr><td>${esc(t.id)}${S.cfg.pointTerminal===t.id?" ✔":""}</td><td>${esc(t.operating_mode||"")}</td><td class="row-btns"><button class="mini" data-act="pt-term" data-id="${esc(t.id)}">Usar esta</button></td></tr>`).join("")}</tbody></table></div>`:`<p class="muted">No se encontraron máquinas en la cuenta.</p>`}
   ${S.cfg.pointTerminal?`<div class="row-btns"><button class="btn" data-act="pt-modo" data-m="PDV">Activar modo integrado</button><button class="btn sec" data-act="pt-modo" data-m="STANDALONE">Volver a modo normal</button></div><p class="muted" style="font-size:12px">Estado en SurCaja: ${S.cfg.pointIntegrado?"<b>integrado</b>":"normal"}. Después de cambiar el modo, reinicia la máquina.</p>`:""}`:`<p class="muted">La cuenta de Mercado Pago aún no autoriza a SurCaja.</p>`):""}</div>`}
 async function ptEstado(){try{S.ptStatus=await mpApi("/status");render()}catch(e){toast("No se pudo revisar: "+e.message)}}
 async function ptLink(){try{const d=await mpApi("/oauth/link",{method:"POST"});window.open(d.url,"_blank","noopener");toast("Se abrió Mercado Pago: autoriza con la cuenta del salón")}catch(e){toast("No se pudo generar el enlace: "+e.message)}}
 async function ptModo(m){if(!S.cfg.pointTerminal)return;try{await mpApi("/terminal-mode",{method:"POST",body:JSON.stringify({terminal_id:S.cfg.pointTerminal,mode:m})});
-  await S.db.doc("config/general").set(Object.assign({},S.cfg,{pointIntegrado:m==="PDV"}));toast(m==="PDV"?"Modo integrado activado: reinicia la máquina":"Modo normal activado: reinicia la máquina");ptEstado()}catch(e){toast("No se pudo cambiar el modo: "+e.message)}}
+  S.ptLive=m;if(S.admin){try{await S.db.doc("config/general").set(Object.assign({},S.cfg,{pointIntegrado:m==="PDV"}))}catch(e){}}render();toast(m==="PDV"?"Modo integrado activado: reinicia la máquina":"Modo normal activado: reinicia la máquina");ptEstado()}catch(e){toast("No se pudo cambiar el modo: "+e.message)}}
 async function guardar(){
   const sel=S.sel, pro=S.pros.find(p=>p.id===sel.pro);
   const items=Object.entries(sel.items).map(([id,q])=>{const s=S.servs.find(x=>x.id===id);return s?{id,nombre:s.nombre,categoria:s.categoria||"",precioLista:Number(s.precio)||0,cantidad:q}:null}).filter(Boolean);
@@ -1102,15 +1110,23 @@ async function guardar(){
     profId:pro.id,profNombre:pro.nombre,modelo:pro.modelo||"",comisionPct:Number(pro.comision)||0,base:S.cfg.base==="bruto"?"bruto":"neto",
     servicios:items,precioLista:lista,venta,propina:int(sel.propina),medio:sel.medio,operacion:sel.medio==="tarjeta"?sel.op.trim():"",nota:sel.nota.trim(),estado:"ok",
     citaId:sel.citaId||"",clientaId:sel.clientaId||"",clientaNombre:sel.clientaNombre||"",giftcard:gc?gc.id:"",...(sel.mp||{})};
+  const esProd=x=>/producto/i.test(x.categoria||"");const pItems=items.filter(esProd);const pLista=pItems.reduce((a,x)=>a+x.precioLista*x.cantidad,0);
+  let docProd=null;
+  if(pItems.length&&!gc){
+    if(pItems.length===items.length){Object.assign(doc,{profId:"salon",profNombre:"Salón (venta de producto)",modelo:"producto",comisionPct:0})}
+    else if(pLista<venta){docProd=Object.assign({},doc,{profId:"salon",profNombre:"Salón (venta de producto)",modelo:"producto",comisionPct:0,servicios:pItems,precioLista:pLista,venta:pLista,propina:0,citaId:"",nota:("Producto vendido junto al servicio de "+pro.nombre+". "+doc.nota).trim()});
+      doc.servicios=items.filter(x=>!esProd(x));doc.precioLista=lista-pLista;doc.venta=venta-pLista}
+  }
   S.saving=true;refreshPreview();
   try{let ref;
+    if(docProd){await S.db.collection("registros").add(docProd)}
     if(gc){ref=S.db.collection("registros").doc();const gref=S.db.doc("giftcards/"+gc.id);
       await S.db.runTransaction(async tx=>{const g=(await tx.get(gref)).data()||{};if(g.estado!=="vigente")throw new Error("gc-estado:"+(g.estado||"no existe"));const sal=+g.saldo||0;if(sal<venta)throw new Error("gc-saldo:"+sal);const ns=sal-venta;
         tx.set(ref,doc);tx.update(gref,{saldo:ns,estado:ns===0?"canjeada":"vigente",canjes:(g.canjes||[]).concat([{fecha:doc.fecha,registroId:ref.id,prof:pro.nombre,monto:venta}])})})}
     else ref=await S.db.collection("registros").add(doc);
     if(sel.citaId){try{await S.db.doc("citas/"+sel.citaId).update({estado:"atendida",registroId:ref.id,venta,modificado:now.toISOString()})}catch(e){console.warn(e)}}
     if(sel.clientaId){try{await S.db.doc("clientas/"+sel.clientaId).update({ultimaVisita:doc.fecha})}catch(e){console.warn(e)}}
-    const c=calc(venta,doc.comisionPct,doc.base);
+    const c=calc(doc.venta,doc.comisionPct,doc.base);
     toast(S.rol==="caja"?`Guardado: ${pro.nombre}`:`Guardado: ${pro.nombre}, comisión ${clp(c.com)}${doc.propina?" + propina "+clp(doc.propina):""}`);
     const fk=S.sel.fecha;S.sel={pro:null,items:{},cobrado:null,manual:false,propina:"",medio:"tarjeta",op:"",nota:"",fecha:fk};
   }catch(e){const m=String(e&&e.message||"");if(m.startsWith("gc-saldo:"))toast("Saldo insuficiente: a la gift card le quedan "+clp(+m.split(":")[1])+". No se guardó el servicio.");else if(m.startsWith("gc-estado:"))toast("La gift card está "+m.split(":")[1]+". No se guardó el servicio.");else fail(e)}

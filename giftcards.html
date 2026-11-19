@@ -116,30 +116,21 @@ function vDet(){const g=S.list.find(x=>x.id===S.sel);if(!g)return`<div class="em
     <p class="muted" style="margin:0;font-size:13px">Si se anula un servicio pagado con esta gift card, el saldo vuelve solo. Ajusta a mano solo casos especiales. Las gift cards no se borran: se anulan y queda el registro.</p></div>`}
 function venceGC(g){if(g.vence)return g.vence;const f=String(g.fechaVenta||"");if(!/^\d{4}-\d{2}-\d{2}$/.test(f))return "";const d=new Date(f+"T12:00:00");d.setDate(d.getDate()+30);return d.toISOString().slice(0,10)}
 function fmtF(f){const m=String(f||"").match(/^(\d{4})-(\d{2})-(\d{2})/);return m?m[3]+"/"+m[2]+"/"+m[1]:""}
-function loto(x,cx,cy,sc){x.save();x.translate(cx,cy);x.scale(sc,sc);x.strokeStyle="rgba(176,120,92,.75)";x.lineWidth=2.2;x.fillStyle="rgba(214,170,140,.28)";
-  const petalo=(ang,len,wid)=>{x.save();x.rotate(ang);x.beginPath();x.moveTo(0,0);x.bezierCurveTo(wid,-len*.35,wid*.8,-len*.85,0,-len);x.bezierCurveTo(-wid*.8,-len*.85,-wid,-len*.35,0,0);x.fill();x.stroke();
-    x.beginPath();x.moveTo(0,-len*.12);x.lineTo(0,-len*.9);x.lineWidth=1;x.stroke();x.lineWidth=2.2;x.restore()};
-  [-1.25,1.25,-.95,.95,-.6,.6,-.3,.3,0].forEach((a,i)=>petalo(a,i<2?150:i<4?210:i<6?260:i<8?290:300,i<2?55:i<4?70:80));x.restore()}
-function dibujar(g){const cv=document.createElement("canvas");cv.width=1080;cv.height=640;const x=cv.getContext("2d");
-  const bg=x.createLinearGradient(0,0,1080,640);bg.addColorStop(0,"#efe9e3");bg.addColorStop(1,"#e3dbd2");x.fillStyle=bg;x.fillRect(0,0,1080,640);
-  loto(x,935,345,.95);
-  const ink="#5a4a46",tan="#a7795f";
-  x.textAlign="center";x.fillStyle=tan;x.font="600 34px Georgia,serif";x.fillText(S.cfg.local||"NÚASPA",160,95);
-  x.textAlign="left";x.fillStyle=ink;x.font="400 150px Georgia,'Times New Roman',serif";x.fillText("GIFT",95,300);
-  x.fillStyle=tan;x.font="italic 120px 'Brush Script MT','Segoe Script',cursive";x.fillText("Card",470,300);
-  x.fillStyle=ink;x.font="400 22px Georgia,serif";const lema="U N   M O M E N T O   P A R A   T I";x.fillText(lema,200,350);
-  x.fillStyle="rgba(239,233,227,.88)";x.fillRect(70,395,770,95);x.strokeStyle="rgba(90,74,70,.45)";x.lineWidth=1.5;x.strokeRect(70,395,770,95);
-  x.beginPath();x.moveTo(470,395);x.lineTo(470,490);x.moveTo(690,395);x.lineTo(690,490);x.stroke();
-  x.font="600 15px system-ui,Arial";x.fillStyle=ink;x.fillText("SERVICIO:",88,425);x.fillText("FECHA:",488,425);
-  x.font="400 24px Georgia,serif";const d=String(g.descripcion||"");x.fillText(d.length>26?d.slice(0,25)+"…":d,88,468);x.fillText(fmtF(g.fechaVenta),488,468);
-  x.textAlign="center";x.font="600 15px system-ui,Arial";x.fillText("VÁLIDA POR",765,428);x.font="700 30px Georgia,serif";x.fillText("30 DÍAS",765,466);
-  x.font="400 14px system-ui,Arial";const v=venceGC(g);if(v)x.fillText("hasta el "+fmtF(v),765,484);
-  x.textAlign="left";x.font="400 18px system-ui,Arial";x.fillStyle=ink;
-  const pd=[g.para?"Para: "+g.para:"",g.de?"De: "+g.de:""].filter(Boolean).join("   ·   ");if(pd)x.fillText(pd,88,530);
-  x.fillStyle="rgba(255,255,255,.75)";x.fillRect(70,548,300,52);x.fillStyle=ink;x.font="700 30px ui-monospace,Menlo,monospace";x.fillText(g.id,92,584);
-  x.font="400 15px system-ui,Arial";x.fillText("Presenta este código al agendar.",390,572);
-  x.fillStyle="rgba(90,74,70,.12)";x.fillRect(0,610,1080,30);x.fillStyle=ink;x.font="400 14px system-ui,Arial";x.textAlign="center";x.fillText(S.cfg.direccion||"",540,630);
-  return cv.toDataURL("image/png")}
+const GC_FONDO=new Image();GC_FONDO.src="gc-fondo.jpg?v=1";
+function gcListo(){return GC_FONDO.complete&&GC_FONDO.naturalWidth>0?Promise.resolve():new Promise(r=>{GC_FONDO.onload=r;GC_FONDO.onerror=r})}
+function dibujar(g){const cv=document.createElement("canvas");cv.width=2000;cv.height=1194;const x=cv.getContext("2d");
+  x.fillStyle="#f6ece0";x.fillRect(0,0,2000,1194);
+  if(GC_FONDO.naturalWidth)x.drawImage(GC_FONDO,0,0,2000,1194);
+  const ink="#6f4a26";x.fillStyle=ink;x.textBaseline="alphabetic";
+  const fit=(t,max,size,fam)=>{let s=size;x.font=`${s}px ${fam}`;while(x.measureText(t).width>max&&s>24){s-=2;x.font=`${s}px ${fam}`}};
+  const serif="'Cormorant Garamond','Playfair Display',Georgia,'Times New Roman',serif";
+  const d=String(g.descripcion||"");fit(d,590,52,serif);x.textAlign="left";x.fillText(d,138,885);
+  const m=String(g.fechaVenta||"").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m){x.font=`52px ${serif}`;x.textAlign="center";x.fillText(m[3],932,885);x.fillText(m[2],1088,885);x.fillText(m[1],1256,885)}
+  const v=venceGC(g);if(v){x.font=`26px ${serif}`;x.textAlign="center";x.fillText("hasta el "+fmtF(v),1765,940)}
+  const linea=["Código "+g.id,g.para?"Para: "+g.para:"",g.de?"De: "+g.de:""].filter(Boolean).join("      ·      ");
+  x.textAlign="center";fit(linea,1700,38,serif);x.fillText(linea,1000,1010);
+  return cv.toDataURL("image/jpeg",.92)}
 async function nuevoCodigo(){const A="ABCDEFGHJKMNPQRSTUVWXYZ23456789";for(let i=0;i<20;i++){let c="NUA-";for(let j=0;j<4;j++)c+=A[Math.floor(Math.random()*A.length)];const s=await S.db.doc("giftcards/"+c).get();if(!s.exists)return c}throw new Error("sin código")}
 async function vender(){const F=S.F,emp=F.tipo==="empresa",u=valorUnit(F),n=emp?Math.max(1,int(F.cantidad)||1):1;
   if(!u){toast(F.modo==="servicio"?"Elige el servicio":"Indica el monto");return}if(emp&&!F.empresa.trim()){toast("Indica la empresa");return}if(n>200){toast("Máximo 200 por venta");return}
@@ -150,7 +141,7 @@ async function vender(){const F=S.F,emp=F.tipo==="empresa",u=valorUnit(F),n=emp?
       valorVenta:u,vence:(()=>{const d=new Date(F.fecha+"T12:00:00");d.setDate(d.getDate()+30);return d.toISOString().slice(0,10)})(),estado:"vigente",canjes:[],creado:now.toISOString(),por:S.email});creados.push(id)}
     toast(n>1?`${n} gift cards creadas`:`Gift card ${creados[0]} creada`);S.F=vacio();if(n===1){S.sel=creados[0]}}
   catch(e){console.warn(e);toast("No se pudo registrar la venta"+(creados.length?` (se crearon ${creados.length})`:""))}
-  S.saving=false;render();if(S.sel){const g=S.list.find(x=>x.id===S.sel);if(g){S.img=dibujar(g);render()}}}
+  S.saving=false;render();if(S.sel){const g=S.list.find(x=>x.id===S.sel);if(g){gcListo().then(()=>{S.img=dibujar(g);render()})}}}
 function excel(){if(!window.XLSX)return;const rows=S.list.map(g=>({"Código":g.id,Tipo:g.tipo==="empresa"?"Empresa":"Persona",Incluye:g.descripcion,Valor:g.valor,Saldo:g.saldo,Estado:g.estado,Para:g.para||"",De:g.de||"",Empresa:g.empresa||"","RUT empresa":g.rutEmpresa||"","Fecha venta":g.fechaVenta,"Medio venta":g.medioVenta,"N° operación":g.opVenta||"",Canjes:(g.canjes||[]).map(c=>c.fecha+" "+c.prof+" "+c.monto).join("; ")}));
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),"Gift cards");XLSX.writeFile(wb,"Gift cards NÚASPA "+hoy()+".xlsx")}
 document.addEventListener("input",ev=>{const t=ev.target;if(t.dataset.f){S.F[t.dataset.f]=t.value;if(["monto","cantidad"].includes(t.dataset.f))render();return}if(t.id==="gc-q"){S.q=t.value;render()}});
@@ -158,11 +149,11 @@ document.addEventListener("change",ev=>{const t=ev.target;if(t.dataset.f){S.F[t.
 document.addEventListener("click",async ev=>{const a=ev.target.closest("[data-act]");if(!a)return;const k=a.dataset.act;
   if(k==="tipo"){S.F.tipo=a.dataset.k;render();return}if(k==="modo"){S.F.modo=a.dataset.k;render();return}if(k==="medio"){S.F.medio=a.dataset.k;render();return}
   if(k==="filtro"){S.filtro=a.dataset.k;render();return}if(k==="vender"){vender();return}if(k==="excel"){excel();return}
-  if(k==="ver"){S.sel=a.dataset.id;const g=S.list.find(x=>x.id===S.sel);S.img=g?dibujar(g):null;render();window.scrollTo(0,0);return}
+  if(k==="ver"){S.sel=a.dataset.id;const g=S.list.find(x=>x.id===S.sel);S.img=null;render();window.scrollTo(0,0);if(g)gcListo().then(()=>{S.img=dibujar(g);render()});return}
   if(k==="volver"){S.sel=null;S.img=null;render();return}
   const g=S.list.find(x=>x.id===S.sel);if(!g)return;
-  if(k==="png"){const l=document.createElement("a");l.href=S.img||dibujar(g);l.download="Gift card "+g.id+".png";document.body.appendChild(l);l.click();l.remove();return}
-  if(k==="guardar-datos"){try{await S.db.doc("giftcards/"+g.id).update({para:$("#d-para").value.trim(),de:$("#d-de").value.trim(),mensaje:$("#d-msg").value.trim()});toast("Guardado");setTimeout(()=>{const x=S.list.find(y=>y.id===S.sel);if(x){S.img=dibujar(x);render()}},400)}catch(e){toast("No se pudo guardar")}return}
+  if(k==="png"){const l=document.createElement("a");l.href=S.img||dibujar(g);l.download="Gift card "+g.id+".jpg";document.body.appendChild(l);l.click();l.remove();return}
+  if(k==="guardar-datos"){try{await S.db.doc("giftcards/"+g.id).update({para:$("#d-para").value.trim(),de:$("#d-de").value.trim(),mensaje:$("#d-msg").value.trim()});toast("Guardado");setTimeout(()=>{const x=S.list.find(y=>y.id===S.sel);if(x){gcListo().then(()=>{S.img=dibujar(x);render()})}},400)}catch(e){toast("No se pudo guardar")}return}
   const motivo=($("#d-motivo")||{}).value?$("#d-motivo").value.trim():"";
   const yaCerrado=async()=>{try{return(await S.db.doc("cierres/"+g.fechaVenta).get()).exists}catch(e){return false}};
   if((k==="saldo"||k==="anular")&&!motivo){toast("Escribe el motivo");return}
