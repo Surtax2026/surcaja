@@ -347,6 +347,7 @@ function refreshPreview(){
   const cobrado=sel.manual?int(sel.cobrado):lista;
   const p=$("#preview");if(p)p.innerHTML=preview(cobrado,pro,calc(cobrado,pro?pro.comision:0,S.cfg.base));
   const b=document.querySelector('[data-act="guardar"]');if(b)b.disabled=!(pro&&cobrado>0&&!S.saving);
+  const pb=document.querySelector('[data-act="pt-cobrar"]');if(pb){const tot=cobrado+int(sel.propina);pb.textContent="Cobrar "+clp(tot)+" en la máquina";pb.disabled=!(pro&&cobrado>0&&tot>=100&&!S.saving)}
 }
 
 function resumen(regs){
