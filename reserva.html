@@ -179,7 +179,7 @@ document.addEventListener("click",async e=>{const b=e.target.closest("[data-a]")
     if(d.length<8||d.length>12){R.error="Revisa tu número de WhatsApp (ej. 9 1234 5678).";render();return}
     R.enviando=true;R.error="";render();
     try{
-      const doc={nombre:nom.slice(0,80),telefono:tel.slice(0,20),servicios:R.items.slice(0,6),profId:R.pro||"",fecha:R.fecha,hora:R.hora,nota:R.nota.trim().slice(0,300),estado:"nueva",creado:firebase.firestore.FieldValue.serverTimestamp()};
+      const canal=(new URLSearchParams(location.search).get("o")||"").toLowerCase().replace(/[^a-z]/g,"").slice(0,12);const doc={nombre:nom.slice(0,80),telefono:tel.slice(0,20),servicios:R.items.slice(0,6),profId:R.pro||"",fecha:R.fecha,hora:R.hora,nota:((canal?"[origen:"+canal+"] ":"")+R.nota.trim()).slice(0,300),estado:"nueva",creado:firebase.firestore.FieldValue.serverTimestamp()};
       await db.collection("solicitudes").add(doc);
       R.hecho={nombre:nom,tel,fecha:R.fecha,hora:R.hora,servicios:sel().map(s=>s.nombre).join(", ")};
     }catch(err){R.error="No pudimos enviar tu solicitud. Revisa tu conexión e intenta de nuevo, o escríbenos por WhatsApp."}

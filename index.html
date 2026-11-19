@@ -642,7 +642,7 @@ function vAjustesBase(){
 
 /* ---------- Agenda ---------- */
 const ESTADOS=[["reservada","Reservada","n"],["confirmada","Confirmada","g"],["llego","Llegó","a"],["atendida","Atendida","g"],["noasistio","No asistió","r"],["cancelada","Cancelada","n"]];
-const ORIGENES=[["presencial","En el local"],["whatsapp","WhatsApp"],["instagram","Instagram"],["web","Reserva web"],["telefono","Teléfono"]];
+const ORIGENES=[["presencial","En el local"],["whatsapp","WhatsApp"],["instagram","Instagram"],["google","Google"],["agendapro","Marketplace AgendaPro"],["recomendacion","Recomendación"],["web","Reserva web"],["telefono","Teléfono"]];
 const PASO=15;
 const estTxt=k=>(ESTADOS.find(e=>e[0]===k)||[k,k,"n"]);
 const toMin=h=>{const m=String(h||"").match(/^(\d{1,2}):(\d{2})/);return m?Number(m[1])*60+Number(m[2]):0};
@@ -705,7 +705,6 @@ function vAgenda(){
     <div class="kpi"><span>Valor agendado (lista)</span><b>${clp(valor)}</b></div>
   </div>
   ${vSols()}
-  ${pend.length?`<div class="note warn"><b>Recordatorios de mañana: ${pend.length} sin enviar</b><span>${pend.map(c=>`${esc(c.hora)} ${esc(c.clientaNombre)} (${esc(c.profNombre)}) <button class="mini wsp" data-act="c-wsp" data-k="recordatorio" data-id="${esc(c.id)}">Enviar</button>`).join(" · ")}</span></div>`:man.length?`<div class="note ok">Los ${man.length} recordatorios de mañana ya se enviaron.</div>`:""}
   ${!S.myPro&&(ocultas>0||S.agTodas)?`<div class="row-btns" style="justify-content:space-between;align-items:center"><span class="muted" style="font-size:13px">${S.agTodas?"Mostrando a todas las profesionales.":`Se muestran solo las que atienden este día (${ocultas} oculta${ocultas>1?"s":""}).`}</span><button class="mini" data-act="ag-todas">${S.agTodas?"Solo las que atienden":"Ver todas"}</button></div>`:""}
   <div class="grid-wrap"><div class="ag" style="grid-template-columns:${cols};grid-template-rows:auto repeat(${filas*K},${ROWU}px)">${g}</div></div>
   <div class="legend"><span class="pill n">Color claro = reservada</span><span class="pill n">Color fuerte ✓ = confirmada</span><span class="pill n">Borde amarillo = llegó</span><span class="pill n">Rayado = bloqueo o fuera de horario</span><span class="pill r">Borde rojo = tope de horario</span><span class="muted" style="font-size:12px">Cada profesional tiene su color.</span></div>
@@ -920,7 +919,7 @@ document.addEventListener("click",async ev=>{
   if(a==="cli-agendar"){const c=S.clientas.find(x=>x.id===id);S.tab="agenda";nuevaForm({cliId:id,fecha:S.agDia});window.scrollTo(0,0);return}
   if(a==="sol-agendar"){const s=(S.sols||[]).find(x=>x.id===id);if(!s)return;const cli=S.clientas.find(c=>telNorm(c.telefono)&&telNorm(c.telefono)===telNorm(s.telefono));
     if(s.fecha&&lunesDe(s.fecha)!==lunesDe(S.agDia)){S.agDia=s.fecha;subAgenda()}else if(s.fecha)S.agDia=s.fecha;S.tab="agenda";
-    nuevaForm({pro:s.profId||undefined,fecha:s.fecha||S.agDia,hora:s.hora||"",items:(s.servicios||[]).filter(x=>S.servs.find(v=>v.id===x)),cliId:cli?cli.id:null,cliNom:cli?"":s.nombre,cliTel:cli?"":s.telefono,origen:"web",nota:s.nota||"",solId:s.id});return}
+    nuevaForm({pro:s.profId||undefined,fecha:s.fecha||S.agDia,hora:s.hora||"",items:(s.servicios||[]).filter(x=>S.servs.find(v=>v.id===x)),cliId:cli?cli.id:null,cliNom:cli?"":s.nombre,cliTel:cli?"":s.telefono,origen:((String(s.nota||"").match(/^\[origen:([a-z]+)\]/)||[])[1]&&ORIGENES.some(x=>x[0]===String(s.nota).match(/^\[origen:([a-z]+)\]/)[1]))?String(s.nota).match(/^\[origen:([a-z]+)\]/)[1]:"web",nota:String(s.nota||"").replace(/^\[origen:[a-z]+\]\s*/,""),solId:s.id});return}
   if(a==="sol-wsp"){const s=(S.sols||[]).find(x=>x.id===id);if(!s)return;const t=telNorm(s.telefono);if(!t){toast("El teléfono no es válido");return}
     const nom=String(s.nombre||"").split(" ")[0];const m=`Hola ${nom}! Te escribimos de ${S.cfg.local||"NÚASPA"}. Recibimos tu solicitud de hora para el ${fechaLarga(s.fecha)} a las ${s.hora} (${solServs(s)}). `;
     abrirWsp(t,m);return}
@@ -1044,7 +1043,7 @@ async function mpApi(path,opt={}){const u=firebase.auth().currentUser;if(!u)thro
   if(!r.ok){const er=new Error((d&&(d.message||d.error))||("Error "+r.status));er.data=d;er.status=r.status;throw er}return d}
 function pointOn(){if(!S.cfg.pointTerminal)return false;return S.ptLive?S.ptLive==="PDV":!!S.cfg.pointIntegrado}
 async function ptSync(){if(S.ptSyncing||!S.cfg.pointTerminal)return;S.ptSyncing=true;try{const d=await mpApi("/status");S.ptStatus=d;const ts=((d.terminales||{}).data||{}).terminals||(d.terminales||{}).terminals||[];const t=ts.find(x=>x.id===S.cfg.pointTerminal);if(t&&t.operating_mode)S.ptLive=t.operating_mode;render()}catch(e){}S.ptSyncing=false}
-function vPointMini(){if(!S.cfg.pointTerminal||!(S.admin||S.rol==="caja"))return"";if(!S.ptLive&&!S.ptSyncing)setTimeout(ptSync,50);const on=pointOn();
+function vPointMini(){if(!S.cfg.pointTerminal||!(S.admin||S.rol==="caja"||S.rol==="profesional"))return"";if(!S.ptLive&&!S.ptSyncing)setTimeout(ptSync,50);const on=pointOn();
   return `<div class="note ${on?"info":""}" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span><b>Máquina: ${on?"modo integrado (cobra desde SurCaja)":"modo normal (cobro a mano)"}</b></span><span class="row-btns">${on?`<button class="mini" data-act="pt-modo" data-m="STANDALONE">Pasar a modo normal</button>`:`<button class="mini" data-act="pt-modo" data-m="PDV">Pasar a modo integrado</button>`}</span><span class="muted" style="font-size:12px;width:100%">Después de cambiar el modo, reinicia la máquina.</span></div>`}
 function vPoint(total,puede){const P=S.point;
   if(!P)return `<div class="step" style="gap:6px"><button class="btn" data-act="pt-cobrar" ${puede&&total>=100&&!S.saving?"":"disabled"}>Cobrar ${clp(total)} en la máquina</button><p id="pt-falta" class="falta" ${ptFalta()?"":"hidden"}>${esc(ptFalta())}</p><p class="muted" style="font-size:12px">SurCaja envía solo el valor del servicio. <b>La propina la agrega la clienta en la máquina</b> y SurCaja la anota sola: no la escribas aquí. Al aprobarse, el servicio se guarda solo.</p></div>`;
