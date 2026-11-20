@@ -238,7 +238,18 @@ async function init(){
   if(!S.myPro)db.collection("solicitudes").where("estado","==","nueva").onSnapshot(q=>{S.sols=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.fecha+a.hora).localeCompare(String(b.fecha+b.hora)));render()},e=>console.warn(e));
   subDia();subAgenda();
 }
-function subAgenda(){
+function avisoSonido(){try{const A=window.AudioContext||window.webkitAudioContext;const c=avisoSonido.c||(avisoSonido.c=new A());const o=c.createOscillator(),g=c.createGain();o.type="sine";o.frequency.value=880;g.gain.setValueAtTime(0.0001,c.currentTime);g.gain.exponentialRampToValueAtTime(0.25,c.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,c.currentTime+0.5);o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+0.55)}catch(e){}}
+function avisar(titulo,texto){S.avisos=[{titulo,texto,t:new Date().toISOString()}].concat(S.avisos||[]).slice(0,20);toast(titulo+": "+texto);avisoSonido();
+  try{if(window.Notification&&Notification.permission==="granted"&&document.hidden)new Notification(titulo,{body:texto,icon:"logo-nua.png",tag:"surcaja-"+Date.now()})}catch(e){}render()}
+function startAvisos(){if(S._avisosOn||!window.firebase||!firebase.auth().currentUser)return;S._avisosOn=true;const t0=new Date().toISOString();const prev={};let primero=true;
+  const col=firebase.firestore().collection("citas");const q=S.myPro?col.where("profId","==",S.myPro):col.where("modificado",">=",t0);
+  q.onSnapshot(snap=>{snap.docChanges().forEach(ch=>{const c=ch.doc.data()||{};const k=[c.fecha,c.hora,c.estado,c.profId].join("|");const antes=prev[ch.doc.id];prev[ch.doc.id]=k;
+      if(primero||ch.doc.metadata.hasPendingWrites||(c.tipo||"cita")==="bloqueo")return;if(String(c.modificado||c.creado||"")<t0)return;if(ch.type==="removed")return;
+      const sv=(c.servicios||[]).map(x=>x.nombre).join(", ");const det=`${c.clientaNombre||"Clienta"} · ${sv} · ${fechaLarga(c.fecha)} ${c.hora} con ${c.profNombre||""}`;
+      if(ch.type==="added"&&!antes)avisar("Nueva cita",det);else if(c.estado==="cancelada"&&(!antes||antes.split("|")[2]!=="cancelada"))avisar("Cita cancelada",det);else if(antes&&antes!==k&&c.estado!=="cancelada")avisar("Cita modificada",det)});primero=false},e=>{S._avisosOn=false;console.warn(e)})}
+async function avisoClienta(c,tipo){try{if(!c||(c.tipo||"cita")==="bloqueo")return;const cli=S.clientas.find(x=>x.id===c.clientaId);const to=cli&&String(cli.correo||cli.email||"").trim();if(!to||!/@/.test(to))return;
+  await mpApi("/aviso-clienta",{method:"POST",body:JSON.stringify({to,tipo,nombre:String(c.clientaNombre||"").split(" ")[0],fecha:fechaLarga(c.fecha),hora:c.hora,servicios:(c.servicios||[]).map(s=>s.nombre).join(", "),profesional:c.profNombre||"",local:S.cfg.local||"NÚASPA",direccion:S.cfg.direccion||"",whatsapp:S.cfg.whatsapp||"",reserva:RESERVA_URL})});toast("Aviso enviado por correo a "+to)}catch(e){if(e&&e.status!==409)console.warn("aviso correo",e)}}
+function subAgenda(){try{startAvisos()}catch(e){}
   if(!S.db)return;
   if(S.unsubSem)S.unsubSem();if(S.unsubMan)S.unsubMan();
   if(S.myPro){const a=lunesDe(S.agDia),b=masDias(a,6),m=masDias(hoy(),1);S.unsubMan=null;S.unsubSem=S.db.collection("citas").where("profId","==",S.myPro).onSnapshot(q=>{const all=q.docs.map(d=>({id:d.id,...d.data()}));S.citasSem=all.filter(c=>c.fecha>=a&&c.fecha<=b);S.citasMan=all.filter(c=>c.fecha===m);render()},err);return}
@@ -695,9 +706,11 @@ function vAgenda(){
   const man=S.citasMan.filter(c=>c.tipo!=="bloqueo"&&(c.estado==="reservada"||c.estado==="confirmada"));
   const pend=man.filter(c=>!c.recordado);
   return `<div class="ag-head"><div><h1>Agenda</h1><p class="muted">${esc(fechaLarga(S.agDia))}</p></div>
+    ${window.Notification&&Notification.permission==="default"?`<p class="falta" style="margin:0 0 8px">⚠ Activa los avisos de citas nuevas, cambios y cancelaciones en este equipo. <button class="mini" data-act="avisos-permiso">Activar avisos</button></p>`:""}
     <div class="row-btns"><button class="btn sec" data-act="ag-mover" data-n="-7" aria-label="Semana anterior">‹</button><button class="btn sec" data-act="ag-hoy">Hoy</button><button class="btn sec" data-act="ag-mover" data-n="7" aria-label="Semana siguiente">›</button>
     <label for="ag-fecha" style="min-width:160px"><input id="ag-fecha" type="date" value="${S.agDia}" aria-label="Ir a fecha"></label>
-    <button class="btn" data-act="ag-nueva">+ Nueva cita</button></div></div>
+    <button class="btn" data-act="ag-nueva">+ Nueva cita</button>${!S.myPro&&window.XLSX?`<label for="ap-file" class="btn sec" style="cursor:pointer">Importar AgendaPro<input id="ap-file" type="file" accept=".xlsx,.xls,.csv" hidden></label>`:""}</div></div>
+    ${S.apImp?`<div class="note ${S.apImp.err?"risk":"info"}"><b>${esc(S.apImp.titulo)}</b><span>${esc(S.apImp.msg)}</span>${S.apImp.falta&&S.apImp.falta.length?`<p class="falta">⚠ ${esc(S.apImp.falta.join(" · "))}</p>`:""}</div>`:""}
   <div class="week">${week}</div>
   <div class="kpis">
     <div class="kpi"><span>Citas del día</span><b>${act.length}</b></div>
@@ -777,8 +790,8 @@ async function guardarCita(){if(S.form)S.form.err="";const {F,pro,items,dur,prec
     const doc=F.tipo==="bloqueo"?{tipo:"bloqueo",fecha:F.fecha,hora:F.hora,dur,profId:pro.id,profNombre:pro.nombre,motivo:F.motivo.trim(),estado:"reservada",modificado:now}
       :{tipo:"cita",fecha:F.fecha,hora:F.hora,dur,profId:pro.id,profNombre:pro.nombre,clientaId:cId,clientaNombre:cNom,telefono:cTel,
         servicios:items.map(s=>({id:s.id,nombre:s.nombre,precio:Number(s.precio)||0,dur:durDe(s,F.pro)})),precio,origen:F.origen,nota:F.nota.trim(),modificado:now};
-    if(F.id){await S.db.doc("citas/"+F.id).update(doc);toast("Cita actualizada")}
-    else{doc.estado="reservada";doc.creado=now;const ref=await S.db.collection("citas").add(doc);if(F.solId){try{await S.db.doc("solicitudes/"+F.solId).update({estado:"agendada",citaId:ref.id,modificado:now})}catch(e){console.warn(e)}}toast(F.tipo==="bloqueo"?"Horario bloqueado":`Agendada: ${cNom}, ${fechaCorta(F.fecha)} ${F.hora}`)}
+    if(F.id){const ant=citaPorId(F.id);await S.db.doc("citas/"+F.id).update(doc);toast("Cita actualizada");if(ant&&(ant.fecha!==doc.fecha||ant.hora!==doc.hora||ant.profId!==doc.profId))avisoClienta(Object.assign({},ant,doc),"modificada")}
+    else{doc.estado="reservada";doc.creado=now;const ref=await S.db.collection("citas").add(doc);avisoClienta(doc,"agendada");if(F.solId){try{await S.db.doc("solicitudes/"+F.solId).update({estado:"agendada",citaId:ref.id,modificado:now})}catch(e){console.warn(e)}}toast(F.tipo==="bloqueo"?"Horario bloqueado":`Agendada: ${cNom}, ${fechaCorta(F.fecha)} ${F.hora}`)}
     if(F.fecha!==S.agDia){S.agDia=F.fecha;subAgenda()}
     S.form=null;render();
   }catch(e){fail(e)}
@@ -804,6 +817,40 @@ async function pubCat(){if(!S.admin||!S.db||!S.servs.length||!S.pros.length)retu
   try{const cur=await S.db.doc("publico/catalogo").get();if(cur.exists){const c=Object.assign({},cur.data());delete c.actualizado;if(stable(c)===h){_pubH=h;return}}
     await S.db.doc("publico/catalogo").set(Object.assign({},cat,{actualizado:new Date().toISOString()}));_pubH=h}catch(e){console.warn("catálogo web",e)}}
 const _ocH={};
+const _nrm=x=>String(x??"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().trim();
+function apFecha(v){if(v instanceof Date&&!isNaN(v))return ymd(v);const t=String(v||"").trim();let m=t.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return m[1]+"-"+m[2]+"-"+m[3];m=t.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);if(m){const y=m[3].length===2?"20"+m[3]:m[3];return y+"-"+m[2].padStart(2,"0")+"-"+m[1].padStart(2,"0")}return""}
+function apHora(v){if(v instanceof Date&&!isNaN(v))return String(v.getHours()).padStart(2,"0")+":"+String(v.getMinutes()).padStart(2,"0");if(typeof v==="number"&&v<1){const mm=Math.round(v*1440);return String(Math.floor(mm/60)).padStart(2,"0")+":"+String(mm%60).padStart(2,"0")}const m=String(v||"").match(/(\d{1,2}):(\d{2})/);return m?m[1].padStart(2,"0")+":"+m[2]:""}
+async function ocupDia(f){try{const q=await S.db.collection("citas").where("fecha","==",f).get();const cs=q.docs.map(d=>d.data());const slots=cs.filter(c=>activa(c)&&c.profId&&c.hora).map(c=>({p:c.profId,h:c.hora,d:Number(c.dur)||PASO})).sort((x,y)=>(x.p+x.h).localeCompare(y.p+y.h));await S.db.doc("ocupado/"+f).set({slots,act:new Date().toISOString()});_ocH[f]=JSON.stringify(slots)}catch(e){console.warn("ocupado",e)}}
+async function apImportar(file){S.apImp={titulo:"Leyendo el archivo de AgendaPro…",msg:""};render();
+  try{const wb=XLSX.read(await file.arrayBuffer(),{type:"array",cellDates:true});const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:"",raw:true});return await apImportarFilas(rows)}
+  catch(e){S.apImp={titulo:"No se pudo importar el archivo",msg:String(e.message||e),err:true};render()}}
+window.apImportarFilas=async function(rows){S.apImp={titulo:"Cargando reservas de AgendaPro…",msg:""};render();
+  try{if(!rows||!rows.length)throw new Error("No llegaron reservas para cargar.");
+    const cols=Object.keys(rows[0]);const col=(...pat)=>cols.find(c=>pat.some(p=>_nrm(c).includes(p)));
+    const cF=col("fecha"),cH=col("hora","inicio"),cP=col("profesional","prestador","staff","recurso"),cC=col("cliente","nombre"),cS=col("servicio"),cE=col("estado"),cT=col("telefono","celular","fono","movil"),cM=col("correo","email","mail"),cD=col("duracion");
+    const falta=[];if(!cF)falta.push("columna de fecha");if(!cP)falta.push("columna de profesional");if(!cC)falta.push("columna de clienta");
+    if(falta.length)throw Object.assign(new Error("No encontré en el archivo: "+falta.join(", ")+". Columnas que trae: "+cols.join(", ")),{});
+    const h0=hoy();let nuevas=0,yaEstaban=0,pasadas=0,canceladas=0;const sinPro={},fechas={};
+    for(const r of rows){const est=_nrm(cE?r[cE]:"");if(/cancel|anul|no asist|elimin/.test(est)){canceladas++;continue}
+      let fecha=apFecha(r[cF]);let hora=apHora(cH?r[cH]:r[cF]);if(!fecha||!hora)continue;if(fecha<h0){pasadas++;continue}
+      const pn=_nrm(r[cP]);const pro=S.pros.find(p=>p.activo!==false&&(_nrm(p.nombre)===pn||pn.startsWith(_nrm(p.nombre).split(" ")[0])||_nrm(p.nombre).startsWith(pn.split(" ")[0])))||S.pros.find(p=>pn&&pn.includes(_nrm(p.nombre).split(" ")[0]));
+      if(!pro){sinPro[String(r[cP]||"(sin nombre)")]=(sinPro[String(r[cP]||"(sin nombre)")]||0)+1;continue}
+      const q=await S.db.collection("citas").where("fecha","==",fecha).get();const ya=q.docs.map(d=>d.data()).some(c=>c.profId===pro.id&&c.hora===hora&&activa(c));
+      if(ya){yaEstaban++;continue}
+      const nom=String(r[cC]||"").trim()||"Clienta AgendaPro";const tel=String(cT?r[cT]:"").trim();const mail=String(cM?r[cM]:"").trim();
+      let cli=S.clientas.find(c=>(tel&&telNorm(c.telefono)&&telNorm(c.telefono)===telNorm(tel))||(mail&&_nrm(c.correo)===_nrm(mail)))||S.clientas.find(c=>_nrm(c.nombre)===_nrm(nom));
+      const now=new Date().toISOString();let cliId=cli?cli.id:null;
+      if(!cli){const ref=await S.db.collection("clientas").add({nombre:nom,telefono:tel,correo:mail,creado:now,origen:"agendapro"});cliId=ref.id}
+      const svNom=String(cS?r[cS]:"").trim();const sv=S.servs.find(x=>_nrm(x.nombre)===_nrm(svNom))||S.servs.find(x=>svNom&&_nrm(x.nombre).includes(_nrm(svNom).slice(0,18)));
+      const dur=Number(cD?String(r[cD]).replace(/\D/g,""):0)||(sv?durDe(sv,pro.id):60);
+      await S.db.collection("citas").add({tipo:"cita",fecha,hora,dur,profId:pro.id,profNombre:pro.nombre,clientaId:cliId,clientaNombre:cli?cli.nombre:nom,telefono:cli?(cli.telefono||tel):tel,
+        servicios:[{id:sv?sv.id:"",nombre:sv?sv.nombre:(svNom||"Servicio AgendaPro"),precio:sv?Number(sv.precio)||0:0,dur}],precio:sv?Number(sv.precio)||0:0,origen:"agendapro",nota:"Importada desde AgendaPro",estado:"reservada",creado:now,modificado:now});
+      nuevas++;fechas[fecha]=1}
+    for(const f of Object.keys(fechas))await ocupDia(f);
+    const fl=Object.entries(sinPro).map(([n,k])=>`${k} cita(s) de "${n}" sin profesional activa en SurCaja`);
+    S.apImp={titulo:`AgendaPro: ${nuevas} cita(s) nueva(s) cargada(s)`,msg:`${yaEstaban} ya estaban en SurCaja, ${pasadas} eran de días pasados y ${canceladas} estaban canceladas. Las horas nuevas quedaron bloqueadas en tu página de reservas.`,falta:fl};
+    toast(nuevas?"Reservas de AgendaPro cargadas":"No había reservas nuevas");subAgenda();render();return{nuevas,yaEstaban,pasadas,canceladas,sinPro}}
+  catch(e){S.apImp={titulo:"No se pudo importar",msg:String(e.message||e),err:true};render();return{error:String(e.message||e)}}}
 function syncOcup(a,b){if(S.myPro||!S.db)return;const h0=hoy();
   for(let f=a;f<=b;f=masDias(f,1)){if(f<h0)continue;
     const slots=S.citasSem.filter(c=>c.fecha===f&&activa(c)&&c.profId&&c.hora).map(c=>({p:c.profId,h:c.hora,d:Number(c.dur)||PASO})).sort((x,y)=>(x.p+x.h).localeCompare(y.p+y.h));
@@ -907,7 +954,7 @@ document.addEventListener("click",async ev=>{
   if(a==="f-forzar"){S.form.forzar=true;render();return}
   if(a==="f-guardar")return guardarCita();
   if(a==="c-estado"){const k=b.dataset.k;await S.db.doc("citas/"+id).update({estado:k,modificado:new Date().toISOString()});
-    const c=citaPorId(id);if(c&&S.cli.hist){const h=S.cli.hist.find(x=>x.id===id);if(h)h.estado=k}
+    const c=citaPorId(id);if(k==="cancelada"&&c&&c.estado!=="cancelada")avisoClienta(c,"cancelada");if(c&&S.cli.hist){const h=S.cli.hist.find(x=>x.id===id);if(h)h.estado=k}
     toast("Estado: "+estTxt(k)[1]+(k==="cancelada"&&c&&c.telefono?". Puedes avisarle por WhatsApp.":""));render();return}
   if(a==="c-wsp"){const c=citaPorId(id);if(c)await enviarWsp(c,b.dataset.k);return}
   if(a==="c-cobrar"){const c=citaPorId(id);if(c)cobrarCita(c);return}
@@ -930,6 +977,7 @@ document.addEventListener("click",async ev=>{
     const nom=String(s.nombre||"").split(" ")[0];const m=`Hola ${nom}! Te escribimos de ${S.cfg.local||"NÚASPA"}. Recibimos tu solicitud de hora para el ${fechaLarga(s.fecha)} a las ${s.hora} (${solServs(s)}). `;
     abrirWsp(t,m);return}
   if(a==="sol-desc"){await S.db.doc("solicitudes/"+id).update({estado:"descartada",modificado:new Date().toISOString()});toast("Solicitud descartada");return}
+  if(a==="avisos-permiso"){try{const r=await Notification.requestPermission();toast(r==="granted"?"Avisos activados en este equipo":"Los avisos quedaron desactivados; puedes activarlos en la configuración del navegador")}catch(e){}avisoSonido();render();return}
   if(a==="respaldo"){b.disabled=true;toast("Preparando respaldo…");const out={creado:new Date().toISOString(),por:(S.user&&S.user.email)||"",colecciones:{}};let n=0;
     for(const col of ["registros","giftcards","servicios","profesionales","citas","clientas","cierres","gastos","mp","config","solicitudes","usuarios","firmas","ocupado","publico"]){try{const q=await firebase.firestore().collection(col).get();out.colecciones[col]=q.docs.map(d=>({id:d.id,...d.data()}));n+=q.size}catch(e){out.colecciones[col]={error:"sin acceso"}}}
     await save("Respaldo SurCaja "+hoy()+".json",new TextEncoder().encode(JSON.stringify(out)));
@@ -1021,6 +1069,7 @@ document.addEventListener("change",async ev=>{
   const t=ev.target;
   if(t.id==="cf-wspmodo"){try{localStorage.setItem("wspModo",t.value)}catch(e){}toast(t.value==="web"?"Los avisos se abrirán en WhatsApp Web":"Los avisos se abrirán en la app de WhatsApp");return}
   if(t.id==="mp-file"&&t.files&&t.files[0]){mpLeer(t.files[0]);return}
+  if(t.id==="ap-file"&&t.files&&t.files[0]){apImportar(t.files[0]);t.value="";return}
   if(t.dataset.mpk&&S.mpImp){S.mpImp.map[t.dataset.mpk]=Number(t.value);render();return}
   if(t.id==="mp-incl"&&S.mpImp){S.mpImp.incl=t.value==="1";render();return}
   if(t.id==="f-dia"&&t.value){S.dia=t.value;subDia();render();return}
