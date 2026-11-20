@@ -6,20 +6,20 @@
 <style>
 /* Layout: barra de pestañas fija arriba; cada pestaña en una columna de hasta 1040px; la de registro usa botones grandes para tablet */
 :root{
-  --bg:#eef2f5; --surface:#ffffff; --ink:#132338; --muted:#5b6b7d; --line:#d9e1e8;
-  --plum:#16325c; --plum-ink:#ffffff; --plum-soft:#e6ecf5; --sage:#0d7a77; --sage-soft:#e2f2f1;
+  --bg:#F7F1EA; --surface:#ffffff; --ink:#2A2420; --muted:#6E6258; --line:#E6DCCF;
+  --plum:#6F4A26; --plum-ink:#ffffff; --plum-soft:#F1E8DA; --sage:#0d7a77; --sage-soft:#e2f2f1;
   --amber:#b26b12; --amber-soft:#fbefdc; --red:#a3312f; --red-soft:#f8e3e2;
   --f-display:"Archivo","Helvetica Neue",Arial,sans-serif;
   --f-body:"IBM Plex Sans","Segoe UI",Arial,sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0c1420; --surface:#132033; --ink:#e6edf5; --muted:#9db0c4; --line:#26384f;
-  --plum:#9cc1f0; --plum-ink:#0c1420; --plum-soft:#1a2a40; --sage:#4cc2bd; --sage-soft:#163a3d;
+  --bg:#1B1612; --surface:#26201A; --ink:#F2EBE3; --muted:#BDAE9C; --line:#3A3027;
+  --plum:#D9B77E; --plum-ink:#1B1612; --plum-soft:#2F271F; --sage:#4cc2bd; --sage-soft:#163a3d;
   --amber:#f0b260; --amber-soft:#3a2c17; --red:#f08b88; --red-soft:#3d1f1f; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#0c1420; --surface:#132033; --ink:#e6edf5; --muted:#9db0c4; --line:#26384f;
-  --plum:#9cc1f0; --plum-ink:#0c1420; --plum-soft:#1a2a40; --sage:#4cc2bd; --sage-soft:#163a3d;
+  --bg:#1B1612; --surface:#26201A; --ink:#F2EBE3; --muted:#BDAE9C; --line:#3A3027;
+  --plum:#D9B77E; --plum-ink:#1B1612; --plum-soft:#2F271F; --sage:#4cc2bd; --sage-soft:#163a3d;
   --amber:#f0b260; --amber-soft:#3a2c17; --red:#f08b88; --red-soft:#3d1f1f; color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--f-body);margin:0}
@@ -154,7 +154,7 @@ body.wide .grid-wrap{max-height:calc(100vh - 130px)}
 </style>
 
 <div class="bar"><div class="bar-in">
-  <div class="brand"><span class="sx">SurCaja</span> <small>NÚASPA · La caja que cuadra todos los días</small></div>
+  <div class="brand"><img src="logo-nua.png" alt="NÚASPA" style="height:44px;width:auto;vertical-align:middle"> <small>con SurCaja</small></div>
   <nav id="nav" aria-label="Secciones">
     <button data-tab="agenda" aria-current="page">Agenda</button>
     <button data-tab="registrar">Registrar</button>
