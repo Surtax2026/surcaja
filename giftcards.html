@@ -121,6 +121,7 @@ function gcListo(){return GC_FONDO.complete&&GC_FONDO.naturalWidth>0?Promise.res
 function dibujar(g){const cv=document.createElement("canvas");cv.width=2000;cv.height=1194;const x=cv.getContext("2d");
   x.fillStyle="#f6ece0";x.fillRect(0,0,2000,1194);
   if(GC_FONDO.naturalWidth)x.drawImage(GC_FONDO,0,0,2000,1194);
+  if(x.roundRect){x.save();x.beginPath();x.rect(0,0,2000,1194);x.roundRect(5,5,1990,1184,62);x.fillStyle="#f6ece0";x.fill("evenodd");x.restore()}
   const ink="#6f4a26";x.fillStyle=ink;x.textBaseline="alphabetic";
   const fit=(t,max,size,fam)=>{let s=size;x.font=`${s}px ${fam}`;while(x.measureText(t).width>max&&s>24){s-=2;x.font=`${s}px ${fam}`}};
   const serif="'Cormorant Garamond','Playfair Display',Georgia,'Times New Roman',serif";
