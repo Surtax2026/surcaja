@@ -5,6 +5,7 @@
   var cfg = window.SURCAJA_FIREBASE;
   firebase.initializeApp(cfg);
   var auth = firebase.auth(), fs = firebase.firestore();
+  try { fs.enablePersistence({ synchronizeTabs: true }).catch(function(){}); } catch (e) {}
   var perfil = null, listo, resolver;
   listo = new Promise(function(r){ resolver = r; });
 
