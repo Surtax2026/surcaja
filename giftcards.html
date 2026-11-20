@@ -97,7 +97,7 @@ function vLista(){const L=S.list.filter(g=>(!S.filtro||g.estado===S.filtro)&&(!S
   ${L.length?`<div class="tbl"><table><thead><tr><th>Código</th><th>Incluye</th><th>Para / Empresa</th><th>Vendida</th><th class="n">Valor</th><th class="n">Saldo</th><th>Estado</th><th></th></tr></thead><tbody>
   ${L.map(g=>{const e=EST[g.estado]||[g.estado,"n"];return`<tr><td class="m"><b>${esc(g.id)}</b></td><td>${esc(g.descripcion)}</td><td>${esc(g.para||"—")}${g.empresa?`<br><span class="muted" style="font-size:12px">${esc(g.empresa)}</span>`:""}</td><td class="m">${esc(g.fechaVenta)}</td><td class="n">${clp(g.valor)}</td><td class="n">${clp(g.saldo)}</td><td><span class="pill ${e[1]}">${e[0]}</span></td><td><button class="mini" data-act="ver" data-id="${esc(g.id)}">Ver</button></td></tr>`}).join("")}</tbody></table></div>`:`<div class="empty">No hay gift cards en esta vista.</div>`}</div>`}
 function vDet(){const g=S.list.find(x=>x.id===S.sel);if(!g)return`<div class="empty">No encontrada. <button class="mini" data-act="volver">Volver</button></div>`;const e=EST[g.estado]||[g.estado,"n"];const local=S.cfg.local||"NÚASPA";
-  const txt=`¡Hola${g.para?" "+String(g.para).split(" ")[0]:""}! 🎁 Te regalaron una gift card de ${local}${g.de?" de parte de "+g.de:""}: ${g.descripcion}. Tu código es ${g.id}.${g.mensaje?`\n\n“${String(g.mensaje).trim()}”\n\n`:" "}Agenda tu hora y presenta el código al llegar 💅`;
+  const txt=`¡Hola${g.para?" "+String(g.para).split(" ")[0]:""}! 🎁 Te regalaron una gift card de ${local}${g.de?" de parte de "+g.de:""}: ${g.descripcion}. Tu código es ${g.id}.${String(g.mensaje||"").trim()?`\n\n“${String(g.mensaje).trim()}”\n\n`:" "}Agenda tu hora y presenta el código al llegar 💅`;
   return`<div class="row" style="justify-content:space-between"><button class="btn sec" data-act="volver">← Volver</button><span class="pill ${e[1]}">${e[0]}</span></div>
   <h1 class="m">${esc(g.id)}</h1>
   <div class="panel"><div class="fields">
@@ -131,7 +131,7 @@ function dibujar(g){const cv=document.createElement("canvas");cv.width=2000;cv.h
   const linea=["Código "+g.id,g.para?"Para: "+g.para:"",g.de?"De: "+g.de:""].filter(Boolean).join("      ·      ");
   x.textAlign="center";fit(linea,1700,38,serif);x.fillText(linea,1000,1010);
   const msg=String(g.mensaje||"").trim();
-  if(msg){const t="“"+msg+"”";x.textAlign="left";let sz=40;const f=()=>x.font=`italic ${sz}px ${serif}`;f();while(x.measureText(t).width>1320&&sz>22){sz-=2;f()}x.fillText(t,175,720)}
+  if(msg){const t="“"+msg+"”";x.textAlign="left";let sz=40;const f=()=>x.font=`italic ${sz}px ${serif}`;f();while(x.measureText(t).width>1320&&sz>22){sz-=2;f()}x.fillText(t,175,720,1320)}
   return cv.toDataURL("image/jpeg",.92)}
 async function nuevoCodigo(){const A="ABCDEFGHJKMNPQRSTUVWXYZ23456789";for(let i=0;i<20;i++){let c="NUA-";for(let j=0;j<4;j++)c+=A[Math.floor(Math.random()*A.length)];const s=await S.db.doc("giftcards/"+c).get();if(!s.exists)return c}throw new Error("sin código")}
 async function vender(){const F=S.F,emp=F.tipo==="empresa",u=valorUnit(F),n=emp?Math.max(1,int(F.cantidad)||1):1;

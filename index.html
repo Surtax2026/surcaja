@@ -1099,8 +1099,14 @@ document.addEventListener("change",async ev=>{
 });
 
 const MPAPI="https://surcaja-nuaspa.netlify.app/api";
-async function mpApi(path,opt={}){const u=firebase.auth().currentUser;if(!u)throw new Error("Sin sesión");const tk=await u.getIdToken();
-  const r=await fetch(MPAPI+path,Object.assign({},opt,{headers:{"Content-Type":"application/json",Authorization:"Bearer "+tk}}));let d={};try{d=await r.json()}catch(e){}
+const esRed=e=>!!e&&(e.code==="auth/network-request-failed"||e.name==="TypeError"||/network|failed to fetch|load failed/i.test(String(e.message||"")));
+const espera=ms=>new Promise(r=>setTimeout(r,ms));
+async function tokenSeguro(u){let ult;for(let i=0;i<4;i++){try{return await u.getIdToken()}catch(e){ult=e;if(!esRed(e))throw e;await espera(1200*(i+1))}}
+  const er=new Error("Sin conexión a internet en este equipo");er.red=true;er.causa=ult;throw er}
+async function mpApi(path,opt={}){const u=firebase.auth().currentUser;if(!u)throw new Error("Sin sesión");const tk=await tokenSeguro(u);
+  const metodo=String(opt.method||"GET").toUpperCase();let r;
+  for(let i=0;;i++){try{r=await fetch(MPAPI+path,Object.assign({},opt,{headers:{"Content-Type":"application/json",Authorization:"Bearer "+tk}}));break}
+    catch(e){if(metodo==="GET"&&i<2&&esRed(e)){await espera(1200*(i+1));continue}const er=new Error("Sin conexión a internet en este equipo");er.red=true;er.envio=true;er.causa=e;throw er}}let d={};try{d=await r.json()}catch(e){}
   if(!r.ok){const er=new Error((d&&(d.message||d.error))||("Error "+r.status));er.data=d;er.status=r.status;throw er}return d}
 function pointOn(){if(!S.cfg.pointTerminal)return false;return S.ptLive?S.ptLive==="PDV":!!S.cfg.pointIntegrado}
 async function ptSync(){if(S.ptSyncing||!S.cfg.pointTerminal)return;S.ptSyncing=true;try{const d=await mpApi("/status");S.ptStatus=d;const ts=((d.terminales||{}).data||{}).terminals||(d.terminales||{}).terminals||[];const t=ts.find(x=>x.id===S.cfg.pointTerminal);if(t&&t.operating_mode)S.ptLive=t.operating_mode;render()}catch(e){}S.ptSyncing=false}
@@ -1126,7 +1132,7 @@ async function cobrarPoint(){const sel=S.sel,pro=S.pros.find(p=>p.id===sel.pro);
   S.point={estado:"enviando",total,ref};render();
   try{const o=await mpApi("/orders",{method:"POST",body:JSON.stringify({amount:total,ref,terminal_id:S.cfg.pointTerminal,description:(pro.nombre+": "+nombres).slice(0,150),taxes:[{payer_condition:"payment_taxable_iva"}]})});
     S.point=Object.assign(S.point,{estado:"en_maquina",orderId:o.id,mpSt:o.status||"created",t0:Date.now()});render();pollPoint(o.id)}
-  catch(e){S.point={estado:"error",titulo:"No se pudo enviar el cobro a la máquina",msg:(e.status===409?"La cuenta de Mercado Pago aún no está conectada. ":"")+e.message+". Puedes cobrar como siempre y registrar el voucher."};render()}}
+  catch(e){S.point={estado:"error",titulo:"No se pudo enviar el cobro a la máquina",msg:e.red?(e.envio?"Se cortó internet justo al enviar el cobro. Mira la máquina: si el cobro apareció, cancélalo ahí; después revisa el wifi y vuelve a tocar Cobrar.":"Este equipo perdió la conexión a internet un momento y el cobro no salió (no se cobró nada). Revisa el wifi o los datos y vuelve a tocar Cobrar.")+" Si sigue igual, cobra como siempre en la máquina y registra el voucher.":(e.status===409?"La cuenta de Mercado Pago aún no está conectada. ":"")+e.message+". Puedes cobrar como siempre y registrar el voucher."};render()}}
 async function pollPoint(id){const t0=Date.now();
   while(S.point&&S.point.orderId===id&&Date.now()-t0<11*60e3){await new Promise(r=>setTimeout(r,2500));
     let o;try{o=await mpApi("/orders/"+id)}catch(e){if(S.point&&S.point.orderId===id){S.point.errN=(S.point.errN||0)+1;S.point.errMsg=String(e.message||e);render()}continue}
