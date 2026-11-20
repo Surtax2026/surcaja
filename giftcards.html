@@ -84,7 +84,7 @@ function vForm(){const F=S.F,emp=F.tipo==="empresa",u=valorUnit(F),n=emp?Math.ma
   ${emp?`<div class="fields"><label for="gc-emp">Empresa (razón social)<input id="gc-emp" data-f="empresa" value="${esc(F.empresa)}"></label><label for="gc-rut">RUT de la empresa<input id="gc-rut" class="m" data-f="rutEmpresa" value="${esc(F.rutEmpresa)}" placeholder="76.123.456-7"></label><label for="gc-cont">Contacto (nombre)<input id="gc-cont" data-f="contacto" value="${esc(F.contacto)}"></label><label for="gc-tel">Teléfono del contacto<input id="gc-tel" data-f="telefono" value="${esc(F.telefono)}" inputmode="tel"></label></div>
     <p class="muted" style="margin:0;font-size:14px">Se crean ${n} gift card(s) con código propio. Después puedes escribir el nombre de cada destinataria en su ficha.</p>`
   :`<div class="fields"><label for="gc-para">Para (quien la recibe)<input id="gc-para" data-f="para" value="${esc(F.para)}"></label><label for="gc-de">De (quien la regala)<input id="gc-de" data-f="de" value="${esc(F.de)}"></label><label for="gc-tel">Teléfono de quien compra<input id="gc-tel" data-f="telefono" value="${esc(F.telefono)}" inputmode="tel"></label></div>`}
-  <label for="gc-msg">Mensaje en la gift card (opcional)<input id="gc-msg" data-f="mensaje" value="${esc(F.mensaje)}" placeholder="Ej. ¡Feliz cumpleaños! Te mereces un día de regaloneo"></label>
+  <label for="gc-msg">Mensaje en la gift card (opcional)<input id="gc-msg" data-f="mensaje" maxlength="100" value="${esc(F.mensaje)}" placeholder="Ej. ¡Feliz cumpleaños! Te mereces un día de regaloneo"></label>
   <div class="row"><span class="muted" style="font-size:13px;font-weight:600">Pagó con:</span><div class="chips">${MEDIOS.map(([k,l])=>`<button class="chip" data-act="medio" data-k="${k}" aria-pressed="${F.medio===k}">${l}</button>`).join("")}</div></div>
   <div class="fields">${F.medio==="tarjeta"?`<label for="gc-op">N° de operación del voucher<input id="gc-op" class="m" data-f="op" value="${esc(F.op)}" inputmode="numeric"></label>`:""}<label for="gc-fecha">Fecha de la venta<input id="gc-fecha" type="date" max="${hoy()}" data-f="fecha" value="${esc(F.fecha)}"></label></div>
   ${emp&&F.medio!=="tarjeta"?`<div class="note info">Las empresas suelen pedir factura. Avísale a Surtax para emitirla a nombre de la empresa.</div>`:""}
@@ -97,12 +97,12 @@ function vLista(){const L=S.list.filter(g=>(!S.filtro||g.estado===S.filtro)&&(!S
   ${L.length?`<div class="tbl"><table><thead><tr><th>Código</th><th>Incluye</th><th>Para / Empresa</th><th>Vendida</th><th class="n">Valor</th><th class="n">Saldo</th><th>Estado</th><th></th></tr></thead><tbody>
   ${L.map(g=>{const e=EST[g.estado]||[g.estado,"n"];return`<tr><td class="m"><b>${esc(g.id)}</b></td><td>${esc(g.descripcion)}</td><td>${esc(g.para||"—")}${g.empresa?`<br><span class="muted" style="font-size:12px">${esc(g.empresa)}</span>`:""}</td><td class="m">${esc(g.fechaVenta)}</td><td class="n">${clp(g.valor)}</td><td class="n">${clp(g.saldo)}</td><td><span class="pill ${e[1]}">${e[0]}</span></td><td><button class="mini" data-act="ver" data-id="${esc(g.id)}">Ver</button></td></tr>`}).join("")}</tbody></table></div>`:`<div class="empty">No hay gift cards en esta vista.</div>`}</div>`}
 function vDet(){const g=S.list.find(x=>x.id===S.sel);if(!g)return`<div class="empty">No encontrada. <button class="mini" data-act="volver">Volver</button></div>`;const e=EST[g.estado]||[g.estado,"n"];const local=S.cfg.local||"NÚASPA";
-  const txt=`¡Hola${g.para?" "+String(g.para).split(" ")[0]:""}! 🎁 Te regalaron una gift card de ${local}${g.de?" de parte de "+g.de:""}: ${g.descripcion}. Tu código es ${g.id}. Agenda tu hora y presenta el código al llegar 💅`;
+  const txt=`¡Hola${g.para?" "+String(g.para).split(" ")[0]:""}! 🎁 Te regalaron una gift card de ${local}${g.de?" de parte de "+g.de:""}: ${g.descripcion}. Tu código es ${g.id}.${g.mensaje?`\n\n“${String(g.mensaje).trim()}”\n\n`:" "}Agenda tu hora y presenta el código al llegar 💅`;
   return`<div class="row" style="justify-content:space-between"><button class="btn sec" data-act="volver">← Volver</button><span class="pill ${e[1]}">${e[0]}</span></div>
   <h1 class="m">${esc(g.id)}</h1>
   <div class="panel"><div class="fields">
     <label for="d-para">Para<input id="d-para" value="${esc(g.para||"")}"></label><label for="d-de">De<input id="d-de" value="${esc(g.de||"")}"></label>
-    <label for="d-msg" style="grid-column:span 2">Mensaje<input id="d-msg" value="${esc(g.mensaje||"")}"></label></div>
+    <label for="d-msg" style="grid-column:span 2">Mensaje<input id="d-msg" maxlength="100" value="${esc(g.mensaje||"")}"></label></div>
     <div class="row"><button class="mini" data-act="guardar-datos">Guardar nombre y mensaje</button></div>
     <p class="muted" style="margin:0;font-size:14px">${esc(g.descripcion)} · Valor ${clp(g.valor)} · Saldo <b>${clp(g.saldo)}</b> · Vendida el ${esc(g.fechaVenta)} · Vence el ${esc(fmtF(venceGC(g)))} con ${esc((MEDIOS.find(m=>m[0]===g.medioVenta)||["",g.medioVenta])[1])}${g.opVenta?" (op. "+esc(g.opVenta)+")":""}${g.empresa?` · Empresa: ${esc(g.empresa)} ${esc(g.rutEmpresa||"")}`:""}</p></div>
   <div class="panel"><h2>Tarjeta para enviar</h2>${S.img?`<img class="prev" src="${S.img}" alt="Gift card">`:""}
@@ -130,6 +130,8 @@ function dibujar(g){const cv=document.createElement("canvas");cv.width=2000;cv.h
   const v=venceGC(g);if(v){x.font=`26px ${serif}`;x.textAlign="center";x.fillText("hasta el "+fmtF(v),1765,940)}
   const linea=["Código "+g.id,g.para?"Para: "+g.para:"",g.de?"De: "+g.de:""].filter(Boolean).join("      ·      ");
   x.textAlign="center";fit(linea,1700,38,serif);x.fillText(linea,1000,1010);
+  const msg=String(g.mensaje||"").trim();
+  if(msg){const t="“"+msg+"”";x.textAlign="left";let sz=40;const f=()=>x.font=`italic ${sz}px ${serif}`;f();while(x.measureText(t).width>1320&&sz>22){sz-=2;f()}x.fillText(t,175,720)}
   return cv.toDataURL("image/jpeg",.92)}
 async function nuevoCodigo(){const A="ABCDEFGHJKMNPQRSTUVWXYZ23456789";for(let i=0;i<20;i++){let c="NUA-";for(let j=0;j<4;j++)c+=A[Math.floor(Math.random()*A.length)];const s=await S.db.doc("giftcards/"+c).get();if(!s.exists)return c}throw new Error("sin código")}
 async function vender(){const F=S.F,emp=F.tipo==="empresa",u=valorUnit(F),n=emp?Math.max(1,int(F.cantidad)||1):1;
