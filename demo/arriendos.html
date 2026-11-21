@@ -1,0 +1,598 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>SurArriendos · Demo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Barra de pestañas fija; cada pestaña en una columna de hasta 1100px. Tablas con scroll propio en pantallas chicas. */
+:root{
+  --bg:#eef2f5; --surface:#ffffff; --ink:#132338; --muted:#5b6b7d; --line:#d9e1e8;
+  --navy:#06213c; --navy-ink:#ffffff; --navy-soft:#e6ecf5; --gold:#a48249; --gold-soft:#f5efe3;
+  --brand:#06213c; --brand-ink:#ffffff;
+  --sage:#0d7a77; --sage-soft:#e2f2f1; --amber:#b26b12; --amber-soft:#fbefdc; --red:#a3312f; --red-soft:#f8e3e2;
+  --f-display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --f-body:"IBM Plex Sans","Segoe UI",Arial,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0c1420; --surface:#132033; --ink:#e6edf5; --muted:#9db0c4; --line:#26384f; --gold-soft:#2e2717; --brand:#081a2e;
+  --navy:#9cc1f0; --navy-ink:#0c1420; --navy-soft:#1a2a40; --gold:#d4b47c;
+  --sage:#4cc2bd; --sage-soft:#163a3d; --amber:#f0b260; --amber-soft:#3a2c17; --red:#f08b88; --red-soft:#3d1f1f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c1420; --surface:#132033; --ink:#e6edf5; --muted:#9db0c4; --line:#26384f; --gold-soft:#2e2717; --brand:#081a2e;
+  --navy:#9cc1f0; --navy-ink:#0c1420; --navy-soft:#1a2a40; --gold:#d4b47c;
+  --sage:#4cc2bd; --sage-soft:#163a3d; --amber:#f0b260; --amber-soft:#3a2c17; --red:#f08b88; --red-soft:#3d1f1f; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--brand)}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--brand);color:var(--brand-ink);border-bottom:4px solid var(--gold);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.bar-in{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:10px 18px;flex-wrap:wrap;padding-block:12px 10px}
+.brand{display:flex;align-items:center;gap:16px;margin-right:auto;min-width:0}
+.logo{font-family:var(--f-display);font-weight:800;font-size:22px;letter-spacing:.22em;line-height:1;color:#fff}
+.logo small{display:block;font-family:var(--f-body);font-weight:500;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#c9b48c;margin-top:5px}
+.prod{border-left:2px solid var(--gold);padding-left:14px;font-family:var(--f-display);font-weight:700;font-size:15px;line-height:1.2;color:#fff}
+.prod small{display:block;font-family:var(--f-body);font-weight:500;font-size:12px;color:rgba(255,255,255,.7)}
+.send{font:700 14px var(--f-body);border:0;border-radius:8px;padding:9px 14px;cursor:pointer;background:var(--gold);color:#fff;white-space:nowrap}
+.send:hover{filter:brightness(1.08)}
+nav{display:flex;gap:2px;flex-wrap:wrap;width:100%;order:3}
+nav button{font:600 14px var(--f-body);border:0;background:transparent;color:rgba(255,255,255,.72);padding:8px 12px;border-radius:8px 8px 0 0;cursor:pointer;position:relative}
+nav button:hover{color:#fff}
+nav button[aria-current="page"]{background:rgba(255,255,255,.1);color:#fff;box-shadow:inset 0 -3px 0 var(--gold)}
+.bar button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.foot{max-width:1100px;margin:0 auto;border-top:1px solid var(--line);padding:12px 0 0;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.foot b{font-family:var(--f-display);letter-spacing:.16em;color:var(--navy)}
+nav button .dot{display:inline-block;min-width:18px;height:18px;border-radius:9px;background:var(--red);color:#fff;font:700 11px/18px var(--f-mono);text-align:center;margin-left:6px;padding:0 5px}
+main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:22px 64px}
+.page{max-width:1100px;margin:0 auto;display:grid;gap:20px}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(22px,3.4vw,30px);margin:0;line-height:1.15;text-wrap:balance}
+h2{font-family:var(--f-display);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--navy);margin:0 0 8px;font-weight:700}
+p{margin:0}
+.muted{color:var(--muted)}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.head{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:end}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;gap:2px;text-align:left;font:inherit;color:inherit}
+button.kpi{cursor:pointer}
+.kpi span{font-size:12px;color:var(--muted);font-weight:600}
+.kpi b{font-family:var(--f-mono);font-size:21px;font-variant-numeric:tabular-nums}
+.kpi small{font-size:12px;color:var(--muted)}
+.kpi.r b{color:var(--red)} .kpi.a b{color:var(--amber)} .kpi.g b{color:var(--sage)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:12px;min-width:0}
+.todo{display:grid;gap:8px}
+.todo-i{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface)}
+.todo-i .ic{width:10px;height:10px;border-radius:50%}
+.todo-i.r .ic{background:var(--red)} .todo-i.a .ic{background:var(--amber)} .todo-i.n .ic{background:var(--navy)}
+.todo-i b{display:block}
+.todo-i span{font-size:13px;color:var(--muted)}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:760px}
+th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);background:var(--bg);font-weight:700;white-space:nowrap}
+td.n,th.n{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+td small{display:block;color:var(--muted);font-size:12px}
+tr.tot td{font-weight:700;background:var(--bg)}
+tr:last-child td{border-bottom:0}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:2px 9px;border-radius:99px;white-space:nowrap}
+.pill.g{background:var(--sage-soft);color:var(--sage)} .pill.a{background:var(--amber-soft);color:var(--amber)} .pill.r{background:var(--red-soft);color:var(--red)} .pill.n{background:var(--bg);color:var(--muted);border:1px solid var(--line)} .pill.b{background:var(--navy-soft);color:var(--navy)}
+.mini{font:600 13px var(--f-body);border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:5px 10px;cursor:pointer;white-space:nowrap}
+.mini.p{background:var(--navy);color:var(--navy-ink);border-color:var(--navy)}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+label{display:grid;gap:4px;font-size:13px;color:var(--muted);font-weight:600}
+input,select,textarea{font:15px var(--f-body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 11px;width:100%}
+input.m{font-family:var(--f-mono)}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--navy);outline-offset:2px}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.btn{font:700 15px var(--f-body);border:0;border-radius:10px;padding:12px 16px;cursor:pointer;background:var(--navy);color:var(--navy-ink);min-height:46px}
+.btn.sec{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+.note{border-radius:10px;padding:11px 14px;font-size:14px;display:grid;gap:3px}
+.note.warn{background:var(--amber-soft)} .note.ok{background:var(--sage-soft)} .note.risk{background:var(--red-soft)} .note.info{background:var(--navy-soft)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:600 13px var(--f-body);padding:6px 12px;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:var(--navy-ink)}
+.empty{border:1.5px dashed var(--line);border-radius:14px;padding:26px;text-align:center;display:grid;gap:6px;justify-items:center;color:var(--muted)}
+.empty strong{color:var(--ink);font-size:16px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:11px 18px;border-radius:12px;font-weight:600;z-index:40;max-width:calc(100% - 32px)}
+.sheet-bg{position:fixed;inset:0;background:rgba(10,20,35,.45);z-index:30;display:grid;place-items:end center;padding:16px}
+@media (min-width:700px){.sheet-bg{place-items:center}}
+.sheet{background:var(--surface);color:var(--ink);border-radius:16px;width:min(640px,100%);max-height:calc(100vh - 32px);overflow:auto;padding:20px;display:grid;gap:14px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.sheet h3{font-family:var(--f-display);font-size:19px;margin:0}
+.sheet-top{display:flex;justify-content:space-between;align-items:start;gap:12px}
+.x{border:0;background:var(--bg);color:var(--ink);border-radius:99px;width:34px;height:34px;font-size:18px;cursor:pointer;flex:none}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px}
+.kv dt{color:var(--muted)} .kv dd{margin:0}
+pre.msg{white-space:pre-wrap;font:14px/1.5 var(--f-body);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;margin:0}
+.bar-h{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.bar-h i{display:block;height:100%;background:var(--sage)}
+.sheet.wide{width:min(860px,100%)}
+.mail-prev{border:1px solid var(--line);border-radius:10px;background:#f4f1ea;max-height:52vh;overflow:auto;padding:12px;color:#132338}
+.mail-prev table{min-width:0;width:auto;font-size:inherit}.mail-prev td,.mail-prev th{padding:0;border-bottom:0;vertical-align:inherit;text-align:inherit}.mail-prev tr:last-child td{border-bottom:inherit}
+.r-stat{display:flex;flex-wrap:wrap;gap:6px}
+.r-stat span{font-size:12.5px;font-weight:600;padding:3px 10px;border-radius:99px;background:var(--gold-soft);color:var(--ink)}
+.btn.gold{background:var(--gold);color:#fff}
+.r-msg{font-size:14px;border-radius:10px;padding:10px 12px}
+.r-msg.ok{background:var(--sage-soft)} .r-msg.err{background:var(--red-soft)} .r-msg.info{background:var(--navy-soft)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="bar"><div class="bar-in">
+  <div class="brand"><div class="logo">SURTAX<small>Gestión y estrategia tributaria</small></div><div class="prod">SurArriendos<small>Demo · cartera de ejemplo</small></div></div>
+  <button class="send" data-act="reporte" type="button">✉ Reporte al cliente</button>
+  <nav id="nav" aria-label="Secciones">
+    <button data-tab="hoy" aria-current="page">Hoy</button>
+    <button data-tab="cobranza">Cobranza</button>
+    <button data-tab="contratos">Contratos</button>
+    <button data-tab="facturacion">Facturación</button>
+    <button data-tab="rendicion">Rendición</button>
+    <button data-tab="propiedades">Propiedades</button>
+  </nav>
+</div></div>
+<main><div class="page" id="app"><div class="empty"><strong>Cargando…</strong><span>Conectando con los registros guardados.</span></div></div>
+<div class="foot" style="margin-top:28px"><span><b>SURTAX</b> · Asesorías Contables y Tributarias Surtax Limitada · RUT 78.235.934-7</span><span>Administración de arriendos · demo con datos de ejemplo</span></div></main>
+<div id="sheet-root"></div>
+<div id="toast" class="toast" hidden></div>
+<script>window.DEMO_LEAD={demo:"surarriendos"}</script>
+<script src="seed-arriendos.js"></script>
+<script src="demo-db.js"></script>
+<script src="lead.js"></script>
+<script src="arriendos-adapter.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+(function(){
+"use strict";
+const IVA=0.19;
+const MEDIOS=[["transferencia","Transferencia"],["deposito","Depósito"],["directo","Pagó directo al propietario"],["otro","Otro"]];
+const RENOV=[["sin","Sin gestión","n"],["consultado","Consultado al propietario","b"],["avisado","Aviso enviado al arrendatario","b"],["renueva","Renueva","g"],["no","No renueva","r"]];
+const S={db:null,dl:null,write:false,offline:false,ready:{p:false,c:false},tab:"hoy",
+  mes:mesDe(hoy()),props:[],cfg:{uf:{}},ind:{uf:{},utm:{},uta:{},ipc:{}},cobros:{},facts:{},rends:{},renov:{},sheet:null,saving:false,filtroCob:"todas",
+  mcp:null,envios:[],r:{para:"cliente@ejemplo.cl",asunto:"",nota:"",confirm:false,busy:false,msg:null}};
+const M365="Microsoft 365";
+
+function hoy(){const d=new Date();return ymd(d)}
+function ymd(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function mesDe(f){return String(f).slice(0,7)}
+function mesSum(m,n){const [y,mm]=m.split("-").map(Number);const d=new Date(y,mm-1+n,1);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")}
+function mesTxt(m){const [y,mm]=m.split("-").map(Number);const t=new Date(y,mm-1,1).toLocaleDateString("es-CL",{month:"long",year:"numeric"});return t.charAt(0).toUpperCase()+t.slice(1)}
+function fTxt(f){if(!f)return"—";const [y,m,d]=String(f).split("-");return d+"-"+m+"-"+y}
+function dias(a,b){const p=s=>{const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)};return Math.round((p(b)-p(a))/864e5)}
+function fechaVenc(p,m){const d=Number(p.dia_pago)||5;const [y,mm]=m.split("-").map(Number);const last=new Date(y,mm,0).getDate();return m+"-"+String(Math.min(d,last)).padStart(2,"0")}
+const $=s=>document.querySelector(s);
+const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const clp=n=>(n<0?"−":"")+"$"+Math.abs(Math.round(Number(n)||0)).toLocaleString("es-CL");
+const int=v=>{const n=Math.round(Number(String(v).replace(/[^\d-]/g,"")));return isFinite(n)?n:0};
+function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>{t.hidden=true},3200)}
+const corto=p=>p.corto||String(p.direccion||p.id).split(" + ")[0];
+
+/* ---------- Reglas de negocio ---------- */
+function ufDia(f){const u=(S.ind&&S.ind.uf)||{};return f&&u[f]?Number(u[f]):0}
+function uf(m,f){const d=ufDia(f||(m+"-05"));if(d)return d;const u=S.cfg.uf||{};if(u[m])return Number(u[m]);const ks=Object.keys(u).sort();const prev=ks.filter(k=>k<=m).pop()||ks.pop();return prev?Number(u[prev]):0}
+function desde(){return S.cfg.desde||"0000-00"}
+function ufFalta(m){return !ufDia(m+"-05")&&!(S.cfg.uf||{})[m]}
+function canon(p,m,f){return p.moneda==="UF"?Math.round((Number(p.canon)||0)*uf(m,f||fechaVenc(p,m))):Math.round(Number(p.canon)||0)}
+function comTipo(p){if(p.comision_tipo)return p.comision_tipo;const c=String(p.comision||"").toLowerCase();if(c.includes("sin"))return"sin";if(c.includes("incluido"))return"incluido";return"mas_iva"}
+function comision(p,base){const t=comTipo(p),pct=(Number(p.comision_pct)||5)/100;
+  if(t==="sin"||!base)return{neto:0,iva:0,total:0};
+  if(t==="incluido"){const total=Math.round(base*pct);const neto=Math.round(total/(1+IVA));return{neto,iva:total-neto,total}}
+  const neto=Math.round(base*pct);const iva=Math.round(neto*IVA);return{neto,iva,total:neto+iva}}
+const comTxt=p=>({sin:"Sin comisión",incluido:(p.comision_pct||5)+"% IVA incluido",mas_iva:(p.comision_pct||5)+"% + IVA"})[comTipo(p)]+(p.comision_confirmar?" · por confirmar":"");
+const activa=p=>p.administra!==false&&p.estado!=="Terminado";
+const id2=(p,m)=>p.id+"_"+m;
+function cobro(p,m){
+  const c=S.cobros[id2(p,m)];const monto=canon(p,m,c&&c.fecha);const venc=fechaVenc(p,m);const h=hoy();
+  if(p.cobra===false){return{estado:"directo",lbl:"Paga directo al propietario",cls:"n",monto,pagado:c?c.monto:null,c,venc,atraso:0,multa:0}}
+  const tol=p.moneda==="UF"?Math.round(monto*0.01):1;
+  if(c&&Number(c.monto)>=monto-tol)return{estado:"pagado",lbl:"Pagado",cls:"g",monto,pagado:Number(c.monto),c,venc,atraso:Math.max(0,c.fecha?dias(venc,c.fecha):0),multa:0};
+  const pag=c?Number(c.monto)||0:0;
+  const at=h>venc?dias(venc,h):0;
+  const multa=at>0&&p.multa?Math.round(monto*(Number(p.multa)/100)*at):0;
+  if(pag>0)return{estado:"parcial",lbl:"Pago parcial",cls:"a",monto,pagado:pag,c,venc,atraso:at,multa,saldo:monto-pag};
+  if(at>0)return{estado:"atrasado",lbl:at+(at===1?" día":" días")+" de atraso",cls:"r",monto,pagado:0,c,venc,atraso:at,multa,saldo:monto};
+  return{estado:"porvencer",lbl:"Vence "+fTxt(venc),cls:"n",monto,pagado:0,c,venc,atraso:0,multa:0,saldo:monto};
+}
+function contrato(p){
+  const h=hoy();const r=S.renov[p.id]||{};const est=r.estado||"sin";
+  if(!p.termino)return{cls:"n",lbl:"Sin plazo en el sistema",orden:5,est,r};
+  const dT=dias(h,p.termino);const aviso=p.aviso||null;const dA=aviso?dias(h,aviso):null;
+  const cerrado=est==="renueva"||est==="no";
+  if(dT<0)return{cls:"r",lbl:"Vencido hace "+(-dT)+" días",orden:0,dT,dA,est,r};
+  if(!cerrado&&dA!=null&&dA<0)return{cls:"r",lbl:"Plazo de aviso vencido",orden:1,dT,dA,est,r};
+  if(!cerrado&&dA!=null&&dA<=30)return{cls:"a",lbl:"Avisar antes del "+fTxt(aviso),orden:2,dT,dA,est,r};
+  if(dT<=90)return{cls:cerrado?"g":"a",lbl:"Vence en "+dT+" días",orden:3,dT,dA,est,r};
+  return{cls:"g",lbl:"Al día",orden:4,dT,dA,est,r};
+}
+function factura(p,m){
+  const b=cobro(p,m);const base=b.estado==="pagado"?b.monto:(b.estado==="directo"?(b.pagado||b.monto):b.pagado||0);
+  const com=comision(p,base);const f=S.facts[id2(p,m)];
+  if(!com.total)return{com,base,f,estado:"na"};
+  return{com,base,f,estado:f&&f.folio?"emitida":(b.estado==="pagado"||b.estado==="directo"?"pendiente":"espera")};
+}
+function rendicion(p,m){
+  const b=cobro(p,m);if(p.cobra===false||b.estado!=="pagado")return null;
+  const com=comision(p,b.pagado).total;const r=S.rends[id2(p,m)]||{};const otros=Number(r.otros)||0;
+  const aTransf=b.pagado-com-otros;const tr=r.transferido!=null&&r.transferido!==""?Number(r.transferido):null;
+  return{cobrado:b.pagado,com,otros,aTransf,tr,dif:tr==null?null:tr-aTransf,r};
+}
+
+/* ---------- Conexión ---------- */
+async function init(){
+  const c=window.claude;if(!c||typeof c.use!=="function"){S.offline=true;render();return}
+  let db=null,user=null,dl=null,mcp=null;try{[db,user,dl,mcp]=await Promise.all([c.use("db"),c.use("user"),c.use("downloads"),c.use("mcp").catch(()=>null)])}catch(e){}
+  S.db=db;S.dl=dl;S.mcp=mcp;if(!db){S.offline=true;render();return}
+  try{const w=user?await user.can("data.write"):null;S.write=w!==false}catch(e){S.write=true}
+  const map=(q)=>{const o={};q.docs.forEach(d=>{o[d.id]=Object.assign({id:d.id},d.data())});return o};
+  db.collection("propiedades").onSnapshot(q=>{S.props=q.docs.map(d=>Object.assign({id:d.id},d.data())).sort((a,b)=>a.id.localeCompare(b.id));S.ready.p=true;render()},err);
+  db.doc("indicadores/actual").onSnapshot(s=>{S.ind=Object.assign({uf:{},utm:{},uta:{},ipc:{}},s.exists?s.data():{});render()},err);
+  db.doc("config/general").onSnapshot(s=>{S.cfg=Object.assign({uf:{}},s.exists?s.data():{});render()},err);
+  db.collection("cobros").onSnapshot(q=>{S.cobros=map(q);S.ready.c=true;render()},err);
+  db.collection("facturas").onSnapshot(q=>{S.facts=map(q);render()},err);
+  db.collection("rendiciones").onSnapshot(q=>{S.rends=map(q);render()},err);
+  db.collection("renovaciones").onSnapshot(q=>{S.renov=map(q);render()},err);
+  db.collection("reportes").onSnapshot(q=>{S.envios=q.docs.map(d=>d.data()).sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha)));const el=document.getElementById("r-ult");if(el)el.innerHTML=ultEnvio()},err);
+}
+function err(e){console.warn(e);if(e&&e.code==="revoked"){S.offline=true;render()}}
+async function guardar(path,data,merge){
+  if(!S.write){toast("Tu acceso es solo de lectura.");return false}
+  S.saving=true;try{const ref=S.db.doc(path);if(merge){const s=await ref.get();if(s.exists)await ref.update(data);else await ref.set(data)}else await ref.set(data);return true}
+  catch(e){console.warn(e);toast(e&&e.code==="invalid_argument"?"No tienes permiso para guardar aquí.":"No se pudo guardar. Intenta de nuevo.");if(e&&e.code==="invalid_argument")S.write=false;return false}
+  finally{S.saving=false}
+}
+
+/* ---------- Render ---------- */
+function render(){
+  const app=$("#app");
+  if(S.offline){app.innerHTML=`<div class="empty"><strong>Sin conexión a los registros en esta vista</strong><span>Ábrela desde claude.ai con tu sesión iniciada.</span></div>`;renderSheet();return}
+  if(!S.ready.p||!S.ready.c)return;
+  const pend=alertas().filter(a=>a.cls==="r").length;
+  document.querySelectorAll("#nav button").forEach(b=>{b.setAttribute("aria-current",b.dataset.tab===S.tab?"page":"false");if(b.dataset.tab==="hoy")b.innerHTML="Hoy"+(pend?`<span class="dot">${pend}</span>`:"")});
+  const keep=focoGuardar();
+  app.innerHTML=({hoy:vHoy,cobranza:vCob,contratos:vCon,facturacion:vFac,rendicion:vRen,propiedades:vProp})[S.tab]();
+  focoVolver(keep);renderSheet();
+}
+function focoGuardar(){const a=document.activeElement;return a&&a.id?{id:a.id,v:a.value,s:a.selectionStart}:null}
+function focoVolver(k){if(!k)return;const el=document.getElementById(k.id);if(el&&!el.closest("#sheet-root")){if(k.v!=null&&"value"in el)el.value=k.v;el.focus();try{if(k.s!=null)el.setSelectionRange(k.s,k.s)}catch(e){}}}
+const mesSel=(id)=>`<div class="row"><button class="mini" data-act="mes" data-n="-1" aria-label="Mes anterior">←</button><label for="${id}" style="min-width:170px">Mes<input id="${id}" data-act="mes-in" type="month" value="${S.mes}"></label><button class="mini" data-act="mes" data-n="1" aria-label="Mes siguiente">→</button></div>`;
+const desdeNota=()=>S.mes<desde()?`<div class="note info"><b>Registro desde ${esc(mesTxt(desde()).toLowerCase())}</b><span>Los meses anteriores están en la planilla de control y en la auditoría de tesorería; aquí se ven solo los pagos que se carguen a mano.</span></div>`:"";
+const ufNota=()=>desdeNota()+(ufFalta(S.mes)&&S.props.some(p=>activa(p)&&p.moneda==="UF")?`<div class="note warn"><b>Aún no está publicada la UF de ${esc(mesTxt(S.mes).toLowerCase())}</b><span>Los arriendos en UF usan la última UF disponible (${clp(uf(S.mes))}). Se actualiza sola cuando el SII la publique.</span></div>`:"");
+
+function alertas(){
+  const m=mesDe(hoy()),out=[];const act=S.props.filter(activa);
+  [mesSum(m,-1),m].filter(mm=>mm>=desde()).forEach(mm=>act.forEach(p=>{const b=cobro(p,mm);if(b.estado==="atrasado"||b.estado==="parcial")out.push({cls:b.atraso>5?"r":"a",t:`${corto(p)}: ${b.estado==="parcial"?"pago parcial":"arriendo sin pago"} de ${mesTxt(mm).toLowerCase()}`,s:`${b.lbl}. Saldo ${clp(b.saldo)}${b.multa?` · multa según contrato ${clp(b.multa)}`:""}`,act:"cobro",id:p.id,m:mm,btn:"Gestionar"})}));
+  act.forEach(p=>{const c=contrato(p);if(c.orden<=2)out.push({cls:c.cls,t:`${corto(p)}: ${c.lbl.toLowerCase()}`,s:`Término ${fTxt(p.termino)} · ${RENOV.find(r=>r[0]===c.est)[1]}`,act:"renov",id:p.id,btn:"Renovación"})});
+  const fp=mesSum(m,-1)>=desde()?act.reduce((a,p)=>{const f=factura(p,mesSum(m,-1));return a+(f.estado==="pendiente"?1:0)},0):0;
+  if(fp)out.push({cls:"a",t:`${fp} comisiones de ${mesTxt(mesSum(m,-1)).toLowerCase()} sin factura`,s:"Emitir en el SII y anotar el folio",act:"tab",tab:"facturacion",m:mesSum(m,-1),btn:"Ver"});
+  const rp=act.filter(p=>{const r=rendicion(p,m);return r&&r.tr==null}).length;
+  if(rp)out.push({cls:"n",t:`${rp} ${rp===1?"rendición":"rendiciones"} de ${mesTxt(m).toLowerCase()} por transferir al propietario`,s:"Arriendos cobrados que aún no se transfieren",act:"tab",tab:"rendicion",m,btn:"Ver"});
+  return out.sort((a,b)=>"ran".indexOf(a.cls)-"ran".indexOf(b.cls));
+}
+function vHoy(){
+  const m=mesDe(hoy());const act=S.props.filter(activa);const cob=act.filter(p=>p.cobra!==false);
+  const bs=cob.map(p=>cobro(p,m));const esperado=bs.reduce((a,b)=>a+b.monto,0),recib=bs.reduce((a,b)=>a+(b.pagado||0),0);
+  const atr=bs.filter(b=>b.estado==="atrasado"||b.estado==="parcial");
+  const com=act.reduce((a,p)=>a+factura(p,m).com.total,0);
+  const al=alertas();
+  return `<div class="head"><div><h1>Hoy, ${esc(new Date().toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"}))}</h1><p class="muted">${act.length} propiedades administradas · ${cob.length} con cobro a través de la administración${ufDia(hoy())?` · UF hoy ${clp(ufDia(hoy()))}`:""}${S.ind.utm&&S.ind.utm[m]?` · UTM ${clp(S.ind.utm[m])}`:""}</p></div></div>
+  <div class="kpis">
+    <button class="kpi" data-act="tab" data-tab="cobranza" data-m="${m}"><span>Cobrado en ${esc(mesTxt(m).toLowerCase())}</span><b>${clp(recib)}</b><small>de ${clp(esperado)} esperado</small><div class="bar-h"><i style="width:${esperado?Math.min(100,recib/esperado*100):0}%"></i></div></button>
+    <button class="kpi ${atr.length?"r":"g"}" data-act="tab" data-tab="cobranza" data-m="${m}"><span>Arriendos atrasados</span><b>${atr.length}</b><small>${clp(atr.reduce((a,b)=>a+(b.saldo||0),0))} por cobrar</small></button>
+    <button class="kpi a" data-act="tab" data-tab="contratos"><span>Contratos por gestionar</span><b>${act.filter(p=>contrato(p).orden<=2).length}</b><small>vencidos o con aviso próximo</small></button>
+    <button class="kpi" data-act="tab" data-tab="facturacion" data-m="${m}"><span>Comisión del mes</span><b>${clp(com)}</b><small>con IVA, según cobros</small></button>
+  </div>
+  <div class="panel"><h2>Qué hacer hoy</h2>
+  ${al.length?`<div class="todo">${al.map(a=>`<div class="todo-i ${a.cls}"><i class="ic"></i><div><b>${esc(a.t)}</b><span>${esc(a.s)}</span></div><button class="mini" data-act="${a.act}" data-id="${esc(a.id||"")}" data-m="${esc(a.m||"")}" data-tab="${esc(a.tab||"")}">${esc(a.btn)}</button></div>`).join("")}</div>`:`<div class="note ok"><b>Todo al día</b><span>No hay cobros atrasados, contratos por avisar ni comisiones pendientes.</span></div>`}
+  </div>`;
+}
+
+function vCob(){
+  const m=S.mes;const act=S.props.filter(activa);
+  const rows=act.map(p=>({p,b:cobro(p,m)}));
+  const f=S.filtroCob;const vis=rows.filter(r=>f==="todas"||(f==="pend"&&["atrasado","parcial","porvencer"].includes(r.b.estado))||(f==="pag"&&r.b.estado==="pagado"));
+  const cob=rows.filter(r=>r.p.cobra!==false);
+  const T={esp:cob.reduce((a,r)=>a+r.b.monto,0),rec:cob.reduce((a,r)=>a+(r.b.pagado||0),0),multa:cob.reduce((a,r)=>a+(r.b.multa||0),0)};
+  return `<div class="head"><div><h1>Cobranza</h1><p class="muted">Arriendo de cada propiedad en ${esc(mesTxt(m).toLowerCase())}: si pagó, cuánto falta y cuántos días de atraso lleva.</p></div>${mesSel("m-cob")}</div>
+  ${ufNota()}
+  <div class="kpis"><div class="kpi"><span>Esperado</span><b>${clp(T.esp)}</b></div><div class="kpi g"><span>Recibido</span><b>${clp(T.rec)}</b></div><div class="kpi ${T.esp-T.rec>0?"a":"g"}"><span>Por cobrar</span><b>${clp(T.esp-T.rec)}</b></div><div class="kpi r"><span>Multas según contrato</span><b>${clp(T.multa)}</b><small>por validar en cada contrato</small></div></div>
+  <div class="chips">${[["todas","Todas"],["pend","Por cobrar"],["pag","Pagadas"]].map(([k,l])=>`<button class="chip" data-act="fcob" data-k="${k}" aria-pressed="${f===k}">${l}</button>`).join("")}</div>
+  <div class="tbl"><table><thead><tr><th>Propiedad</th><th>Arrendatario</th><th class="n">Arriendo</th><th>Vence</th><th class="n">Pagado</th><th>Estado</th><th class="n">Multa</th><th>Avisos</th><th></th></tr></thead><tbody>
+  ${vis.map(({p,b})=>`<tr><td><b>${esc(corto(p))}</b><small>${esc(p.id)} · ${esc(p.propietario||"")}</small></td><td>${esc(p.arrendatario||"—")}</td><td class="n">${clp(b.monto)}${p.moneda==="UF"?`<small>${String(p.canon).replace(".",",")} UF</small>`:""}</td><td>${fTxt(b.venc)}</td><td class="n">${b.pagado!=null&&b.pagado!==0?clp(b.pagado):"—"}${b.c&&b.c.fecha?`<small>${fTxt(b.c.fecha)}</small>`:""}</td><td><span class="pill ${b.cls}">${esc(b.lbl)}</span>${b.estado==="pagado"&&b.atraso>0?`<small>pagó ${b.atraso} día(s) tarde</small>`:""}</td><td class="n">${b.multa?clp(b.multa):"—"}</td><td>${b.c&&b.c.avisos&&b.c.avisos.length?`<small>${b.c.avisos.map(fTxt).join(", ")}</small>`:"—"}</td>
+  <td><div class="acts">${b.estado!=="pagado"?`<button class="mini p" data-act="cobro" data-id="${esc(p.id)}" data-m="${m}">Registrar pago</button>`:`<button class="mini" data-act="cobro" data-id="${esc(p.id)}" data-m="${m}">Ver</button>`}${["atrasado","parcial","porvencer"].includes(b.estado)?`<button class="mini" data-act="aviso" data-id="${esc(p.id)}" data-m="${m}">Aviso</button>`:""}</div></td></tr>`).join("")||`<tr><td colspan="9" class="muted">Nada en este filtro.</td></tr>`}
+  </tbody></table></div>
+  <p class="muted" style="font-size:13px">La multa usa el % diario anotado en cada propiedad sobre el arriendo del mes. Revísala contra la cláusula del contrato antes de cobrarla.</p>`;
+}
+
+function vCon(){
+  const rows=S.props.filter(activa).map(p=>({p,c:contrato(p)})).sort((a,b)=>a.c.orden-b.c.orden||String(a.p.termino||"9").localeCompare(String(b.p.termino||"9")));
+  return `<div class="head"><div><h1>Contratos y renovaciones</h1><p class="muted">Ordenados por urgencia. El plazo de aviso es la fecha límite para avisar si se renueva o no.${(()=>{const a6=ipcAcum(6),a12=ipcAcum(12)||ipc12();return a6?` IPC acumulado: 6 meses ${String(Math.round(a6.v*10)/10).replace(".",",")}%`+(a12?` · 12 meses ${String(Math.round(a12.v*10)/10).replace(".",",")}%`:"")+".":""})()}</p></div></div>
+  <div class="tbl"><table><thead><tr><th>Propiedad</th><th>Inicio</th><th>Término</th><th>Límite de aviso</th><th>Situación</th><th>Reajuste</th><th>Gestión</th><th></th></tr></thead><tbody>
+  ${rows.map(({p,c})=>{const rv=RENOV.find(r=>r[0]===c.est);return`<tr><td><b>${esc(corto(p))}</b><small>${esc(p.id)} · ${esc(p.arrendatario||"")}</small></td><td>${fTxt(p.inicio)}</td><td>${fTxt(p.termino)}</td><td>${fTxt(p.aviso)}${p.dias_aviso?`<small>${p.dias_aviso} días antes</small>`:""}</td><td><span class="pill ${c.cls}">${esc(c.lbl)}</span></td><td><small style="color:var(--ink)">${esc(p.reajuste||"—")}</small></td><td><span class="pill ${rv[2]}">${esc(rv[1])}</span>${c.r&&c.r.nota?`<small>${esc(c.r.nota)}</small>`:""}${c.r&&c.r.fecha?`<small>${fTxt(c.r.fecha)}</small>`:""}</td><td><button class="mini" data-act="renov" data-id="${esc(p.id)}">Actualizar</button></td></tr>`}).join("")}
+  </tbody></table></div>`;
+}
+
+function vFac(){
+  const m=S.mes;const rows=S.props.filter(activa).map(p=>({p,f:factura(p,m)})).filter(r=>r.f.estado!=="na");
+  const T={tot:rows.reduce((a,r)=>a+r.f.com.total,0),emi:rows.filter(r=>r.f.estado==="emitida").reduce((a,r)=>a+r.f.com.total,0)};
+  const lbl={emitida:["Emitida","g"],pendiente:["Por emitir","a"],espera:["Espera el pago","n"]};
+  return `<div class="head"><div><h1>Facturación de comisiones</h1><p class="muted">Comisión de administración de ${esc(mesTxt(m).toLowerCase())}, calculada sobre lo cobrado. Se factura al propietario.</p></div>${mesSel("m-fac")}</div>
+  ${ufNota()}
+  <div class="kpis"><div class="kpi"><span>Comisión del mes (con IVA)</span><b>${clp(T.tot)}</b></div><div class="kpi g"><span>Facturada</span><b>${clp(T.emi)}</b></div><div class="kpi ${T.tot-T.emi>0?"a":"g"}"><span>Por facturar</span><b>${clp(T.tot-T.emi)}</b></div></div>
+  <div class="tbl"><table><thead><tr><th>Propiedad</th><th>Facturar a</th><th>Tipo</th><th class="n">Base</th><th class="n">Neto</th><th class="n">IVA</th><th class="n">Total</th><th>Estado</th><th></th></tr></thead><tbody>
+  ${rows.map(({p,f})=>`<tr><td><b>${esc(corto(p))}</b><small>${esc(p.id)}</small></td><td>${esc(p.facturar_a||p.propietario||"—")}${p.rut_factura?`<small>${esc(p.rut_factura)}</small>`:""}</td><td>${esc(comTxt(p))}</td><td class="n">${clp(f.base)}</td><td class="n">${clp(f.com.neto)}</td><td class="n">${clp(f.com.iva)}</td><td class="n"><b>${clp(f.com.total)}</b></td><td><span class="pill ${lbl[f.estado][1]}">${lbl[f.estado][0]}</span>${f.f&&f.f.folio?`<small>Folio ${esc(f.f.folio)} · ${fTxt(f.f.fecha)}</small>`:""}</td><td>${f.estado!=="espera"?`<button class="mini ${f.estado==="pendiente"?"p":""}" data-act="fact" data-id="${esc(p.id)}" data-m="${m}">${f.estado==="emitida"?"Editar":"Anotar folio"}</button>`:""}</td></tr>`).join("")||`<tr><td colspan="9" class="muted">No hay comisiones en este mes.</td></tr>`}
+  <tr class="tot"><td colspan="6">Total</td><td class="n">${clp(T.tot)}</td><td colspan="2"></td></tr>
+  </tbody></table></div>
+  <p class="muted" style="font-size:13px">"Por confirmar" indica que falta confirmar con el propietario si la comisión es 5% más IVA o 5% con IVA incluido.</p>`;
+}
+
+function vRen(){
+  const m=S.mes;const rows=S.props.filter(activa).map(p=>({p,r:rendicion(p,m)})).filter(x=>x.r);
+  const T=rows.reduce((a,{r})=>({c:a.c+r.cobrado,k:a.k+r.com,o:a.o+r.otros,t:a.t+r.aTransf,tr:a.tr+(r.tr||0)}),{c:0,k:0,o:0,t:0,tr:0});
+  const sinPago=S.props.filter(p=>activa(p)&&p.cobra!==false&&cobro(p,m).estado!=="pagado").length;
+  return `<div class="head"><div><h1>Rendición a propietarios</h1><p class="muted">Lo cobrado en ${esc(mesTxt(m).toLowerCase())}, menos la comisión y otros cargos, es lo que se transfiere a cada propietario.</p></div>${mesSel("m-ren")}</div>
+  <div class="kpis"><div class="kpi"><span>Arriendos cobrados</span><b>${clp(T.c)}</b></div><div class="kpi"><span>Comisión descontada</span><b>${clp(T.k)}</b></div><div class="kpi"><span>A transferir</span><b>${clp(T.t)}</b></div><div class="kpi ${T.t-T.tr>0?"a":"g"}"><span>Falta transferir</span><b>${clp(T.t-T.tr)}</b></div></div>
+  ${sinPago?`<div class="note info">${sinPago} propiedad(es) aún sin pago este mes; aparecerán aquí cuando se registre su pago.</div>`:""}
+  <div class="tbl"><table><thead><tr><th>Propietario</th><th>Propiedad</th><th class="n">Cobrado</th><th class="n">Comisión</th><th class="n">Otros cargos</th><th class="n">A transferir</th><th class="n">Transferido</th><th>Estado</th><th></th></tr></thead><tbody>
+  ${rows.map(({p,r})=>`<tr><td><b>${esc(p.propietario||"—")}</b></td><td>${esc(corto(p))}<small>${esc(p.id)}</small></td><td class="n">${clp(r.cobrado)}</td><td class="n">${clp(-r.com)}</td><td class="n">${r.otros?clp(-r.otros):"—"}${r.r.otros_glosa?`<small>${esc(r.r.otros_glosa)}</small>`:""}</td><td class="n"><b>${clp(r.aTransf)}</b></td><td class="n">${r.tr==null?"—":clp(r.tr)}${r.r.fecha?`<small>${fTxt(r.r.fecha)}</small>`:""}</td><td>${r.tr==null?`<span class="pill a">Por transferir</span>`:Math.abs(r.dif)<=1?`<span class="pill g">Cuadra</span>`:`<span class="pill r">Diferencia ${clp(r.dif)}</span>`}</td><td><button class="mini ${r.tr==null?"p":""}" data-act="rend" data-id="${esc(p.id)}" data-m="${m}">${r.tr==null?"Registrar":"Editar"}</button></td></tr>`).join("")||`<tr><td colspan="9" class="muted">Aún no hay arriendos cobrados en este mes.</td></tr>`}
+  <tr class="tot"><td colspan="2">Total</td><td class="n">${clp(T.c)}</td><td class="n">${clp(-T.k)}</td><td class="n">${clp(-T.o)}</td><td class="n">${clp(T.t)}</td><td class="n">${clp(T.tr)}</td><td colspan="2"></td></tr>
+  </tbody></table></div>
+  ${S.dl&&rows.length?`<div class="row"><button class="btn" data-act="xlsx">Descargar rendición del mes (Excel)</button></div>`:""}`;
+}
+
+function ipc12(){const ks=Object.keys(S.ind.ipc||{}).filter(k=>S.ind.ipc[k]&&S.ind.ipc[k].doce!=null).sort();const k=ks[ks.length-1];return k?{v:Number(S.ind.ipc[k].doce),hasta:k}:null}
+function ipcAcum(n){const ks=Object.keys(S.ind.ipc||{}).filter(k=>S.ind.ipc[k]&&S.ind.ipc[k].mensual!=null).sort().slice(-n);if(ks.length<n)return null;return{v:(ks.reduce((a,k)=>a*(1+Number(S.ind.ipc[k].mensual)/100),1)-1)*100,desde:ks[0],hasta:ks[ks.length-1]}}
+function vInd(){const I=S.ind,h=hoy(),m=mesDe(h);const ufh=ufDia(h);const ipcKs=Object.keys(I.ipc||{}).filter(k=>I.ipc[k]&&I.ipc[k].mensual!=null).sort();const ul=ipcKs[ipcKs.length-1];const a6=ipcAcum(6),a12=ipcAcum(12)||ipc12();
+  const pct=v=>v==null?"—":String(Math.round(v*10)/10).replace(".",",")+"%";
+  return `<div class="panel"><h2>Indicadores (en la demo, valores de ejemplo)</h2>
+  <div class="kpis"><div class="kpi"><span>UF de hoy</span><b>${ufh?"$"+ufh.toLocaleString("es-CL",{minimumFractionDigits:2,maximumFractionDigits:2}):"—"}</b><small>${fTxt(h)}</small></div>
+  <div class="kpi"><span>UTM ${esc(mesTxt(m).toLowerCase())}</span><b>${I.utm&&I.utm[m]?clp(I.utm[m]):"—"}</b><small>UTA ${I.uta&&I.uta[m]?clp(I.uta[m]):"—"}</small></div>
+  <div class="kpi"><span>IPC ${ul?esc(mesTxt(ul).toLowerCase()):""}</span><b>${ul?pct(I.ipc[ul].mensual):"—"}</b><small>12 meses ${ul&&I.ipc[ul].doce!=null?pct(I.ipc[ul].doce):"—"}</small></div>
+  <div class="kpi"><span>IPC acumulado</span><b>${pct(a6&&a6.v)}</b><small>6 meses${a6?" ("+esc(mesTxt(a6.desde).slice(0,3).toLowerCase())+"–"+esc(mesTxt(a6.hasta).slice(0,3).toLowerCase())+")":""} · 12 meses ${pct(a12&&a12.v)}</small></div></div>
+  <p class="muted" style="font-size:13px">${I.actualizado?`Actualizado automáticamente el ${esc(new Date(I.actualizado).toLocaleString("es-CL"))} desde ${esc(I.fuente||"sii.cl")}.`:"Aún no hay indicadores cargados."} Los arriendos en UF se calculan con la UF del día de pago. El IPC acumulado sirve de referencia para los reajustes; confirma el período exacto que dice cada contrato.</p>
+  <details><summary class="muted" style="font-size:13px;cursor:pointer">Corregir la UF a mano</summary><div class="row" style="margin-top:8px"><label for="uf-mes" style="min-width:170px">Mes<input id="uf-mes" type="month" value="${S.mes}"></label><label for="uf-val" style="min-width:170px">Valor UF<input id="uf-val" class="m" inputmode="decimal" value="${(S.cfg.uf||{})[S.mes]||""}" placeholder="Ej. 41336,67"></label><button class="btn" data-act="uf">Guardar</button></div><p class="muted" style="font-size:12px;margin-top:6px">Solo se usa si el SII no tiene la UF de ese día.</p></details></div>`}
+function vProp(){
+  const act=S.props;
+  return `<div class="head"><div><h1>Propiedades</h1><p class="muted">Datos de cada contrato que usan las demás pestañas. Edita aquí cuando cambie el arriendo, la comisión o el plazo.</p></div></div>
+  ${vInd()}
+  <div class="tbl"><table><thead><tr><th>Propiedad</th><th>Propietario</th><th>Arrendatario</th><th class="n">Arriendo</th><th>Día de pago</th><th>Comisión</th><th>Cobro</th><th></th></tr></thead><tbody>
+  ${act.map(p=>`<tr><td><b>${esc(corto(p))}</b><small>${esc(p.id)} · ${esc(p.comuna||"")}</small></td><td>${esc(p.propietario||"—")}</td><td>${esc(p.arrendatario||"—")}${p.telefono?`<small>${esc(p.telefono)}</small>`:""}</td><td class="n">${p.moneda==="UF"?String(p.canon).replace(".",",")+" UF":clp(p.canon)}</td><td>${p.dia_pago||"5*"}</td><td>${esc(comTxt(p))}</td><td>${p.administra===false?`<span class="pill n">Sin administración</span>`:p.cobra===false?`<span class="pill b">Paga directo</span>`:`<span class="pill g">Administración</span>`}</td><td><button class="mini" data-act="prop" data-id="${esc(p.id)}">Editar</button></td></tr>`).join("")}
+  </tbody></table></div>
+  <p class="muted" style="font-size:13px">* Sin día de pago en el contrato: se usa el día 5.</p>`;
+}
+
+/* ---------- Reporte para el cliente (correo con formato Surtax) ---------- */
+const MESES=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const pctTxt=v=>v==null||isNaN(v)?"—":String(Math.round(v*10)/10).replace(".",",")+"%";
+function mesCorto(m){const [y,mm]=m.split("-").map(Number);return MESES[mm-1].slice(0,3)+" "+y}
+function fLarga(f){const [y,m,d]=f.split("-").map(Number);return d+" de "+MESES[m-1]+" de "+y}
+function ultEnvio(){const e=S.envios[0];return e?`Último reporte: ${esc(new Date(e.fecha).toLocaleString("es-CL",{dateStyle:"medium",timeStyle:"short"}))} · ${esc(e.via||"")} · ${esc(e.para||"")}`:"Aún no se ha enviado ningún reporte desde aquí."}
+function reporte(){
+  const h=hoy(),m=mesDe(h),prev=mesSum(m,-1);const act=S.props.filter(activa);
+  const meses=[prev,m].filter(mm=>mm>=desde());const ml=mesTxt(m).toLowerCase();
+  const R={h,m,sec:[]};
+  const cob=act.filter(p=>p.cobra!==false).map(p=>cobro(p,m));
+  R.esperado=cob.reduce((a,b)=>a+b.monto,0);R.recibido=cob.reduce((a,b)=>a+(b.pagado||0),0);
+  // 1. Arriendos pendientes
+  const arr=[];meses.forEach(mm=>act.forEach(p=>{const b=cobro(p,mm);if(["atrasado","parcial","porvencer"].includes(b.estado))arr.push({p,mm,b})}));
+  arr.sort((a,b)=>b.b.atraso-a.b.atraso);
+  const atr=arr.filter(x=>x.b.estado!=="porvencer");R.arrN=atr.length;R.arrTot=atr.reduce((a,x)=>a+(x.b.saldo||0),0);
+  R.sec.push({t:"Arriendos pendientes de cobro",i:`Cobrado en ${ml}: ${clp(R.recibido)} de ${clp(R.esperado)}.`,
+    cols:["Propiedad","Arrendatario","Mes","Pendiente","Situación"],num:[3],
+    rows:arr.map(({p,mm,b})=>[corto(p),p.arrendatario||"—",mesCorto(mm),clp(b.saldo),b.lbl+(b.multa?` · multa según contrato ${clp(b.multa)}`:"")]),
+    vacio:`Todos los arriendos de ${ml} están pagados.`});
+  // 2. Transferencias a propietarios
+  const tr=[];let trOk=0;act.forEach(p=>{const r=rendicion(p,m);if(!r)return;
+    if(r.tr==null)tr.push([p.propietario||"—",corto(p),clp(r.aTransf),"Por transferir"]);
+    else if(Math.abs(r.dif)>1)tr.push([p.propietario||"—",corto(p),clp(r.aTransf),`Se transfirió ${clp(r.tr)} (diferencia ${clp(r.dif)})`]);else trOk++});
+  R.trN=tr.length;
+  R.sec.push({t:"Transferencias a propietarios",i:trOk?`${trOk} propietario(s) ya recibieron su arriendo de ${ml} sin diferencias.`:"",cols:["Propietario","Propiedad","A transferir","Estado"],num:[2],rows:tr,vacio:"No hay transferencias pendientes ni diferencias."});
+  // 3. Gastos comunes y otros descuentos
+  const gc=[];act.forEach(p=>{const r=rendicion(p,m);if(r&&r.otros)gc.push([corto(p),r.r.otros_glosa||"Otros cargos",clp(r.otros)])});
+  R.sec.push({t:"Gastos comunes y otros descuentos",cols:["Propiedad","Detalle","Monto"],num:[2],rows:gc,vacio:`En ${ml} no hay gastos comunes ni otros descuentos registrados.`});
+  // 4. Facturas de comisión
+  const fa=[];meses.forEach(mm=>act.forEach(p=>{const f=factura(p,mm);if(f.estado==="pendiente")fa.push([corto(p),mesCorto(mm),p.facturar_a||p.propietario||"—",clp(f.com.total)])}));
+  R.faN=fa.length;
+  R.sec.push({t:"Facturas de comisión por hacer",cols:["Propiedad","Mes","A nombre de","Monto"],num:[3],rows:fa,vacio:"Las facturas de comisión del mes están al día."});
+  // 5. Contratos
+  const co=act.map(p=>({p,c:contrato(p)})).filter(x=>x.c.orden<=3||x.c.orden===5).sort((a,b)=>a.c.orden-b.c.orden);
+  R.coN=co.length;
+  R.sec.push({t:"Contratos por gestionar",cols:["Propiedad","Término","Situación","Gestión"],
+    rows:co.map(({p,c})=>[corto(p),fTxt(p.termino),c.orden===5?"Falta el contrato o su plazo":c.lbl,(RENOV.find(r=>r[0]===c.est)||RENOV[0])[1]]),
+    vacio:"No hay contratos por vencer en los próximos 90 días."});
+  // 6. Reajustes por IPC (próximos 2 meses)
+  const lim=mesSum(m,2);const rj=[];
+  act.forEach(p=>{const t=String(p.reajuste||"");if(!/ipc/i.test(t))return;const x=t.match(/próximo:\s*([a-záéíóú]+)\s+(\d{4})/i);if(!x)return;
+    const ix=MESES.indexOf(x[1].toLowerCase());if(ix<0)return;const mm=x[2]+"-"+String(ix+1).padStart(2,"0");if(mm>lim)return;
+    const n=/trimestral/i.test(t)?3:/semestral/i.test(t)?6:12;const a=ipcAcum(n);
+    const nuevo=a&&p.moneda!=="UF"?Math.round(Number(p.canon)*(1+a.v/100)):null;
+    rj.push([corto(p),(mm<=m?"Corresponde desde ":"")+mesTxt(mm).toLowerCase(),clp(canon(p,m)),a?`${pctTxt(a.v)} (${n} meses)`:"IPC aún no publicado",nuevo?clp(nuevo):"—"])});
+  R.rjN=rj.length;
+  R.sec.push({t:"Reajustes de arriendo por IPC",i:rj.length?"Monto estimado con el IPC publicado. Antes de cobrarlo confirmamos el período exacto que dice cada contrato.":"",
+    cols:["Propiedad","Cuándo","Arriendo actual","Alza IPC","Nuevo arriendo (estimado)"],num:[2,4],rows:rj,vacio:"No hay reajustes por IPC en los próximos dos meses."});
+  // Indicadores
+  const I=S.ind;const ks=Object.keys(I.ipc||{}).filter(k=>I.ipc[k]&&I.ipc[k].mensual!=null).sort();const ul=ks[ks.length-1];
+  R.ind=[["UF de hoy",ufDia(h)?"$"+ufDia(h).toLocaleString("es-CL",{minimumFractionDigits:2,maximumFractionDigits:2}):"—"],
+    ["UTM de "+ml,I.utm&&I.utm[m]?clp(I.utm[m]):"—"],
+    ["IPC "+(ul?mesTxt(ul).toLowerCase():""),ul?`${pctTxt(I.ipc[ul].mensual)} en el mes · ${pctTxt(I.ipc[ul].doce)} en 12 meses`:"—"]];
+  return R;
+}
+const FF="Aptos,Calibri,'Segoe UI',Helvetica,Arial,sans-serif";
+function notaLineas(o){return String(o.nota||"").split("\n").map(x=>x.trim()).filter(Boolean)}
+function mailHtml(R,o){
+  const tx=(t,ex="")=>`<div style="font-family:${FF};font-size:14px;color:#132338;line-height:1.55;margin:0 0 12px;${ex}">${t}</div>`;
+  const tit=t=>`<div style="padding:20px 0 8px;font-family:${FF};font-size:12px;letter-spacing:2px;font-weight:bold;color:#06213c;text-transform:uppercase;border-bottom:2px solid #a48249;margin-bottom:8px">${esc(t)}</div>`;
+  const td=(s,ex="")=>`<td style="padding:7px 10px;border-bottom:1px solid #e5e0d4;font-family:${FF};font-size:13px;color:#132338;vertical-align:top;${ex}">${s}</td>`;
+  const sec=s=>{let h=tit(s.t);if(s.i)h+=tx(esc(s.i),"margin:0 0 8px");
+    if(!s.rows.length)return h+tx("✓ "+esc(s.vacio),"color:#0d6b52;margin:0");
+    const nm=s.num||[];
+    h+=`<table style="width:100%;border-collapse:collapse;border:1px solid #e5e0d4"><tr>${s.cols.map((c,i)=>`<td style="background:#f4f1ea;padding:7px 10px;font-family:${FF};font-size:11px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;color:#5b6b7d;${nm.includes(i)?"text-align:right;":""}">${esc(c)}</td>`).join("")}</tr>`;
+    s.rows.forEach(r=>{h+=`<tr>${r.map((c,i)=>td(i===0?`<b>${esc(c)}</b>`:esc(c),(nm.includes(i)?"text-align:right;":"")+(nm.includes(i)||String(c).length<=10?"white-space:nowrap;":""))).join("")}</tr>`});
+    return h+"</table>"};
+  const nota=notaLineas(o);
+  let b=tx("Hola,")+tx(`Te comparto cómo va la administración al ${esc(fLarga(R.h))}: lo que falta cobrar, transferir y facturar, los contratos que hay que mirar y los reajustes que vienen.`);
+  if(nota.length)b+=`<div style="background:#f5efe3;border-left:3px solid #a48249;padding:12px 16px;margin:4px 0 4px"><div style="font-family:${FF};font-size:12px;letter-spacing:2px;font-weight:bold;color:#06213c;padding-bottom:6px">LO QUE NECESITO DE TI</div>${nota.map((x,i)=>`<div style="font-family:${FF};font-size:14px;color:#132338;line-height:1.5;padding:1px 0">${i+1}. ${esc(x)}</div>`).join("")}</div>`;
+  R.sec.forEach(s=>{b+=sec(s)});
+  b+=tit("Indicadores del día")+`<table style="width:100%;border-collapse:collapse;border:1px solid #e5e0d4">${R.ind.map(([k,v])=>`<tr>${td(esc(k))}${td(`<b>${esc(v)}</b>`,"text-align:right")}</tr>`).join("")}</table>`;
+  b+=`<div style="height:18px;line-height:18px;font-size:0">&nbsp;</div>`+tx("Cualquier duda me escribes y lo vemos.")+tx("Un abrazo,<br>Jorge","margin:0");
+  b+=`<table style="margin-top:16px;border-collapse:collapse"><tr><td style="border-right:2px solid #a48249;padding-right:16px;vertical-align:middle;font-family:${FF};font-size:14px;font-weight:bold;letter-spacing:3px;color:#06213c">SURTAX</td><td style="padding-left:16px;vertical-align:middle;font-family:${FF};font-size:13px;color:#132338;line-height:1.5"><b>Jorge Sandoval Paiva</b><br>Experto Tributario<br>+56 9 9078 7753 · <a href="mailto:jorge.sandoval@surtax.cl" style="color:#06213c">jorge.sandoval@surtax.cl</a> · <a href="https://www.surtax.cl" style="color:#06213c">www.surtax.cl</a></td></tr></table>`;
+  return `<div style="padding:16px 0;background:#f4f1ea"><table style="width:100%;max-width:680px;margin:0 auto;border-collapse:collapse;border:1px solid #e5e0d4;background:#ffffff">`+
+  `<tr><td style="background:#06213c;padding:22px 28px"><table style="width:100%;border-collapse:collapse"><tr><td style="vertical-align:middle"><div style="font-family:${FF};font-size:20px;font-weight:bold;letter-spacing:6px;color:#ffffff">SURTAX</div><div style="font-family:${FF};font-size:11px;letter-spacing:1px;color:#c9b48c;padding-top:4px">Gestión y estrategia tributaria</div></td>`+
+  `<td style="text-align:right;vertical-align:middle"><div style="font-family:${FF};font-size:11px;letter-spacing:2px;color:#c9d3df">REPORTE DE ADMINISTRACIÓN</div><div style="font-family:${FF};font-size:14px;font-weight:bold;color:#ffffff;padding-top:3px">Administración · ${fTxt(R.h)}</div></td></tr></table></td></tr>`+
+  `<tr><td style="background:#a48249;height:4px;line-height:4px;font-size:0;padding:0">&nbsp;</td></tr>`+
+  `<tr><td style="padding:24px 28px">${b}</td></tr>`+
+  `<tr><td style="background:#06213c;padding:10px 28px;text-align:center;font-family:${FF};font-size:11px;color:#c9d3df">SURTAX · Asesorías Contables y Tributarias Surtax Limitada · RUT 78.235.934-7</td></tr></table></div>`;
+}
+/* Versión sin estilos para el borrador de Outlook (el conector solo acepta etiquetas básicas, sin atributos de estilo). */
+function mailSimple(R,o){
+  const nota=notaLineas(o);
+  let h=`<h2>SURTAX</h2><p>Gestión y estrategia tributaria<br><b>Reporte de administración · ${fTxt(R.h)}</b></p><hr>`;
+  h+=`<p>Hola,</p><p>Te comparto cómo va la administración al ${esc(fLarga(R.h))}: lo que falta cobrar, transferir y facturar, los contratos que hay que mirar y los reajustes que vienen.</p>`;
+  if(nota.length)h+=`<h3>Lo que necesito de ti</h3><ol>${nota.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>`;
+  R.sec.forEach(s=>{h+=`<h3>${esc(s.t)}</h3>`;if(s.i)h+=`<p>${esc(s.i)}</p>`;
+    h+=s.rows.length?`<table><tr>${s.cols.map(c=>`<td><b>${esc(c)}</b></td>`).join("")}</tr>${s.rows.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</table>`:`<p>✓ ${esc(s.vacio)}</p>`});
+  h+=`<h3>Indicadores del día</h3><table>${R.ind.map(([k,v])=>`<tr><td>${esc(k)}</td><td><b>${esc(v)}</b></td></tr>`).join("")}</table>`;
+  h+=`<p>Cualquier duda me escribes y lo vemos.</p><p>Un abrazo,<br>Jorge</p><hr><p><b>Jorge Sandoval Paiva</b><br>Experto Tributario · SURTAX<br>+56 9 9078 7753 · <a href="mailto:jorge.sandoval@surtax.cl">jorge.sandoval@surtax.cl</a> · <a href="https://www.surtax.cl">www.surtax.cl</a></p>`;
+  return h;
+}
+function outlookLink(){return "https://outlook.office.com/mail/deeplink/compose?to="+encodeURIComponent(S.r.para)+"&subject="+encodeURIComponent(S.r.asunto)}
+function rActs(){const r=S.r;const ok=!!S.mcp;let h="";
+  if(r.msg)h+=`<div class="r-msg ${r.msg.k}">${r.msg.t}</div>`;
+  h+=`<div class="row" style="margin-top:10px">`;
+  if(ok)h+=r.confirm?`<button class="btn gold" data-act="r-enviar2" ${r.busy?"disabled":""}>Confirmar envío a ${esc(r.para)}</button><button class="btn sec" data-act="r-cancel">Cancelar</button>`
+    :`<button class="btn gold" data-act="r-enviar" ${r.busy?"disabled":""}>Enviar ahora</button><button class="btn" data-act="r-borrador" ${r.busy?"disabled":""}>Crear borrador en Outlook</button>`;
+  h+=`<button class="btn sec" data-act="r-copiar">Copiar correo con formato</button><a class="btn sec" style="text-decoration:none;display:inline-flex;align-items:center" target="_blank" rel="noopener" href="${esc(outlookLink())}">Abrir Outlook ↗</a></div>`;
+  h+=`<p class="muted" style="font-size:12.5px;margin-top:8px">${ok?"Enviar y Borrador usan tu cuenta de Microsoft 365. El borrador va sin colores, para que le agregues tu firma o adjuntos. Para el diseño Surtax completo: Copiar, abrir Outlook y pegar en el cuerpo.":"Para enviar directo desde aquí, abre la página en claude.ai con Microsoft 365 conectado. Mientras tanto: Copiar, abrir Outlook y pegar en el cuerpo."}</p>`;
+  return h}
+function rPaint(){const el=document.getElementById("r-acts");if(el)el.innerHTML=rActs()}
+function rValido(){const ok=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(S.r.para)&&S.r.asunto.trim();if(!ok)toast("Revisa el correo de destino y el asunto.");return ok}
+function errMcp(e,env){const c=e&&e.code;
+  if(c==="needs_reauth")return"Tu conexión con Microsoft 365 venció. Reconéctala en claude.ai → Configuración → Conectores y vuelve a intentar.";
+  if(c==="server_not_connected"||c==="selection_required"||c==="server_not_found")return"Microsoft 365 no está conectado en tu cuenta de claude.ai. Agrégalo en Configuración → Conectores, o usa Copiar.";
+  if(c==="not_in_manifest"||c==="approval_required"||c==="consent_required")return"Falta permitir que esta página use Microsoft 365. Presiona de nuevo y acepta el permiso, o revísalo en el menú Permisos del artefacto.";
+  if(c==="blocked_by_policy")return"Tu organización no permite esta acción de Microsoft 365 desde aquí. Usa Copiar.";
+  if(c==="not_granted"||c==="capability_disabled"||c==="capability_removed")return"Esta vista no puede usar Microsoft 365. Ábrela en claude.ai o usa Copiar.";
+  if(c==="tool_error")return"Outlook rechazó el correo: "+esc(String(e.message||"").slice(0,300));
+  if(env&&(c==="server_unavailable"||c==="upstream_error"||c==="cancelled"))return"No sabemos si el correo salió. Revisa tus Enviados en Outlook antes de volver a enviarlo.";
+  return"No se pudo completar ("+esc(c||"error")+"). Intenta de nuevo o usa Copiar.";}
+async function rRegistrar(via){if(!S.write||!S.db)return;try{await S.db.doc("reportes/r"+Date.now()).set({fecha:new Date().toISOString(),para:S.r.para,asunto:S.r.asunto,via})}catch(e){console.warn(e)}}
+
+/* ---------- Hojas (formularios) ---------- */
+function renderSheet(){
+  const r=$("#sheet-root");const s=S.sheet;if(!s){r.innerHTML="";return}
+  if(r.dataset.k===s.k&&r.innerHTML)return;
+  r.dataset.k=s.k;const p=S.props.find(x=>x.id===s.id);let h="";
+  if(s.t==="cobro"){const b=cobro(p,s.m);const c=b.c||{};
+    h=`<h3>Pago de ${esc(mesTxt(s.m).toLowerCase())}</h3><dl class="kv"><dt>Propiedad</dt><dd>${esc(corto(p))}</dd><dt>Arrendatario</dt><dd>${esc(p.arrendatario||"—")}</dd><dt>Arriendo del mes</dt><dd class="num">${clp(b.monto)}</dd><dt>Vence</dt><dd>${fTxt(b.venc)}</dd>${b.multa?`<dt>Multa según contrato</dt><dd class="num">${clp(b.multa)} (${b.atraso} días × ${String(p.multa).replace(".",",")}% diario)</dd>`:""}</dl>
+    <div class="fields"><label for="s-monto">Monto recibido<input id="s-monto" class="m" inputmode="numeric" value="${c.monto!=null?c.monto:b.monto}"></label><label for="s-fecha">Fecha de pago<input id="s-fecha" type="date" value="${esc(c.fecha||hoy())}"></label>
+    <label for="s-medio">Medio<select id="s-medio">${MEDIOS.map(([k,l])=>`<option value="${k}" ${(c.medio||(p.cobra===false?"directo":"transferencia"))===k?"selected":""}>${l}</option>`).join("")}</select></label><label for="s-op">N° de operación<input id="s-op" class="m" value="${esc(c.op||"")}"></label></div>
+    <label for="s-nota">Nota<input id="s-nota" value="${esc(c.nota||"")}" placeholder="Ej. pagó con multa incluida"></label>
+    <div class="row"><button class="btn" data-act="s-cobro">Guardar pago</button>${b.c?`<button class="btn sec" data-act="s-cobro-del">Borrar pago</button>`:""}</div>`}
+  if(s.t==="aviso"){const b=cobro(p,s.m);const nom=String(p.arrendatario||"").split(" ")[0]||"";
+    const txt=b.estado==="porvencer"?`Hola ${nom}, te recordamos que el arriendo de ${mesTxt(s.m).toLowerCase()} de ${corto(p)} es de ${clp(b.monto)} y vence el ${fTxt(b.venc)}. Cuando transfieras, envíanos el comprobante por este medio. ¡Gracias!\n\nAdministración de propiedades`
+      :`Hola ${nom}, a la fecha no hemos recibido el arriendo de ${mesTxt(s.m).toLowerCase()} de ${corto(p)}, que venció el ${fTxt(b.venc)}. El saldo pendiente es ${clp(b.saldo)}${b.multa?`, y según el contrato corresponde una multa de ${clp(b.multa)} por ${b.atraso} días de atraso`:""}. Te pedimos regularizarlo a la brevedad y enviarnos el comprobante. Si ya pagaste, avísanos para revisarlo.\n\nAdministración de propiedades`;
+    h=`<h3>Aviso de cobro</h3><p class="muted">${esc(corto(p))} · ${esc(p.arrendatario||"")}${p.telefono?` · ${esc(p.telefono)}`:""}${p.email?` · ${esc(p.email)}`:""}</p><label for="s-txt">Mensaje (puedes editarlo)<textarea id="s-txt" rows="8">${esc(txt)}</textarea></label>
+    <div class="note info">Copia el mensaje y envíalo por WhatsApp o correo. Al marcarlo como enviado queda la fecha en Cobranza.</div>
+    <div class="row"><button class="btn" data-act="s-copiar">Copiar mensaje</button><button class="btn sec" data-act="s-aviso">Marcar como enviado hoy</button></div>`}
+  if(s.t==="renov"){const c=contrato(p);const r=c.r||{};
+    h=`<h3>Renovación del contrato</h3><dl class="kv"><dt>Propiedad</dt><dd>${esc(corto(p))}</dd><dt>Término</dt><dd>${fTxt(p.termino)}</dd><dt>Límite de aviso</dt><dd>${fTxt(p.aviso)}</dd><dt>Reajuste</dt><dd>${esc(p.reajuste||"—")}</dd></dl>
+    <label for="s-est">Estado<select id="s-est">${RENOV.map(([k,l])=>`<option value="${k}" ${c.est===k?"selected":""}>${l}</option>`).join("")}</select></label>
+    <label for="s-rnota">Nota<textarea id="s-rnota" rows="3" placeholder="Ej. propietaria acepta renovar con nuevo canon">${esc(r.nota||"")}</textarea></label>
+    <div class="row"><button class="btn" data-act="s-renov">Guardar</button></div>`}
+  if(s.t==="fact"){const f=factura(p,s.m);const d=f.f||{};
+    h=`<h3>Factura de comisión</h3><dl class="kv"><dt>Propiedad</dt><dd>${esc(corto(p))} · ${esc(mesTxt(s.m))}</dd><dt>Facturar a</dt><dd>${esc(p.facturar_a||p.propietario||"—")}</dd><dt>Neto</dt><dd class="num">${clp(f.com.neto)}</dd><dt>IVA</dt><dd class="num">${clp(f.com.iva)}</dd><dt>Total</dt><dd class="num"><b>${clp(f.com.total)}</b></dd></dl>
+    <div class="fields"><label for="s-folio">Folio SII<input id="s-folio" class="m" inputmode="numeric" value="${esc(d.folio||"")}"></label><label for="s-ffecha">Fecha de emisión<input id="s-ffecha" type="date" value="${esc(d.fecha||hoy())}"></label></div>
+    <div class="row"><button class="btn" data-act="s-fact">Guardar</button>${d.folio?`<button class="btn sec" data-act="s-fact-del">Quitar folio</button>`:""}</div>`}
+  if(s.t==="rend"){const r=rendicion(p,s.m);const d=r.r||{};
+    h=`<h3>Transferencia al propietario</h3><dl class="kv"><dt>Propietario</dt><dd>${esc(p.propietario||"—")}</dd><dt>Cobrado</dt><dd class="num">${clp(r.cobrado)}</dd><dt>Comisión</dt><dd class="num">${clp(-r.com)}</dd></dl>
+    <div class="fields"><label for="s-otros">Otros cargos<input id="s-otros" class="m" inputmode="numeric" value="${d.otros||""}" placeholder="0"></label><label for="s-oglosa">Detalle de otros cargos<input id="s-oglosa" value="${esc(d.otros_glosa||"")}" placeholder="Ej. gastos comunes"></label>
+    <label for="s-tr">Monto transferido<input id="s-tr" class="m" inputmode="numeric" value="${d.transferido!=null?d.transferido:""}" placeholder="${r.aTransf}"></label><label for="s-tfecha">Fecha<input id="s-tfecha" type="date" value="${esc(d.fecha||hoy())}"></label></div>
+    <div class="row"><button class="btn" data-act="s-rend">Guardar</button></div>`}
+  if(s.t==="prop"){const fl=(k,l,t="text",ex="")=>`<label for="pp-${k}">${l}<input id="pp-${k}" type="${t}" value="${esc(p[k]==null?"":p[k])}" ${ex}></label>`;
+    h=`<h3>${esc(corto(p))}</h3><div class="fields">${fl("arrendatario","Arrendatario")}${fl("telefono","Teléfono arrendatario")}${fl("email","Correo arrendatario","email")}${fl("propietario","Propietario")}${fl("facturar_a","Facturar comisión a")}${fl("rut_factura","RUT para la factura")}
+    ${fl("canon","Arriendo (monto)","text",'inputmode="decimal" class="m"')}<label for="pp-moneda">Moneda<select id="pp-moneda"><option ${p.moneda==="CLP"?"selected":""}>CLP</option><option ${p.moneda==="UF"?"selected":""}>UF</option></select></label>${fl("dia_pago","Día de pago","number",'min="1" max="31"')}${fl("multa","Multa % diario","text",'inputmode="decimal" class="m"')}
+    ${fl("inicio","Inicio","date")}${fl("termino","Término","date")}${fl("aviso","Límite de aviso","date")}
+    <label for="pp-comision_tipo">Comisión<select id="pp-comision_tipo">${[["mas_iva","% + IVA"],["incluido","% con IVA incluido"],["sin","Sin comisión"]].map(([k,l])=>`<option value="${k}" ${comTipo(p)===k?"selected":""}>${l}</option>`).join("")}</select></label>${fl("comision_pct","Porcentaje","number",'step="0.1"')}
+    <label for="pp-cobra">¿Quién recibe el arriendo?<select id="pp-cobra"><option value="si" ${p.cobra!==false?"selected":""}>La administración</option><option value="no" ${p.cobra===false?"selected":""}>El propietario directo</option></select></label>
+    <label for="pp-administra">Administración<select id="pp-administra"><option value="si" ${p.administra!==false?"selected":""}>Administrada</option><option value="no" ${p.administra===false?"selected":""}>Sin administración</option></select></label></div>
+    <label for="pp-comision_confirmar" style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input id="pp-comision_confirmar" type="checkbox" style="width:auto" ${p.comision_confirmar?"checked":""}> Comisión por confirmar con el propietario</label>
+    <label for="pp-reajuste">Reajuste<input id="pp-reajuste" value="${esc(p.reajuste||"")}"></label><label for="pp-nota">Nota<textarea id="pp-nota" rows="3">${esc(p.nota||"")}</textarea></label>
+    <div class="row"><button class="btn" data-act="s-prop">Guardar cambios</button></div>`}
+  if(s.t==="reporte"){const R=reporte();const q=S.r;if(!q.asunto)q.asunto=`Reporte de administración al ${fLarga(R.h)}`;
+    h=`<h3>Reporte para el cliente</h3><p class="muted" style="font-size:14px">Correo con el estado de hoy: arriendos por cobrar, transferencias, gastos comunes, facturas, contratos y reajustes por IPC. Se arma solo con los datos de la página.</p>
+    <div class="r-stat">${[[R.arrN,"arriendos atrasados",R.arrTot],[R.trN,"transferencias pendientes"],[R.faN,"facturas por hacer"],[R.coN,"contratos por gestionar"],[R.rjN,"reajustes por IPC"]].map(([n,l,t])=>`<span>${n} ${l}${t?` · ${clp(t)}`:""}</span>`).join("")}</div>
+    <div class="fields"><label for="r-para">Para<input id="r-para" type="email" value="${esc(q.para)}"></label><label for="r-asunto">Asunto<input id="r-asunto" value="${esc(q.asunto)}"></label></div>
+    <label for="r-nota">Lo que necesitas del cliente (opcional, un punto por línea)<textarea id="r-nota" rows="3" placeholder="Ej. Confirmar si el departamento P04 pagó noviembre">${esc(q.nota)}</textarea></label>
+    <div><h2 style="margin-bottom:6px">Vista previa</h2><div class="mail-prev" id="r-prev">${mailHtml(R,q)}</div></div>
+    <div id="r-acts">${rActs()}</div><p class="muted" id="r-ult" style="font-size:12.5px">${ultEnvio()}</p>`}
+  r.innerHTML=`<div class="sheet-bg" data-act="cerrar"><div class="sheet${s.t==="reporte"?" wide":""}" role="dialog" aria-modal="true" aria-label="${s.t==="reporte"?"Reporte para el cliente":"Detalle"}"><div class="sheet-top"><div></div><button class="x" data-act="cerrar" aria-label="Cerrar">×</button></div>${h}${S.write?"":`<div class="note info">Esta vista es de consulta. Los pagos, folios y transferencias los registra Surtax.</div>`}</div></div>`;
+}
+function abrir(t,id,m){S.sheet={t,id,m,k:t+id+(m||"")+Date.now()};renderSheet()}
+function cerrar(){S.sheet=null;renderSheet()}
+const val=id=>{const el=document.getElementById(id);return el?el.value:""};
+
+/* ---------- Acciones ---------- */
+document.addEventListener("click",async e=>{
+  const nb=e.target.closest("#nav button");if(nb){S.tab=nb.dataset.tab;window.scrollTo(0,0);render();return}
+  const t=e.target.closest("[data-act]");if(!t)return;const a=t.dataset.act;
+  if(a==="cerrar"){if(e.target===t)cerrar();return}
+  if(a==="tab"){S.tab=t.dataset.tab||S.tab;if(t.dataset.m)S.mes=t.dataset.m;window.scrollTo(0,0);render();return}
+  if(a==="mes"){S.mes=mesSum(S.mes,Number(t.dataset.n));render();return}
+  if(a==="fcob"){S.filtroCob=t.dataset.k;render();return}
+  if(a==="reporte"){Object.assign(S.r,{confirm:false,busy:false,msg:null});abrir("reporte","",mesDe(hoy()));return}
+  if(["cobro","aviso","renov","fact","rend","prop"].includes(a)){abrir(a,t.dataset.id,t.dataset.m||S.mes);return}
+  if(a==="r-enviar"){if(!rValido())return;S.r.confirm=true;S.r.msg=null;rPaint();return}
+  if(a==="r-cancel"){S.r.confirm=false;rPaint();return}
+  if(a==="r-enviar2"||a==="r-borrador"){if(!rValido()||S.r.busy||!S.mcp)return;const env=a==="r-enviar2";const R=reporte();
+    S.r.busy=true;S.r.msg={k:"info",t:env?"Enviando…":"Creando borrador…"};rPaint();
+    try{const res=await S.mcp.callTool(M365,env?"outlook_send_mail":"outlook_create_draft",{to:[S.r.para],subject:S.r.asunto.trim(),body:env?mailHtml(R,S.r):mailSimple(R,S.r),bodyType:"html"});
+      const pl=(res&&res.payload)||{};const link=typeof pl==="object"&&pl?(pl.webLink||pl.weblink):null;
+      S.r.msg={k:"ok",t:env?`Correo enviado a ${esc(S.r.para)}. Queda en tus Enviados de Outlook.`:`Borrador creado en Outlook${link&&/^https:\/\//.test(link)?` · <a href="${esc(link)}" target="_blank" rel="noopener">abrir borrador</a>`:""}. Agrégale tu firma o adjuntos y envíalo desde ahí.`};
+      rRegistrar(env?"enviado desde Sur Arriendos":"borrador en Outlook");
+    }catch(er){console.warn(er);S.r.msg={k:"err",t:errMcp(er,env)}}
+    S.r.busy=false;S.r.confirm=false;rPaint();return}
+  if(a==="r-copiar"){const pv=$("#r-prev");const html=mailHtml(reporte(),S.r);let ok=false;
+    try{if(window.ClipboardItem&&navigator.clipboard&&navigator.clipboard.write){await navigator.clipboard.write([new ClipboardItem({"text/html":new Blob([html],{type:"text/html"}),"text/plain":new Blob([pv?pv.innerText:""],{type:"text/plain"})})]);ok=true}}catch(er){}
+    if(!ok&&pv){try{const rg=document.createRange();rg.selectNodeContents(pv);const sl=getSelection();sl.removeAllRanges();sl.addRange(rg);ok=document.execCommand("copy");sl.removeAllRanges()}catch(er){}}
+    S.r.msg=ok?{k:"ok",t:`Correo copiado con el formato Surtax. Presiona «Abrir Outlook ↗» y pega en el cuerpo (Ctrl+V).`}:{k:"err",t:"No se pudo copiar automáticamente. Selecciona la vista previa y cópiala a mano."};
+    rPaint();return}
+  const s=S.sheet;const p=s&&S.props.find(x=>x.id===s.id);
+  if(a==="s-cobro"){const monto=int(val("s-monto"));if(!monto){toast("Ingresa el monto recibido.");return}
+    const prev=S.cobros[id2(p,s.m)]||{};const ok=await guardar("cobros/"+id2(p,s.m),{prop:p.id,mes:s.m,monto,fecha:val("s-fecha"),medio:val("s-medio"),op:val("s-op").trim(),nota:val("s-nota").trim(),avisos:prev.avisos||[]});if(ok){toast("Pago guardado");cerrar()}}
+  if(a==="s-cobro-del"){if(!S.write)return;try{await S.db.doc("cobros/"+id2(p,s.m)).delete();toast("Pago borrado");cerrar()}catch(er){toast("No se pudo borrar.")}}
+  if(a==="s-copiar"){const tx=val("s-txt");try{await navigator.clipboard.writeText(tx);toast("Mensaje copiado")}catch(er){const el=$("#s-txt");el.focus();el.select();toast("Selecciona y copia el texto")}}
+  if(a==="s-aviso"){const prev=S.cobros[id2(p,s.m)];const av=[...((prev&&prev.avisos)||[]),hoy()];
+    const ok=await guardar("cobros/"+id2(p,s.m),prev?{avisos:av}:{prop:p.id,mes:s.m,monto:0,avisos:av},!!prev);if(ok){toast("Aviso registrado");cerrar()}}
+  if(a==="s-renov"){const ok=await guardar("renovaciones/"+p.id,{estado:val("s-est"),nota:val("s-rnota").trim(),fecha:hoy()});if(ok){toast("Renovación actualizada");cerrar()}}
+  if(a==="s-fact"){const folio=val("s-folio").trim();if(!folio){toast("Ingresa el folio.");return}const f=factura(p,s.m);
+    const ok=await guardar("facturas/"+id2(p,s.m),{prop:p.id,mes:s.m,folio,fecha:val("s-ffecha"),neto:f.com.neto,iva:f.com.iva,total:f.com.total});if(ok){toast("Factura anotada");cerrar()}}
+  if(a==="s-fact-del"){try{await S.db.doc("facturas/"+id2(p,s.m)).delete();toast("Folio quitado");cerrar()}catch(er){toast("No se pudo quitar.")}}
+  if(a==="s-rend"){const trv=val("s-tr").trim();const ok=await guardar("rendiciones/"+id2(p,s.m),{prop:p.id,mes:s.m,otros:int(val("s-otros")),otros_glosa:val("s-oglosa").trim(),transferido:trv===""?null:int(trv),fecha:val("s-tfecha")});if(ok){toast("Rendición guardada");cerrar()}}
+  if(a==="s-prop"){const num=v=>{const n=Number(String(v).replace(/\./g,"").replace(",","."));return isFinite(n)?n:null};
+    const d={arrendatario:val("pp-arrendatario").trim(),telefono:val("pp-telefono").trim(),email:val("pp-email").trim(),propietario:val("pp-propietario").trim(),facturar_a:val("pp-facturar_a").trim(),rut_factura:val("pp-rut_factura").trim(),
+      moneda:val("pp-moneda"),dia_pago:num(val("pp-dia_pago")),multa:num(val("pp-multa")),inicio:val("pp-inicio")||null,termino:val("pp-termino")||null,aviso:val("pp-aviso")||null,
+      comision_tipo:val("pp-comision_tipo"),comision_pct:num(val("pp-comision_pct"))||5,cobra:val("pp-cobra")==="si",administra:val("pp-administra")==="si",comision_confirmar:$("#pp-comision_confirmar").checked,reajuste:val("pp-reajuste").trim(),nota:val("pp-nota").trim()};
+    const cv=val("pp-canon");d.canon=d.moneda==="UF"?Number(String(cv).replace(",",".")):int(cv);
+    const ok=await guardar("propiedades/"+p.id,d,true);if(ok){toast("Propiedad actualizada");cerrar()}}
+  if(a==="uf"){const m=val("uf-mes");const v=Number(String(val("uf-val")).replace(/\./g,"").replace(",","."));if(!m||!v){toast("Ingresa mes y valor.");return}
+    const u=Object.assign({},S.cfg.uf||{});u[m]=v;const ok=await guardar("config/general",{uf:u},true);if(ok)toast("UF guardada")}
+  if(a==="xlsx")descargar();
+});
+document.addEventListener("input",e=>{const id=e.target&&e.target.id;
+  if(id==="r-para"){S.r.para=e.target.value.trim();S.r.confirm=false;rPaint()}
+  else if(id==="r-asunto"){S.r.asunto=e.target.value;rPaint()}
+  else if(id==="r-nota"){S.r.nota=e.target.value;const pv=$("#r-prev");if(pv)pv.innerHTML=mailHtml(reporte(),S.r)}});
+document.addEventListener("change",e=>{const t=e.target;if(t.dataset&&t.dataset.act==="mes-in"&&t.value){S.mes=t.value;render()}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&S.sheet)cerrar()});
+
+async function descargar(){
+  if(!window.XLSX||!S.dl){toast("La descarga no está disponible en esta vista.");return}
+  const m=S.mes;const rows=S.props.filter(activa).map(p=>({p,r:rendicion(p,m)})).filter(x=>x.r);
+  const aoa=[["Rendición a propietarios · "+mesTxt(m)],["Cartera de ejemplo"],[],["Propietario","Propiedad","Arriendo cobrado","Comisión","Otros cargos","Detalle otros","A transferir","Transferido","Fecha","Diferencia"]];
+  rows.forEach(({p,r})=>aoa.push([p.propietario||"",corto(p),r.cobrado,-r.com,-r.otros,r.r.otros_glosa||"",r.aTransf,r.tr==null?"":r.tr,r.r.fecha||"",r.dif==null?"":r.dif]));
+  const ws=XLSX.utils.aoa_to_sheet(aoa);ws["!cols"]=[{wch:34},{wch:30},{wch:14},{wch:12},{wch:12},{wch:20},{wch:14},{wch:14},{wch:12},{wch:12}];
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Rendición");
+  const data=XLSX.write(wb,{bookType:"xlsx",type:"array"});
+  try{await S.dl.save({filename:"Rendicion_"+m+".xlsx",data:new Blob([data],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"})});}catch(er){toast("Descarga cancelada.")}
+}
+init();
+})();
+</script>
+
+</body></html>
