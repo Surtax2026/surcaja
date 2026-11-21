@@ -58,7 +58,7 @@ const S={db:null,cfg:{},pros:[],clientas:[],regs:[],citas:[],regsAll:null,desde:
 function wsp(tel,txt){let d=String(tel||"").replace(/\D/g,"");if(!d)return"";if(d.length===8)d="569"+d;else if(d.length===9)d="56"+d;return"https://wa.me/"+d+"?text="+encodeURIComponent(txt)}
 async function init(){const c=window.claude;S.db=await c.use("db");const u=await c.use("user");
   if(!u||u.rol()!=="admin"){$("#app").innerHTML=`<div class="empty">Solo la administradora puede ver las estadísticas. <a href="./">Volver</a></div>`;return}
-  const [cf,pr,cl]=await Promise.all([S.db.doc("config/general").get(),S.db.collection("profesionales").get(),S.db.collection("clientas").get()]);
+  const [cf,pr,cl]=await Promise.all([S.db.doc("config/general").get(),S.db.collection("profesionales").get(),Promise.all([0,1,2,3].map(i=>S.db.doc("indices/clientas_"+i).get())).then(ps=>ps.some(p=>p.exists)?{docs:[].concat(...ps.map(p=>{const c=(p.exists&&p.data().c)||{};return Object.keys(c).map(id=>({id,data:()=>c[id]}))}))}:S.db.collection("clientas").get())]);
   S.cfg=cf.exists?cf.data():{};S.pros=pr.docs.map(d=>({id:d.id,...d.data()}));S.clientas=cl.docs.map(d=>({id:d.id,...d.data()}));
   await cargar()}
 async function cargar(){$("#app").innerHTML=`<div class="empty">Calculando…</div>`;

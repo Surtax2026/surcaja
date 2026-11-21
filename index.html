@@ -239,11 +239,25 @@ async function init(){
   db.collection("profesionales").onSnapshot(q=>{S.pros=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre),"es"));S.ready=true;render()},err);
   db.collection("servicios").onSnapshot(q=>{S.servs=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>catOrd(a.categoria)-catOrd(b.categoria)||String(a.categoria||"").localeCompare(String(b.categoria||""),"es")||String(a.nombre).localeCompare(String(b.nombre),"es"));render()},err);
   db.doc("config/general").onSnapshot(s=>{S.cfg=Object.assign({base:"neto"},s.exists?s.data():{});render()},err);
-  if(!S.myPro)db.collection("clientas").onSnapshot(q=>{S.clientas=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre),"es"));render()},err);
+  if(!S.myPro)subClientas(db);
   try{(S.myPro?db.collection("firmas").where("profId","==",S.myPro).where("estado","==","enviado"):S.admin?db.collection("firmas").where("estado","==","firmado_pro"):null)?.onSnapshot(q=>{S.firmasPend=q.docs.length;render()},()=>{})}catch(e){}
   if(!S.myPro)db.collection("solicitudes").where("estado","==","nueva").onSnapshot(q=>{S.sols=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.fecha+a.hora).localeCompare(String(b.fecha+b.hora)));render()},e=>console.warn(e));
   subDia();subAgenda();
 }
+/* --- Índice de clientas: todas las fichas en 4 documentos para leer 4 veces en vez de una por clienta --- */
+const CLI_SH=4;
+function cliShard(id){let h=0;for(const ch of String(id))h=(h*31+ch.charCodeAt(0))>>>0;return "indices/clientas_"+(h%CLI_SH)}
+function cliIdx(id,data){if(!S.db||!id)return Promise.resolve();return S.db.doc(cliShard(id)).set({c:{[id]:data},act:new Date().toISOString()},{merge:true}).catch(e=>console.warn("indice clientas",e))}
+function cliOrden(a,b){return String(a.nombre).localeCompare(String(b.nombre),"es")}
+function subClientas(db){const parts={};
+  for(let i=0;i<CLI_SH;i++)db.doc("indices/clientas_"+i).onSnapshot(s=>{parts[i]=s.exists?(s.data().c||{}):null;
+    if(Object.keys(parts).length<CLI_SH)return;
+    if(Object.values(parts).every(p=>p===null)){ // sin índice todavía: se lee la colección una vez y, si es la dueña, se arma el índice
+      if(S._cliFb)return;S._cliFb=true;
+      db.collection("clientas").get().then(q=>{S.clientas=q.docs.map(d=>({id:d.id,...d.data()})).sort(cliOrden);render();
+        if(S.admin){const sh={};q.docs.forEach(d=>{const k=cliShard(d.id);(sh[k]=sh[k]||{})[d.id]=d.data()});const t=new Date().toISOString();
+          for(let j=0;j<CLI_SH;j++){const k="indices/clientas_"+j;db.doc(k).set({c:sh[k]||{},act:t,total:q.size}).catch(e=>console.warn("indice clientas",e))}}},err);return}
+    const all=[];Object.values(parts).forEach(p=>{if(p)Object.keys(p).forEach(id=>all.push({id,...p[id]}))});S.clientas=all.sort(cliOrden);render()},err)}
 function avisoSonido(){try{const A=window.AudioContext||window.webkitAudioContext;const c=avisoSonido.c||(avisoSonido.c=new A());const o=c.createOscillator(),g=c.createGain();o.type="sine";o.frequency.value=880;g.gain.setValueAtTime(0.0001,c.currentTime);g.gain.exponentialRampToValueAtTime(0.25,c.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,c.currentTime+0.5);o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+0.55)}catch(e){}}
 function avisar(titulo,texto){S.avisos=[{titulo,texto,t:new Date().toISOString()}].concat(S.avisos||[]).slice(0,20);toast(titulo+": "+texto);avisoSonido();
   try{if(window.Notification&&Notification.permission==="granted"&&document.hidden)new Notification(titulo,{body:texto,icon:"logo-nua.png",tag:"surcaja-"+Date.now()})}catch(e){}render()}
@@ -792,7 +806,7 @@ async function guardarCita(){if(S.form)S.form.err="";const {F,pro,items,dur,prec
     let cId=cli?cli.id:null,cNom=cli?cli.nombre:"",cTel=cli?(cli.telefono||""):"";
     if(F.tipo==="cita"&&!cli){cNom=F.cliNom.trim();cTel=F.cliTel.trim();
       const dup=S.clientas.find(c=>String(c.nombre).toLowerCase()===cNom.toLowerCase()&&telNorm(c.telefono)===telNorm(cTel));
-      if(dup)cId=dup.id;else{const r=await S.db.collection("clientas").add({nombre:cNom,telefono:cTel,creado:now,origen:F.origen});cId=r.id}}
+      if(dup)cId=dup.id;else{const cd={nombre:cNom,telefono:cTel,creado:now,origen:F.origen};const r=await S.db.collection("clientas").add(cd);cId=r.id;cliIdx(cId,cd)}}
     const doc=F.tipo==="bloqueo"?{tipo:"bloqueo",fecha:F.fecha,hora:F.hora,dur,profId:pro.id,profNombre:pro.nombre,motivo:F.motivo.trim(),estado:"reservada",modificado:now}
       :{tipo:"cita",fecha:F.fecha,hora:F.hora,dur,profId:pro.id,profNombre:pro.nombre,clientaId:cId,clientaNombre:cNom,telefono:cTel,
         servicios:items.map(s=>({id:s.id,nombre:s.nombre,precio:Number(s.precio)||0,dur:durDe(s,F.pro)})),precio,origen:F.origen,nota:F.nota.trim(),modificado:now};
@@ -846,7 +860,7 @@ window.apImportarFilas=async function(rows){S.apImp={titulo:"Cargando reservas d
       const nom=String(r[cC]||"").trim()||"Clienta AgendaPro";const tel=String(cT?r[cT]:"").trim();const mail=String(cM?r[cM]:"").trim();
       let cli=S.clientas.find(c=>(tel&&telNorm(c.telefono)&&telNorm(c.telefono)===telNorm(tel))||(mail&&_nrm(c.correo)===_nrm(mail)))||S.clientas.find(c=>_nrm(c.nombre)===_nrm(nom));
       const now=new Date().toISOString();let cliId=cli?cli.id:null;
-      if(!cli){const ref=await S.db.collection("clientas").add({nombre:nom,telefono:tel,correo:mail,creado:now,origen:"agendapro"});cliId=ref.id}
+      if(!cli){const cd={nombre:nom,telefono:tel,correo:mail,creado:now,origen:"agendapro"};const ref=await S.db.collection("clientas").add(cd);cliId=ref.id;cliIdx(cliId,cd)}
       const svNom=String(cS?r[cS]:"").trim();const sv=S.servs.find(x=>_nrm(x.nombre)===_nrm(svNom))||S.servs.find(x=>svNom&&_nrm(x.nombre).includes(_nrm(svNom).slice(0,18)));
       const dur=Number(cD?String(r[cD]).replace(/\D/g,""):0)||(sv?durDe(sv,pro.id):60);
       await S.db.collection("citas").add({tipo:"cita",fecha,hora,dur,profId:pro.id,profNombre:pro.nombre,clientaId:cliId,clientaNombre:cli?cli.nombre:nom,telefono:cli?(cli.telefono||tel):tel,
@@ -972,9 +986,9 @@ document.addEventListener("click",async ev=>{
   if(a==="cli-cerrar"){S.cli.sel=null;S.cli.hist=null;render();return}
   if(a==="cli-nueva"){S.cli.nuevo=true;render();return}
   if(a==="cli-crear"){const n=$("#nc-nom").value.trim();if(!n){toast("Escribe el nombre");return}
-    const r=await S.db.collection("clientas").add({nombre:n,telefono:$("#nc-tel").value.trim(),creado:new Date().toISOString(),origen:"presencial"});S.cli.nuevo=false;toast("Clienta creada");abrirClienta(r.id);return}
+    const cd={nombre:n,telefono:$("#nc-tel").value.trim(),creado:new Date().toISOString(),origen:"presencial"};const r=await S.db.collection("clientas").add(cd);cliIdx(r.id,cd);S.cli.nuevo=false;toast("Clienta creada");abrirClienta(r.id);return}
   if(a==="cli-guardar"){const n=$("#cl-nom").value.trim();if(!n){toast("El nombre no puede quedar vacío");return}
-    await S.db.doc("clientas/"+id).update({nombre:n,telefono:$("#cl-tel").value.trim(),correo:$("#cl-mail").value.trim(),cumple:$("#cl-cumple").value.trim(),notas:$("#cl-notas").value.trim(),modificado:new Date().toISOString()});toast("Ficha guardada");return}
+    const cu={nombre:n,telefono:$("#cl-tel").value.trim(),correo:$("#cl-mail").value.trim(),cumple:$("#cl-cumple").value.trim(),notas:$("#cl-notas").value.trim(),modificado:new Date().toISOString()};await S.db.doc("clientas/"+id).update(cu);cliIdx(id,cu);toast("Ficha guardada");return}
   if(a==="cli-agendar"){const c=S.clientas.find(x=>x.id===id);S.tab="agenda";nuevaForm({cliId:id,fecha:S.agDia});window.scrollTo(0,0);return}
   if(a==="sol-agendar"){const s=(S.sols||[]).find(x=>x.id===id);if(!s)return;const cli=S.clientas.find(c=>telNorm(c.telefono)&&telNorm(c.telefono)===telNorm(s.telefono));
     if(s.fecha&&lunesDe(s.fecha)!==lunesDe(S.agDia)){S.agDia=s.fecha;subAgenda()}else if(s.fecha)S.agDia=s.fecha;S.tab="agenda";
@@ -1210,7 +1224,7 @@ async function guardar(){
         tx.set(ref,doc);tx.update(gref,{saldo:ns,estado:ns===0?"canjeada":"vigente",canjes:(g.canjes||[]).concat([{fecha:doc.fecha,registroId:ref.id,prof:pro.nombre,monto:venta}])})})}
     else ref=await S.db.collection("registros").add(doc);
     if(sel.citaId){try{await S.db.doc("citas/"+sel.citaId).update({estado:"atendida",registroId:ref.id,venta,modificado:now.toISOString()})}catch(e){console.warn(e)}}
-    if(sel.clientaId){try{await S.db.doc("clientas/"+sel.clientaId).update({ultimaVisita:doc.fecha})}catch(e){console.warn(e)}}
+    if(sel.clientaId){try{await S.db.doc("clientas/"+sel.clientaId).update({ultimaVisita:doc.fecha});cliIdx(sel.clientaId,{ultimaVisita:doc.fecha})}catch(e){console.warn(e)}}
     const c=calc(doc.venta,doc.comisionPct,doc.base);
     toast(S.rol==="caja"?`Guardado: ${pro.nombre}`:`Guardado: ${pro.nombre}, comisión ${clp(c.com)}${doc.propina?" + propina "+clp(doc.propina):""}`);
     const fk=S.sel.fecha;S.sel={pro:null,items:{},cobrado:null,manual:false,propina:"",medio:"tarjeta",op:"",nota:"",fecha:fk};
