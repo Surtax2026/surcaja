@@ -61,6 +61,12 @@ footer a{color:var(--gold-d)}
 .skel{height:44px;border-radius:12px;background:linear-gradient(90deg,#efe5d6,#f7efe4,#efe5d6);background-size:200% 100%;animation:sk 1.2s infinite}
 @keyframes sk{to{background-position:-200% 0}}
 @media (prefers-reduced-motion:reduce){.skel{animation:none}}
+.pl{display:grid;gap:4px}
+.pl h2{margin-top:6px}
+.pl .row{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.pl .row:last-child{border-bottom:0}
+.pl .row small{grid-column:1;color:var(--muted);font-size:13px}
+.pl .row b{grid-column:2;grid-row:1/span 2;align-self:center;font-weight:600;font-variant-numeric:tabular-nums}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -82,7 +88,7 @@ footer a{color:var(--gold-d)}
 firebase.initializeApp(window.SURCAJA_FIREBASE);
 const db=firebase.firestore();
 const PASO=30,ANTICIPO_MIN=90,DIAS=21;
-const R={cat:null,step:1,items:[],pro:"",fecha:"",hora:"",ocup:{},cargandoDia:false,nombre:"",tel:"",nota:"",enviando:false,error:"",hecho:null,catSel:""};
+const R={precios:new URLSearchParams(location.search).get("v")==="precios",cat:null,step:1,items:[],pro:"",fecha:"",hora:"",ocup:{},cargandoDia:false,nombre:"",tel:"",nota:"",enviando:false,error:"",hecho:null,catSel:""};
 const $=s=>document.querySelector(s);
 const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const clp=n=>"$"+Math.round(Number(n)||0).toLocaleString("es-CL");
@@ -160,12 +166,20 @@ function vHecho(){const h=R.hecho,w=telNorm(R.cat.whatsapp);
   <p class="muted">Si necesitas cambiarla o cancelarla, escríbenos por WhatsApp.</p>
   ${w?`<a class="wsp" href="https://wa.me/${w}?text=${encodeURIComponent(txt)}" target="_blank" rel="noopener">Escribirnos por WhatsApp</a>`:""}
   <button class="link" data-a="otra">Pedir otra hora</button></div>`}
+function vPrecios(){const C=cats();
+  return`<div class="card pl">${C.map(c=>`<h2>${esc(c)}</h2><div>${(R.cat.servicios||[]).filter(s=>s.categoria===c).map(s=>`<div class="row"><span>${esc(s.nombre)}</span><small>${Number(s.duracion)||60} min</small><b>${clp(s.precio)}</b></div>`).join("")}</div>`).join("")}
+  <p class="muted">Valores en pesos chilenos, IVA incluido. Lista actualizada al ${esc(new Date().toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"}))}.</p>
+  <button class="cta" data-a="reservar">Reservar tu hora</button></div>`}
 function render(){if(!R.cat)return;
+  const h1=document.querySelector("header h1");if(h1)h1.textContent=R.precios?"Lista de precios":"Reserva tu hora";
+  if(R.precios){document.title="Lista de precios · NÚASPA";$("#app").innerHTML=vPrecios();return}
+  document.title="Reserva tu hora · NÚASPA";
   if(R.hecho){$("#app").innerHTML=vHecho();return}
   $("#app").innerHTML=pasos()+({1:vServicios,2:vHora,3:vDatos}[R.step])();}
 
 document.addEventListener("input",e=>{const t=e.target;if(t.id==="r-nom")R.nombre=t.value;if(t.id==="r-tel")R.tel=t.value;if(t.id==="r-nota")R.nota=t.value});
 document.addEventListener("click",async e=>{const b=e.target.closest("[data-a]");if(!b||b.disabled)return;const a=b.dataset.a,v=b.dataset.v;
+  if(a==="reservar"){R.precios=false;render();window.scrollTo({top:0,behavior:"smooth"});return}
   if(a==="cat"){R.catSel=v;render();return}
   if(a==="svc"){const i=R.items.indexOf(v);if(i>=0)R.items.splice(i,1);else if(R.items.length<6)R.items.push(v);R.hora="";render();return}
   if(a==="paso"){R.step=+v;R.error="";render();window.scrollTo({top:0,behavior:"smooth"});return}
