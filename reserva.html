@@ -154,10 +154,10 @@ function vDatos(){const pro=(R.cat.profesionales||[]).find(p=>p.id===R.pro);
   <p class="muted" style="font-size:12.5px">Te confirmamos la hora por WhatsApp. Si no puedes asistir, avísanos con al menos 3 horas de anticipación. Usamos tu nombre y teléfono solo para gestionar tu reserva en NÚASPA (LUZIA SpA); puedes pedir que los eliminemos escribiéndonos.</p>
   <button class="link" data-a="paso" data-v="2">← Cambiar día u hora</button></div>`}
 function vHecho(){const h=R.hecho,w=telNorm(R.cat.whatsapp);
-  const txt=`Hola! Acabo de pedir hora por la web: ${fLarga(h.fecha)} a las ${h.hora}, ${h.servicios}. Mi nombre es ${h.nombre}.`;
-  return`<div class="card done"><div class="ico" aria-hidden="true">✓</div><h2>¡Solicitud recibida!</h2>
-  <p style="margin:0">Te escribiremos al WhatsApp <b>${esc(h.tel)}</b> para confirmar tu hora del <b>${esc(fLarga(h.fecha))} a las ${esc(h.hora)}</b>.</p>
-  <p class="muted">Tu hora queda tomada cuando te la confirmemos.</p>
+  const txt=`Hola! Acabo de reservar hora por la web: ${fLarga(h.fecha)} a las ${h.hora}, ${h.servicios}. Mi nombre es ${h.nombre}.`;
+  return`<div class="card done"><div class="ico" aria-hidden="true">✓</div><h2>¡Tu hora quedó reservada!</h2>
+  <p style="margin:0">Te esperamos el <b>${esc(fLarga(h.fecha))} a las ${esc(h.hora)}</b>: ${esc(h.servicios)}.</p>
+  <p class="muted">Si necesitas cambiarla o cancelarla, escríbenos por WhatsApp.</p>
   ${w?`<a class="wsp" href="https://wa.me/${w}?text=${encodeURIComponent(txt)}" target="_blank" rel="noopener">Escribirnos por WhatsApp</a>`:""}
   <button class="link" data-a="otra">Pedir otra hora</button></div>`}
 function render(){if(!R.cat)return;

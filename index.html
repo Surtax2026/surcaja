@@ -241,7 +241,7 @@ async function init(){
   db.doc("config/general").onSnapshot(s=>{S.cfg=Object.assign({base:"neto"},s.exists?s.data():{});render()},err);
   if(!S.myPro)subClientas(db);
   try{(S.myPro?db.collection("firmas").where("profId","==",S.myPro).where("estado","==","enviado"):S.admin?db.collection("firmas").where("estado","==","firmado_pro"):null)?.onSnapshot(q=>{S.firmasPend=q.docs.length;render()},()=>{})}catch(e){}
-  if(!S.myPro)db.collection("solicitudes").where("estado","==","nueva").onSnapshot(q=>{S.sols=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.fecha+a.hora).localeCompare(String(b.fecha+b.hora)));render()},e=>console.warn(e));
+  if(!S.myPro)db.collection("solicitudes").where("estado","in",["nueva","procesando"]).onSnapshot(q=>{const all=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.fecha+a.hora).localeCompare(String(b.fecha+b.hora)));S.sols=all.filter(x=>x.estado==="nueva");render();autoAgendar(all)},e=>console.warn(e));
   subDia();subAgenda();
 }
 /* --- Índice de clientas: todas las fichas en 4 documentos para leer 4 veces en vez de una por clienta --- */
@@ -876,9 +876,47 @@ function syncOcup(a,b){if(S.myPro||!S.db)return;const h0=hoy();
     const slots=S.citasSem.filter(c=>c.fecha===f&&activa(c)&&c.profId&&c.hora).map(c=>({p:c.profId,h:c.hora,d:Number(c.dur)||PASO})).sort((x,y)=>(x.p+x.h).localeCompare(y.p+y.h));
     const h=JSON.stringify(slots);if(_ocH[f]===h)continue;_ocH[f]=h;
     S.db.doc("ocupado/"+f).set({slots,act:new Date().toISOString()}).catch(e=>{console.warn("ocupado",e);delete _ocH[f]})}}
+
+/* --- Reserva web automática: cada solicitud nueva entra sola a la agenda si la hora está libre --- */
+let _autoBusy=false;const _autoFail={};
+function horPro(p,f){const[yy,mm,dd]=f.split("-").map(Number);const dw=new Date(yy,mm-1,dd).getDay();
+  if(p&&p.horario){const h=p.horario[String(dw)];return h&&h.a&&h.b?{a:toMin(h.a),b:toMin(h.b)}:null}
+  const H=horario();return{a:H.a,b:(dw===6&&S.cfg.cierraSab)?toMin(S.cfg.cierraSab):H.b}}
+async function autoAgendar(lista){if(_autoBusy||S.myPro||!S.db)return;if(!S.pros.length||!S.servs.length||!Array.isArray(S.clientas)){clearTimeout(S._autoT);S._autoT=setTimeout(()=>autoAgendar(lista),3000);return}_autoBusy=true;
+  try{const ahora=Date.now();
+    for(const s of lista){if(_autoFail[s.id])continue;
+      const viejo=s.estado==="procesando"&&ahora-Date.parse(s.modificado||0)>120000;if(s.estado!=="nueva"&&!viejo)continue;
+      const ref=S.db.doc("solicitudes/"+s.id);let tomada=false;
+      try{await S.db.runTransaction(async t=>{const d=await t.get(ref);if(!d.exists)return;const x=d.data();
+        const ok=x.estado==="nueva"||(x.estado==="procesando"&&Date.now()-Date.parse(x.modificado||0)>120000);if(!ok)return;
+        t.update(ref,{estado:"procesando",modificado:new Date().toISOString()});tomada=true})}catch(e){console.warn("reserva auto",e);continue}
+      if(!tomada)continue;
+      const devolver=async m=>{_autoFail[s.id]=1;try{await ref.update({estado:"nueva",autoNota:m,modificado:new Date().toISOString()})}catch(e){console.warn(e)}};
+      try{const items=(s.servicios||[]).map(id=>S.servs.find(v=>v.id===id)).filter(Boolean);
+        if(!items.length||!s.fecha||!s.hora){await devolver("Falta el servicio, la fecha o la hora");continue}
+        const q=await S.db.collection("citas").where("fecha","==",s.fecha).get();const dia=q.docs.map(d=>({id:d.id,...d.data()}));
+        const cands=s.profId?S.pros.filter(p=>p.id===s.profId):S.pros.filter(p=>p.activo!==false&&p.web!==false);
+        let pro=null,dur=60;
+        for(const p of cands){const D=items.reduce((a,x)=>a+durDe(x,p.id),0)||60;const h=horPro(p,s.fecha),m=toMin(s.hora);
+          if(!h||m<h.a||m+D>h.b)continue;if(choques({id:null,profId:p.id,fecha:s.fecha,hora:s.hora,dur:D},dia).length)continue;pro=p;dur=D;break}
+        if(!pro){await devolver("La hora ya no está libre");continue}
+        const now=new Date().toISOString();
+        const cli=S.clientas.find(c=>telNorm(c.telefono)&&telNorm(c.telefono)===telNorm(s.telefono));let cId,cNom,cTel;
+        if(cli){cId=cli.id;cNom=cli.nombre;cTel=cli.telefono||s.telefono||""}
+        else{cNom=String(s.nombre||"").trim();cTel=String(s.telefono||"").trim();const cd={nombre:cNom,telefono:cTel,creado:now,origen:"web"};const r=await S.db.collection("clientas").add(cd);cId=r.id;cliIdx(cId,cd)}
+        const om=String(s.nota||"").match(/^\[origen:([a-z]+)\]/);const org=om&&ORIGENES.some(x=>x[0]===om[1])?om[1]:"web";
+        const doc={tipo:"cita",fecha:s.fecha,hora:s.hora,dur,profId:pro.id,profNombre:pro.nombre,clientaId:cId,clientaNombre:cNom,telefono:cTel,
+          servicios:items.map(x=>({id:x.id,nombre:x.nombre,precio:Number(x.precio)||0,dur:durDe(x,pro.id)})),precio:items.reduce((a,x)=>a+(Number(x.precio)||0),0),
+          origen:org,nota:("Reserva web automática. "+String(s.nota||"").replace(/^\[origen:[a-z]+\]\s*/,"")).trim(),estado:"reservada",creado:now,modificado:now};
+        const c=await S.db.collection("citas").add(doc);
+        await ref.update({estado:"agendada",citaId:c.id,auto:true,modificado:now});
+        await ocupDia(s.fecha);avisoClienta(doc,"agendada");
+        toast(`Reserva web agendada sola: ${cNom}, ${fechaCorta(s.fecha)} ${s.hora} con ${pro.nombre}`)}
+      catch(e){console.warn("reserva auto",e);await devolver("No se pudo agendar sola")}}}
+  finally{_autoBusy=false}}
 function solServs(s){return(s.servicios||[]).map(id=>{const x=S.servs.find(v=>v.id===id);return x?x.nombre:"(servicio)"}).join(", ")}
 function vSols(){const L=S.sols||[];if(!L.length)return"";
-  return`<div class="panel" style="border-color:var(--amber)"><h2>Solicitudes de la reserva web (${L.length})</h2><p class="muted">Llegaron desde el link de reserva. Agéndalas y confírmale a la clienta por WhatsApp.</p>
+  return`<div class="panel" style="border-color:var(--amber)"><h2>Solicitudes de la reserva web (${L.length})</h2><p class="muted">Estas reservas web no se pudieron agendar solas (la hora se ocupó o falta un dato). Revísalas y agéndalas a mano.</p>
   <div class="sel-list">${L.map(s=>{const pro=S.pros.find(p=>p.id===s.profId);const om=String(s.nota||"").match(/^\[origen:([a-z]+)\]\s*/);const oc=om&&ORIGENES.find(x=>x[0]===om[1]);const nt=String(s.nota||"").replace(/^\[origen:[a-z]+\]\s*/,"");return`<div class="sel-item" style="flex-wrap:wrap;gap:8px"><span style="display:grid;gap:2px"><b>${esc(s.nombre)} · ${esc(fechaCorta(s.fecha))} ${esc(s.hora)}${oc?` <span class="muted" style="font-weight:400;font-size:12px">· llegó desde ${esc(oc[1])}</span>`:""}</b><span class="muted" style="font-size:13px">${esc(solServs(s))} · ${esc(pro?pro.nombre:"Cualquier profesional")} · ${esc(s.telefono)}${nt?" · “"+esc(nt)+"”":""}</span></span>
   <span class="row-btns"><button class="mini" data-act="sol-agendar" data-id="${esc(s.id)}">Agendar</button><button class="mini wsp" data-act="sol-wsp" data-id="${esc(s.id)}">WhatsApp</button><button class="mini" data-act="sol-desc" data-id="${esc(s.id)}">Descartar</button></span></div>`}).join("")}</div></div>`}
 function wspModo(){try{return localStorage.getItem("wspModo")||"app"}catch(e){return"app"}}
