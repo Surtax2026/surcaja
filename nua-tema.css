@@ -1,0 +1,25 @@
+/* Tema NÚASPA para las páginas secundarias de SurCaja (estadísticas, gift cards, gastos, firmas, contratos).
+   Usa los mismos colores y letras que la pantalla principal. Se carga después del estilo propio de cada página. */
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=PT+Sans:wght@400;700&display=swap");
+html:root{
+  --bg:#F7F1EA; --surface:#ffffff; --paper:#fffdf9; --ink:#2A2420; --muted:#6E6258; --line:#E6DCCF;
+  --navy:#6F4A26; --navy-ink:#ffffff; --navy-soft:#F1E8DA; --plum:#6F4A26; --bar:#A9864A; --mark:#F6EBD8;
+  --f-display:"Playfair Display",Georgia,"Times New Roman",serif;
+  --f-body:"PT Sans","Segoe UI",Calibri,Arial,sans-serif;
+  --f-mono:"PT Sans","Segoe UI",Calibri,Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){html.nua-dark:root:not([data-theme="light"]){
+  --bg:#1B1612; --surface:#26201A; --paper:#2A231C; --ink:#F2EBE3; --muted:#BDAE9C; --line:#3A3027;
+  --navy:#D9B77E; --navy-ink:#1B1612; --navy-soft:#2F271F; --plum:#D9B77E; --bar:#D9B77E; --mark:#3A2F22; color-scheme:dark}}
+html.nua-dark:root[data-theme="dark"]{
+  --bg:#1B1612; --surface:#26201A; --paper:#2A231C; --ink:#F2EBE3; --muted:#BDAE9C; --line:#3A3027;
+  --navy:#D9B77E; --navy-ink:#1B1612; --navy-soft:#2F271F; --plum:#D9B77E; --bar:#D9B77E; --mark:#3A2F22; color-scheme:dark}
+body{font-family:var(--f-body)}
+button,input,select,textarea{font-family:inherit}
+h1,.top b,.brand{font-family:var(--f-display);font-weight:600;color:var(--navy)}
+.top{border-bottom:2px solid var(--navy)!important;align-items:center}
+.top a{color:var(--navy)}
+.nua-logo{display:block;height:34px;width:auto;max-width:42vw}
+.top b{margin-right:auto}
+.brand{display:flex;align-items:center;gap:12px}
+input,select,textarea,.chip,.btn,.mini,.panel,.card,.kpi,.tile,.box,.pill,table{border-radius:0!important}
