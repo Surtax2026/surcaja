@@ -276,7 +276,7 @@ async function avisoPro(c,tipo,antes){try{if(!c||(c.tipo||"cita")==="bloqueo"||!
 function syncCorreosPro(){if(!S.admin||!S.usuarios||!S.pros||!S.db)return;
   S.usuarios.forEach(u=>{const em=String(u.email||u.id||"").trim().toLowerCase();if(!u.profId||!/@/.test(em))return;const p=S.pros.find(x=>x.id===u.profId);
     if(p&&p.avisoCorreo!==em&&!(syncCorreosPro.hecho||{})[p.id+em]){(syncCorreosPro.hecho=syncCorreosPro.hecho||{})[p.id+em]=1;S.db.doc("profesionales/"+p.id).update({avisoCorreo:em}).catch(e=>console.warn("correo pro",e))}})}
-async function avisoClienta(c,tipo){try{if(!c||(c.tipo||"cita")==="bloqueo")return;const cli=S.clientas.find(x=>x.id===c.clientaId);const to=cli&&String(cli.correo||cli.email||"").trim();if(!to||!/@/.test(to))return;
+async function avisoClienta(c,tipo){try{if(!c||(c.tipo||"cita")==="bloqueo")return;const cli=S.clientas.find(x=>x.id===c.clientaId);const to=String(c._correo||"").trim()||(cli&&String(cli.correo||cli.email||"").trim());if(!to||!/@/.test(to))return;
   await mpApi("/aviso-clienta",{method:"POST",body:JSON.stringify({to,tipo,nombre:String(c.clientaNombre||"").split(" ")[0],fecha:fechaLarga(c.fecha),hora:c.hora,servicios:(c.servicios||[]).map(s=>s.nombre).join(", "),profesional:c.profNombre||"",local:S.cfg.local||"NÚASPA",direccion:S.cfg.direccion||"",whatsapp:S.cfg.whatsapp||"",reserva:RESERVA_URL})});toast("Aviso enviado por correo a "+to)}catch(e){if(e&&e.status!==409)console.warn("aviso correo",e)}}
 function subAgenda(){try{startAvisos()}catch(e){}
   if(!S.db)return;
@@ -910,16 +910,17 @@ async function autoAgendar(lista){if(_autoBusy||S.myPro||!S.db)return;if(!S.pros
           if(!h||m<h.a||m+D>h.b)continue;if(choques({id:null,profId:p.id,fecha:s.fecha,hora:s.hora,dur:D},dia).length)continue;pro=p;dur=D;break}
         if(!pro){await devolver("La hora ya no está libre");continue}
         const now=new Date().toISOString();
+        const nt=String(s.nota||""),cm=nt.match(/\[correo:([^\]\s]+)\]/),sMail=cm?cm[1].slice(0,80):"",sWa=/\[wa:si\]/.test(nt);
         const cli=S.clientas.find(c=>telNorm(c.telefono)&&telNorm(c.telefono)===telNorm(s.telefono));let cId,cNom,cTel;
-        if(cli){cId=cli.id;cNom=cli.nombre;cTel=cli.telefono||s.telefono||""}
-        else{cNom=String(s.nombre||"").trim();cTel=String(s.telefono||"").trim();const cd={nombre:cNom,telefono:cTel,creado:now,origen:"web"};const r=await S.db.collection("clientas").add(cd);cId=r.id;cliIdx(cId,cd)}
+        if(cli){cId=cli.id;cNom=cli.nombre;cTel=cli.telefono||s.telefono||"";const up={};if(sMail&&!cli.correo)up.correo=sMail;if(sWa&&!cli.waOptIn)up.waOptIn=now;if(Object.keys(up).length){try{await S.db.doc("clientas/"+cId).update(up);cliIdx(cId,(({id,...r})=>r)(Object.assign({},cli,up)))}catch(e){console.warn("clienta web",e)}}}
+        else{cNom=String(s.nombre||"").trim();cTel=String(s.telefono||"").trim();const cd={nombre:cNom,telefono:cTel,creado:now,origen:"web"};if(sMail)cd.correo=sMail;if(sWa)cd.waOptIn=now;const r=await S.db.collection("clientas").add(cd);cId=r.id;cliIdx(cId,cd)}
         const om=String(s.nota||"").match(/^\[origen:([a-z]+)\]/);const org=om&&ORIGENES.some(x=>x[0]===om[1])?om[1]:"web";
         const doc={tipo:"cita",fecha:s.fecha,hora:s.hora,dur,profId:pro.id,profNombre:pro.nombre,clientaId:cId,clientaNombre:cNom,telefono:cTel,
           servicios:items.map(x=>({id:x.id,nombre:x.nombre,precio:Number(x.precio)||0,dur:durDe(x,pro.id)})),precio:items.reduce((a,x)=>a+(Number(x.precio)||0),0),
-          origen:org,nota:("Reserva web automática. "+String(s.nota||"").replace(/^\[origen:[a-z]+\]\s*/,"")).trim(),estado:"reservada",creado:now,modificado:now};
+          origen:org,nota:("Reserva web automática. "+(sWa?"Acepta WhatsApp. ":"")+nt.replace(/\[(origen|correo|wa):[^\]]*\]\s*/g,"")).trim(),estado:"reservada",creado:now,modificado:now};
         const c=await S.db.collection("citas").add(doc);
         await ref.update({estado:"agendada",citaId:c.id,auto:true,modificado:now});
-        await ocupDia(s.fecha);avisoClienta(doc,"agendada");avisoPro(doc,"agendada");
+        await ocupDia(s.fecha);avisoClienta(Object.assign({},doc,{_correo:sMail}),"agendada");avisoPro(doc,"agendada");
         toast(`Reserva web agendada sola: ${cNom}, ${fechaCorta(s.fecha)} ${s.hora} con ${pro.nombre}`)}
       catch(e){console.warn("reserva auto",e);await devolver("No se pudo agendar sola")}}}
   finally{_autoBusy=false}}

@@ -89,7 +89,7 @@ footer a{color:var(--gold-d)}
 firebase.initializeApp(window.SURCAJA_FIREBASE);
 const db=firebase.firestore();
 const PASO=30,ANTICIPO_MIN=90,DIAS=21;
-const R={precios:new URLSearchParams(location.search).get("v")==="precios",cat:null,step:1,items:[],pro:"",fecha:"",hora:"",ocup:{},cargandoDia:false,nombre:"",tel:"",nota:"",enviando:false,error:"",hecho:null,catSel:""};
+const R={precios:new URLSearchParams(location.search).get("v")==="precios",cat:null,step:1,items:[],pro:"",fecha:"",hora:"",ocup:{},cargandoDia:false,nombre:"",tel:"",mail:"",waOk:false,nota:"",enviando:false,error:"",hecho:null,catSel:""};
 const $=s=>document.querySelector(s);
 const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const clp=n=>"$"+Math.round(Number(n)||0).toLocaleString("es-CL");
@@ -155,16 +155,18 @@ function vDatos(){const pro=(R.cat.profesionales||[]).find(p=>p.id===R.pro);
   <p class="msg info"><b>${esc(fLarga(R.fecha))}, ${esc(R.hora)}</b>${pro?` con ${esc(pro.nombre)}`:""}<br>${esc(sel().map(s=>s.nombre).join(", "))} · ${clp(total())}</p>
   <label for="r-nom">Nombre y apellido<input id="r-nom" autocomplete="name" value="${esc(R.nombre)}" maxlength="80"></label>
   <label for="r-tel">WhatsApp<input id="r-tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="9 1234 5678" value="${esc(R.tel)}" maxlength="20"></label>
+  <label for="r-mail">Correo (opcional, para recibir la confirmación)<input id="r-mail" type="email" inputmode="email" autocomplete="email" placeholder="tucorreo@ejemplo.cl" value="${esc(R.mail)}" maxlength="80"></label>
+  <label style="display:flex;gap:10px;align-items:flex-start;font-weight:400;font-size:14px"><input id="r-wa" type="checkbox" style="width:20px;height:20px;margin-top:2px;flex:0 0 auto" ${R.waOk?"checked":""}><span>Acepto recibir por WhatsApp la confirmación y el recordatorio de mi hora.</span></label>
   <label for="r-nota">Comentario (opcional)<textarea id="r-nota" rows="2" maxlength="300" placeholder="Ej. es para dos personas, tengo uñas acrílicas de otro salón">${esc(R.nota)}</textarea></label>
   ${R.error?`<p class="msg err">${esc(R.error)}</p>`:""}
   <button class="cta" data-a="enviar" ${R.enviando?"disabled":""}>${R.enviando?"Enviando…":"Solicitar hora"}</button>
-  <p class="muted" style="font-size:12.5px">Te confirmamos la hora por WhatsApp. Si no puedes asistir, avísanos con al menos 3 horas de anticipación. Usamos tu nombre y teléfono solo para gestionar tu reserva en NÚASPA (LUZIA SpA); puedes pedir que los eliminemos escribiéndonos.</p>
+  <p class="muted" style="font-size:12.5px">Te enviamos la confirmación al correo que dejes y, si lo aceptas, por WhatsApp. Si no puedes asistir, avísanos con al menos 3 horas de anticipación. Usamos tu nombre, teléfono y correo solo para gestionar tu reserva en NÚASPA (LUZIA SpA); puedes pedir que los eliminemos escribiéndonos.</p>
   <button class="link" data-a="paso" data-v="2">← Cambiar día u hora</button></div>`}
 function vHecho(){const h=R.hecho,w=telNorm(R.cat.whatsapp);
   const txt=`Hola! Acabo de reservar hora por la web: ${fLarga(h.fecha)} a las ${h.hora}, ${h.servicios}. Mi nombre es ${h.nombre}.`;
   return`<div class="card done"><div class="ico" aria-hidden="true">✓</div><h2>¡Tu hora quedó reservada!</h2>
   <p style="margin:0">Te esperamos el <b>${esc(fLarga(h.fecha))} a las ${esc(h.hora)}</b>: ${esc(h.servicios)}.</p>
-  <p class="muted">Si necesitas cambiarla o cancelarla, escríbenos por WhatsApp.</p>
+  <p class="muted">${h.mail?`Te enviamos la confirmación a <b>${esc(h.mail)}</b>. `:""}Si necesitas cambiarla o cancelarla, escríbenos por WhatsApp.</p>
   ${w?`<a class="wsp" href="https://wa.me/${w}?text=${encodeURIComponent(txt)}" target="_blank" rel="noopener">Escribirnos por WhatsApp</a>`:""}
   <button class="link" data-a="otra">Pedir otra hora</button></div>`}
 function vPrecios(){const C=cats();
@@ -178,7 +180,8 @@ function render(){if(!R.cat)return;
   if(R.hecho){$("#app").innerHTML=vHecho();return}
   $("#app").innerHTML=pasos()+({1:vServicios,2:vHora,3:vDatos}[R.step])();}
 
-document.addEventListener("input",e=>{const t=e.target;if(t.id==="r-nom")R.nombre=t.value;if(t.id==="r-tel")R.tel=t.value;if(t.id==="r-nota")R.nota=t.value});
+document.addEventListener("input",e=>{const t=e.target;if(t.id==="r-nom")R.nombre=t.value;if(t.id==="r-tel")R.tel=t.value;if(t.id==="r-nota")R.nota=t.value;if(t.id==="r-mail")R.mail=t.value;if(t.id==="r-wa")R.waOk=t.checked});
+document.addEventListener("change",e=>{if(e.target.id==="r-wa")R.waOk=e.target.checked});
 document.addEventListener("click",async e=>{const b=e.target.closest("[data-a]");if(!b||b.disabled)return;const a=b.dataset.a,v=b.dataset.v;
   if(a==="reservar"){R.precios=false;render();window.scrollTo({top:0,behavior:"smooth"});return}
   if(a==="cat"){R.catSel=v;render();return}
@@ -192,11 +195,12 @@ document.addEventListener("click",async e=>{const b=e.target.closest("[data-a]")
     const nom=R.nombre.trim().replace(/\s+/g," "),tel=R.tel.trim(),d=tel.replace(/\D/g,"");
     if(nom.length<3){R.error="Escribe tu nombre.";render();return}
     if(d.length<8||d.length>12){R.error="Revisa tu número de WhatsApp (ej. 9 1234 5678).";render();return}
+    const mail=R.mail.trim().toLowerCase();if(mail&&!/^[^@\s\[\]]+@[^@\s\[\]]+\.[a-z]{2,}$/.test(mail)){R.error="Revisa tu correo o déjalo en blanco.";render();return}
     R.enviando=true;R.error="";render();
     try{
-      const canal=(new URLSearchParams(location.search).get("o")||"").toLowerCase().replace(/[^a-z]/g,"").slice(0,12);const doc={nombre:nom.slice(0,80),telefono:tel.slice(0,20),servicios:R.items.slice(0,6),profId:R.pro||"",fecha:R.fecha,hora:R.hora,nota:((canal?"[origen:"+canal+"] ":"")+R.nota.trim()).slice(0,300),estado:"nueva",creado:firebase.firestore.FieldValue.serverTimestamp()};
+      const canal=(new URLSearchParams(location.search).get("o")||"").toLowerCase().replace(/[^a-z]/g,"").slice(0,12);const doc={nombre:nom.slice(0,80),telefono:tel.slice(0,20),servicios:R.items.slice(0,6),profId:R.pro||"",fecha:R.fecha,hora:R.hora,nota:((canal?"[origen:"+canal+"] ":"")+(mail?"[correo:"+mail+"] ":"")+(R.waOk?"[wa:si] ":"")+R.nota.trim()).slice(0,300),estado:"nueva",creado:firebase.firestore.FieldValue.serverTimestamp()};
       await db.collection("solicitudes").add(doc);
-      R.hecho={nombre:nom,tel,fecha:R.fecha,hora:R.hora,servicios:sel().map(s=>s.nombre).join(", ")};
+      R.hecho={mail,nombre:nom,tel,fecha:R.fecha,hora:R.hora,servicios:sel().map(s=>s.nombre).join(", ")};
     }catch(err){R.error="No pudimos enviar tu solicitud. Revisa tu conexión e intenta de nuevo, o escríbenos por WhatsApp."}
     R.enviando=false;render();window.scrollTo({top:0,behavior:"smooth"});return}
 });
