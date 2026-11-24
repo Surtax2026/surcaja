@@ -373,7 +373,7 @@ function vRegistrar(){
         <div class="chips">${MEDIOS.map(([k,l])=>`<button class="chip" style="font-size:14px;padding:10px 14px;min-height:44px" data-act="medio" data-k="${k}" aria-pressed="${sel.medio===k}">${l}</button>`).join("")}</div></div>
       ${sel.medio==="giftcard"?`<label for="f-gc">Código de la gift card<input id="f-gc" class="m" value="${esc(sel.gc||"")}" placeholder="Ej. NUA-7K2P" style="text-transform:uppercase"></label><p class="muted" style="font-size:12px">El monto se descuenta del saldo de la gift card. Tu comisión se calcula igual que siempre.</p>`:""}${sel.medio==="tarjeta"?`<label for="f-op">N° de operación o de boleta<input id="f-op" class="m" inputmode="numeric" value="${esc(sel.op)}" placeholder="Ej. 186263056396"></label><p class="muted" style="font-size:12px">Si dos profesionales atendieron a la misma clienta con un solo voucher, cada una registra solo sus servicios y su parte de la propina, con el mismo número de operación.</p>`:""}
       ${S.admin?`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px"><label for="f-fecha">Fecha del servicio<input id="f-fecha" type="date" max="${hoy()}" value="${esc(sel.fecha||hoy())}"></label>${sel.fecha&&sel.fecha!==hoy()?`<label for="f-hora">Hora del cobro<input id="f-hora" type="time" value="${esc(sel.hora||"")}"></label>`:""}</div>${sel.fecha&&sel.fecha!==hoy()?`<p class="muted" style="font-size:12px">Estás registrando un servicio de otro día. Usa la hora del voucher para que cuadre con Mercado Pago.</p>`:""}`:""}
-      ${sel.medio==="tarjeta"&&pointOn()?vPoint(cobrado,puede):""}
+      ${sel.medio==="tarjeta"&&pointOn()?vCombo(cobrado,puede)+vPoint(cobrado+comboTotal(),(puede||((S.combo||[]).length>0&&!Object.keys(sel.items).length))&&!S.saving):""}
       <label for="f-nota">Nota (opcional)<input id="f-nota" value="${esc(sel.nota)}" placeholder="Ej. descuento clienta frecuente"></label>
       <div id="preview" class="step" style="gap:6px;border-top:1px solid var(--line);padding-top:12px">${preview(cobrado,pro,r)}</div>
       ${sel.editId?`<div class="note info"><b>Estás editando un servicio ya registrado</b><span>${esc((sel.orig&&sel.orig.profNombre)||"")} · ${esc(sel.fecha||"")} ${esc(sel.hora||"")}. Agrega o quita servicios y revisa el monto cobrado; al guardar se reemplaza el registro anterior.</span></div>`:""}
@@ -395,7 +395,7 @@ function refreshPreview(){
   const cobrado=sel.manual?int(sel.cobrado):lista;
   const p=$("#preview");if(p)p.innerHTML=preview(cobrado,pro,calc(cobrado,pro?pro.comision:0,S.cfg.base));
   const b=document.querySelector('[data-act="guardar"]');if(b)b.disabled=!(pro&&cobrado>0&&!S.saving);
-  const pb=document.querySelector('[data-act="pt-cobrar"]');if(pb){const tot=cobrado;pb.textContent="Cobrar "+clp(cobrado)+" en la máquina";pb.disabled=!(pro&&cobrado>0&&tot>=100&&!S.saving)}const pf=$("#pt-falta");if(pf)pf.textContent=ptFalta();const rf=$("#reg-falta");if(rf){const m=regFalta();rf.textContent=m;rf.hidden=!m}
+  const pb=document.querySelector('[data-act="pt-cobrar"]');if(pb){const ct=comboTotal(),solo=(S.combo||[]).length>0&&!Object.keys(sel.items).length,tot=(solo?0:cobrado)+ct;pb.textContent="Cobrar "+clp(tot)+" en la máquina";pb.disabled=!(((pro&&cobrado>0)||solo)&&tot>=100&&!S.saving)}const pf=$("#pt-falta");if(pf)pf.textContent=ptFalta();const rf=$("#reg-falta");if(rf){const m=regFalta();rf.textContent=m;rf.hidden=!m}
 }
 
 function resumen(regs){
@@ -1068,6 +1068,10 @@ document.addEventListener("click",async ev=>{
   if(a==="menos"){sel.items[id]=Math.max(0,(sel.items[id]||0)-1);if(!sel.items[id])delete sel.items[id];render();return}
   if(a==="medio"){sel.medio=b.dataset.k;render();return}
   if(a==="reset-cobrado"){sel.manual=false;sel.cobrado=null;render();return}
+  if(a==="combo-add"){const sel=S.sel,pro=S.pros.find(p=>p.id===sel.pro);const v=ventaSel();if(!pro||!Object.keys(sel.items).length||!(v>0)){toast("Elige profesional y servicio antes de sumarla");return}
+    (S.combo=S.combo||[]).push(JSON.parse(JSON.stringify({pro:sel.pro,items:sel.items,cobrado:sel.cobrado,manual:sel.manual,nota:sel.nota||"",citaId:sel.citaId||"",clientaId:sel.clientaId||"",clientaNombre:sel.clientaNombre||"",fecha:sel.fecha||"",hora:sel.hora||""})));
+    S.sel={pro:null,items:{},cobrado:null,manual:false,propina:"",medio:"tarjeta",op:"",nota:"",fecha:sel.fecha};toast(pro.nombre+" quedó en el cobro conjunto. Ahora elige la otra profesional y su servicio");render();return}
+  if(a==="combo-del"){(S.combo||[]).splice(+b.dataset.i,1);render();return}
   if(a==="pt-cobrar")return cobrarPoint();
   if(a==="pt-cancelar")return cancelarPoint();
   if(a==="pt-limpiar"){S.point=null;return render()}
@@ -1200,13 +1204,23 @@ function regFalta(){const sel=S.sel;const f=[];if(!S.pros.find(p=>p.id===sel.pro
   if(sel.medio==="giftcard"&&!String(sel.gc||"").trim())return"⚠ Falta el código de la gift card.";
   if(sel.medio==="tarjeta"&&!String(sel.op||"").trim()&&!pointOn())return"⚠ Falta el N° de operación o de boleta del voucher (puedes guardar igual, pero cuesta cuadrar la caja).";return""}
 function ptFalta(){const sel=S.sel;const f=[];if(!S.pros.find(p=>p.id===sel.pro))f.push("la profesional");if(!Object.keys(sel.items).length)f.push("el servicio");const t=ventaSel();if(!f.length&&t<100)return"El monto mínimo para cobrar en la máquina es $100.";return f.length?"Para cobrar falta elegir "+f.join(" y ")+".":""}
+function lineaVenta(l){const lista=Object.entries(l.items||{}).reduce((a,[id,q])=>{const s=S.servs.find(x=>x.id===id);return a+(s?(Number(s.precio)||0)*q:0)},0);return l.manual?int(l.cobrado):lista}
+function comboTotal(){return (S.combo||[]).reduce((a,l)=>a+lineaVenta(l),0)}
+function vCombo(cobrado,puede){const L=S.combo||[];if(S.point)return"";
+  const filas=L.map((l,i)=>{const p=S.pros.find(x=>x.id===l.pro)||{};const n=Object.keys(l.items).map(id=>(S.servs.find(x=>x.id===id)||{}).nombre).filter(Boolean).join(", ");
+    return `<div class="sel-item"><span><b>${esc(p.nombre||"")}</b> · ${esc(n)}${l.clientaNombre?` <span class="muted">(${esc(l.clientaNombre)})</span>`:""}</span><span class="row-btns"><span class="num">${clp(lineaVenta(l))}</span><button class="mini" data-act="combo-del" data-i="${i}" aria-label="Quitar">−</button></span></div>`}).join("");
+  return `<div class="step" style="gap:6px;border:1.5px dashed var(--line);padding:10px 12px">
+    ${L.length?`<b style="font-size:14px">Cobro conjunto: una sola pasada de tarjeta</b>${filas}<p class="muted" style="font-size:12px">Ahora elige la otra profesional y su servicio; el botón de abajo cobra todo junto. Cada profesional queda con su servicio y su comisión, y la propina se reparte en proporción a cada servicio.</p>`:`<span class="muted" style="font-size:13px">¿Una clienta paga también el servicio de otra persona, atendida por otra profesional?</span>`}
+    <button class="mini" data-act="combo-add" ${puede?"":"disabled"}>+ Sumar otra profesional a este mismo cobro</button></div>`}
 function ventaSel(){const sel=S.sel;const lista=Object.entries(sel.items).reduce((a,[id,q])=>{const s=S.servs.find(x=>x.id===id);return a+(s?(Number(s.precio)||0)*q:0)},0);return sel.manual?int(sel.cobrado):lista}
-async function cobrarPoint(){const sel=S.sel,pro=S.pros.find(p=>p.id===sel.pro);const venta=ventaSel(),total=venta;
-  if(!pro||!venta){toast("Elige profesional y servicio");return}if(S.point)return;
-  const nombres=Object.keys(sel.items).map(id=>(S.servs.find(x=>x.id===id)||{}).nombre).filter(Boolean).join(", ");
+async function cobrarPoint(){const sel=S.sel,pro=S.pros.find(p=>p.id===sel.pro);if(S.point)return;
+  const actual=pro&&Object.keys(sel.items).length&&ventaSel()>0?[JSON.parse(JSON.stringify({pro:sel.pro,items:sel.items,cobrado:sel.cobrado,manual:sel.manual,nota:sel.nota||"",citaId:sel.citaId||"",clientaId:sel.clientaId||"",clientaNombre:sel.clientaNombre||"",fecha:sel.fecha||"",hora:sel.hora||""}))]:[];
+  const lineas=(S.combo||[]).concat(actual);if(!lineas.length){toast("Elige profesional y servicio");return}
+  const venta=lineas.reduce((a,l)=>a+lineaVenta(l),0),total=venta;if(!venta){toast("Elige profesional y servicio");return}
+  const nombres=lineas.map(l=>((S.pros.find(p=>p.id===l.pro)||{}).nombre||"")+": "+Object.keys(l.items).map(id=>(S.servs.find(x=>x.id===id)||{}).nombre).filter(Boolean).join(", ")).join(" / ");
   const ref="sc"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-  S.point={estado:"enviando",total,ref};render();
-  try{const o=await mpApi("/orders",{method:"POST",body:JSON.stringify({amount:total,ref,terminal_id:S.cfg.pointTerminal,description:(pro.nombre+": "+nombres).slice(0,150),taxes:[{payer_condition:"payment_taxable_iva"}]})});
+  S.point={estado:"enviando",total,ref,lineas};render();
+  try{const o=await mpApi("/orders",{method:"POST",body:JSON.stringify({amount:total,ref,terminal_id:S.cfg.pointTerminal,description:nombres.slice(0,150),taxes:[{payer_condition:"payment_taxable_iva"}]})});
     S.point=Object.assign(S.point,{estado:"en_maquina",orderId:o.id,mpSt:o.status||"created",t0:Date.now()});render();pollPoint(o.id)}
   catch(e){S.point={estado:"error",titulo:"No se pudo enviar el cobro a la máquina",msg:e.red?(e.envio?"Se cortó internet justo al enviar el cobro. Mira la máquina: si el cobro apareció, cancélalo ahí; después revisa el wifi y vuelve a tocar Cobrar.":"Este equipo perdió la conexión a internet un momento y el cobro no salió (no se cobró nada). Revisa el wifi o los datos y vuelve a tocar Cobrar.")+" Si sigue igual, cobra como siempre en la máquina y registra el voucher.":(e.status===409?"La cuenta de Mercado Pago aún no está conectada. ":"")+e.message+". Puedes cobrar como siempre y registrar el voucher."};render()}}
 async function pollPoint(id){const t0=Date.now();
@@ -1215,8 +1229,15 @@ async function pollPoint(id){const t0=Date.now();
     const st=o.status,pay=((o.transactions||{}).payments||[])[0]||{};
     if(S.point&&S.point.orderId===id){const cambio=S.point.mpSt!==st||S.point.errN;S.point.mpSt=st;S.point.errN=0;if(cambio||(st!=="at_terminal"&&Date.now()-S.point.t0>30e3&&!S.point.avisoLento)){if(st!=="at_terminal"&&Date.now()-S.point.t0>30e3)S.point.avisoLento=true;render()}}
     if(st==="processed"){S.point.estado="pagado";render();
-      S.sel.op=String(pay.reference_id||pay.id||id);S.sel.propina=String(Math.round(Number(pay.tip_amount)||0));S.sel.mp={mpOrderId:id,mpPaymentId:String(pay.id||""),mpEstado:st,cobroIntegrado:true,mpMonto:Number(S.point.total)};
-      await guardar();S.point=null;render();return}
+      const op=String(pay.reference_id||pay.id||id),tip=Math.round(Number(pay.tip_amount)||0),mp={mpOrderId:id,mpPaymentId:String(pay.id||""),mpEstado:st,cobroIntegrado:true,mpMonto:Number(S.point.total)};
+      const L=S.point.lineas||[];
+      if(L.length<=1){S.sel.op=op;S.sel.propina=String(tip);S.sel.mp=mp;await guardar()}
+      else{const tot=L.reduce((a,l)=>a+lineaVenta(l),0);let rest=tip;
+        for(let i=0;i<L.length;i++){const l=L[i];const pr=i===L.length-1?rest:Math.round(tip*lineaVenta(l)/(tot||1));rest-=pr;
+          S.sel=Object.assign({},l,{medio:"tarjeta",op,propina:String(pr),mp:Object.assign({},mp,{cobroConjunto:true,lineasConjunto:L.length}),okOp:true,
+            nota:((l.nota||"")+" Cobro conjunto ("+L.length+" servicios, un voucher)"+(tip?", propina repartida en proporción al servicio":"")+".").trim()});
+          await guardar()}}
+      S.combo=[];S.point=null;render();return}
     if(["canceled","expired","failed","refunded","action_required"].includes(st)){
       const T={canceled:"Cobro cancelado",expired:"El cobro venció sin pago",failed:"El pago fue rechazado",refunded:"El pago fue devuelto",action_required:"La máquina pide revisar el pago"};
       S.point={estado:"error",titulo:T[st],msg:(pay.status_detail||o.status_detail||"")+". El servicio no se guardó; puedes intentar de nuevo."};render();return}
