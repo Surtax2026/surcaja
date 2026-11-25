@@ -203,12 +203,15 @@ function catOrd(c){const i=CAT_ORDEN.indexOf(String(c||"").trim().toLowerCase())
 const MEDIOS=[["tarjeta","Tarjeta (Mercado Pago)"],["efectivo","Efectivo"],["transferencia","Transferencia"],["giftcard","Gift card"]];
 function gcToPseudo(g){return{id:"gc-"+g.id,venta:+g.valorVenta||0,propina:0,medio:g.medioVenta,operacion:g.opVenta||"",profNombre:"Venta gift card "+g.id,hora:g.horaVenta||"",estado:"ok",comisionPct:0,base:"bruto"}}
 function cDesdeVal(){const c=S.cierreDia||{};return S.cDesde||c.desdePoint||S.dia}
+function cDesdeHora(){const c=S.cierreDia||{};return S.cDesdeH||c.desdeHoraPoint||"00:00"}
+function cKey(d){return d+"|"+cDesdeHora()+"|"+S.dia}
+function enRango(f,h,desde,dh){if(f>desde)return true;if(f<desde)return false;if(dh==="00:00")return true;return String(h||"")>dh}
 async function cargaRango(desde){
   if(!S.db||!desde||desde>=S.dia)return;
-  const key=desde+"|"+S.dia;if(S.cRango&&S.cRango.key===key)return;
+  const key=cKey(desde),dh=cDesdeHora();if(S.cRango&&S.cRango.key===key)return;
   S.cRango={key,cargando:true};
   try{const [r,g]=await Promise.all([S.db.collection("registros").where("fecha",">=",desde).where("fecha","<=",S.dia).get(),S.db.collection("giftcards").where("fechaVenta",">=",desde).where("fechaVenta","<=",S.dia).get()]);
-    const regs=r.docs.map(d=>({id:d.id,...d.data()})),gcs=g.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.estado!=="anulada").map(gcToPseudo);
+    const regs=r.docs.map(d=>({id:d.id,...d.data()})).filter(x=>enRango(x.fecha,x.hora,desde,dh)),gcs=g.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.estado!=="anulada"&&enRango(x.fechaVenta,x.horaVenta,desde,dh)).map(gcToPseudo);
     if(S.cRango&&S.cRango.key===key)S.cRango={key,cargando:false,res:resumen(regs.concat(gcs)),dias:[...new Set(regs.map(x=>x.fecha))].length};
   }catch(e){fail(e);S.cRango=null}
   render();
@@ -444,8 +447,8 @@ const medioTxt=k=>(MEDIOS.find(m=>m[0]===k)||[k,k])[1];
 function vCierre(){
   const t=resumen(S.regsDia.concat(gcPseudo())), c=S.cierreDia||{};
   const dsd=cDesdeVal(), multi=dsd<S.dia;
-  if(multi&&(!S.cRango||S.cRango.key!==dsd+"|"+S.dia))setTimeout(()=>cargaRango(dsd),0);
-  const rg=multi&&S.cRango&&S.cRango.key===dsd+"|"+S.dia&&!S.cRango.cargando?S.cRango.res:null;
+  if(multi&&(!S.cRango||S.cRango.key!==cKey(dsd)))setTimeout(()=>cargaRango(dsd),0);
+  const rg=multi&&S.cRango&&S.cRango.key===cKey(dsd)&&!S.cRango.cargando?S.cRango.res:null;
   const tj=rg?rg.porMedio.tarjeta:t.porMedio.tarjeta;
   const tP=c.totalPoint!=null?c.totalPoint:"", vP=c.ventasPoint!=null?c.ventasPoint:"", pP=c.propinasPoint!=null?c.propinasPoint:"", nP=c.cantPoint!=null?c.cantPoint:"", ef=c.efectivoContado!=null?c.efectivoContado:"";
   const fila=(lbl,sis,real,fmt=clp)=>{if(real===""||real==null)return`<tr><td>${lbl}</td><td class="n">${fmt(sis)}</td><td class="n">—</td><td class="n">—</td><td><span class="pill n">Falta dato</span></td></tr>`;const d=Number(real)-sis;return`<tr><td>${lbl}</td><td class="n">${fmt(sis)}</td><td class="n">${fmt(real)}</td><td class="n">${fmt(d)}</td><td>${d===0?`<span class="pill g">Cuadra</span>`:`<span class="pill r">${d>0?"Cobro sin registro":"Registro sin cobro"}</span>`}</td></tr>`};
@@ -458,13 +461,14 @@ function vCierre(){
       <p class="muted" style="font-size:14px">Copia los totales del ticket "Resumen de ventas" que imprime la máquina al final del día.</p>
       <div class="fields">
         <label for="c-desde">El ticket dice "desde el"<input id="c-desde" type="date" value="${esc(dsd)}" max="${S.dia}"></label>
+        ${multi?`<label for="c-desdeh">A las (hora del papel)<input id="c-desdeh" type="time" value="${esc(cDesdeHora())}"></label>`:""}
         <label for="c-total">Total del ticket<input id="c-total" class="m" inputmode="numeric" value="${esc(tP)}" placeholder="Ej. 103532"></label>
         <label for="c-ventas">Ventas<input id="c-ventas" class="m" inputmode="numeric" value="${esc(vP)}" placeholder="Ej. 98236"></label>
         <label for="c-cant">N° de ventas (tickets)<input id="c-cant" class="m" inputmode="numeric" value="${esc(nP)}" placeholder="Ej. 5"></label>
         <label for="c-prop">Propinas<input id="c-prop" class="m" inputmode="numeric" value="${esc(pP)}" placeholder="Ej. 5296"></label>
         <label for="c-ef">Efectivo contado<input id="c-ef" class="m" inputmode="numeric" value="${esc(ef)}" placeholder="0"></label>
       </div>
-      ${multi?`<div class="note warn"><b>El papel incluye días anteriores</b><span>La máquina sumó las ventas desde el ${esc(fechaLarga(dsd))}. Por eso la comparación de tarjeta se hace con lo registrado del ${esc(fechaLarga(dsd))} al ${esc(fechaLarga(S.dia))}${rg?"":" (cargando…)"}. Para que cada día calce solo, imprime al cierre el resumen de ventas de hoy.</span></div>`:`<p class="muted" style="font-size:13px">Revisa en el papel la línea "Todas las ventas realizadas… del ___ hasta ___". Si empieza un día anterior, cambia la fecha "desde el".</p>`}
+      ${multi?`<div class="note warn"><b>El papel incluye días anteriores</b><span>La máquina sumó las ventas desde el ${esc(fechaLarga(dsd))}${cDesdeHora()!=="00:00"?" a las "+esc(cDesdeHora()):""}. Por eso la comparación de tarjeta se hace con lo registrado del ${esc(fechaLarga(dsd))} al ${esc(fechaLarga(S.dia))}${rg?"":" (cargando…)"}. Para que cada día calce solo, imprime al cierre el resumen de ventas de hoy.</span></div>`:`<p class="muted" style="font-size:13px">Revisa en el papel la línea "Todas las ventas realizadas… del ___ hasta ___". Si empieza un día anterior, cambia la fecha "desde el".</p>`}
       <label for="c-obs">Observaciones<textarea id="c-obs" rows="2">${esc(c.obs||"")}</textarea></label>
       <div class="row-btns"><button class="btn" data-act="cerrar">${S.cierreDia?"Actualizar cierre":"Guardar cierre"}</button></div>
       ${S.cierreDia&&S.cierreDia.gcFirma!=null&&S.cierreDia.gcFirma!==gcFirma()?`<div class="note warn"><b>Cambiaron las gift cards de este día</b><span>Después de guardar el cierre se anuló o se modificó una gift card vendida este día. Revisa y toca "Actualizar cierre".</span></div>`:""}
@@ -1171,8 +1175,9 @@ document.addEventListener("change",async ev=>{
   if(t.id==="ap-file"&&t.files&&t.files[0]){apImportar(t.files[0]);t.value="";return}
   if(t.dataset.mpk&&S.mpImp){S.mpImp.map[t.dataset.mpk]=Number(t.value);render();return}
   if(t.id==="mp-incl"&&S.mpImp){S.mpImp.incl=t.value==="1";render();return}
-  if(t.id==="f-dia"&&t.value){S.dia=t.value;S.cDesde="";S.cRango=null;subDia();render();return}
+  if(t.id==="f-dia"&&t.value){S.dia=t.value;S.cDesde="";S.cDesdeH="";S.cRango=null;subDia();render();return}
   if(t.id==="c-desde"){S.cDesde=t.value&&t.value<=S.dia?t.value:S.dia;if(S.cDesde<S.dia)cargaRango(S.cDesde);render();return}
+  if(t.id==="c-desdeh"){S.cDesdeH=t.value||"00:00";const d=cDesdeVal();if(d<S.dia)cargaRango(d);render();return}
   if(t.id==="r-desde"||t.id==="r-hasta"){S.rep[t.id==="r-desde"?"desde":"hasta"]=t.value;S.rep.regs=null;render();return}
   if(t.id==="r-pro"){S.rep.pro=t.value;render();return}
   if(t.id==="r-cat"){S.rep.cat=t.value;render();return}
@@ -1331,7 +1336,7 @@ async function guardar(){
 function gcFirma(){return gcPseudo().map(g=>g.id+":"+g.venta+":"+g.medio).sort().join("|")}
 async function cerrar(){
   const t=resumen(S.regsDia.concat(gcPseudo())), dsd=cDesdeVal(), multi=dsd<S.dia;
-  if(multi&&!(S.cRango&&S.cRango.key===dsd+"|"+S.dia&&S.cRango.res)){toast("Espera: todavía se están cargando las ventas desde el "+dsd.split("-").reverse().join("-"));return}
+  if(multi&&!(S.cRango&&S.cRango.key===cKey(dsd)&&S.cRango.res)){toast("Espera: todavía se están cargando las ventas desde el "+dsd.split("-").reverse().join("-"));return}
   const tj=multi?S.cRango.res.porMedio.tarjeta:t.porMedio.tarjeta;
   const vivos=S.regsDia.filter(r=>r.estado!=="anulado"),cj=vivos.filter(r=>r.medio==="giftcard"),gv=gcPseudo();
   const g=id=>{const v=$(id).value.trim();return v===""?null:int(v)};
@@ -1339,7 +1344,7 @@ async function cerrar(){
     registrado:{ventasTarjeta:t.porMedio.tarjeta.v,cantTarjeta:t.porMedio.tarjeta.n,propinasTarjeta:t.porMedio.tarjeta.p,efectivo:t.porMedio.efectivo.v+t.porMedio.efectivo.p,transferencia:t.porMedio.transferencia.v+t.porMedio.transferencia.p,servicios:vivos.length,
       giftcardsVendidas:gv.length,montoGiftcardsVendidas:gv.reduce((a,g)=>a+g.venta,0),giftcardsCanjeadas:cj.length,montoGiftcardsCanjeadas:cj.reduce((a,r)=>a+(+r.venta||0),0)},gcFirma:gcFirma(),
     ts:new Date().toISOString()};
-  d.desdePoint=dsd;if(multi)d.registradoRango={desde:dsd,hasta:S.dia,ventasTarjeta:tj.v,cantTarjeta:tj.n,propinasTarjeta:tj.p};
+  d.desdePoint=dsd;d.desdeHoraPoint=cDesdeHora();if(multi)d.registradoRango={desde:dsd,desdeHora:cDesdeHora(),hasta:S.dia,ventasTarjeta:tj.v,cantTarjeta:tj.n,propinasTarjeta:tj.p};
   const cuadra=(d.totalPoint==null||d.totalPoint===tj.v+tj.p)&&d.ventasPoint===tj.v&&d.propinasPoint===tj.p&&(d.cantPoint==null||d.cantPoint===tj.n)&&(d.efectivoContado==null||d.efectivoContado===d.registrado.efectivo);
   d.estado=cuadra?"cuadra":"diferencia";
   try{await S.db.doc("cierres/"+S.dia).set(d);toast(cuadra?"Cierre guardado: la caja cuadra":"Cierre guardado con diferencias")}catch(e){fail(e)}
