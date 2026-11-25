@@ -199,7 +199,8 @@ document.addEventListener("click",async e=>{const b=e.target.closest("[data-a]")
     R.enviando=true;R.error="";render();
     try{
       const canal=(new URLSearchParams(location.search).get("o")||"").toLowerCase().replace(/[^a-z]/g,"").slice(0,12);const doc={nombre:nom.slice(0,80),telefono:tel.slice(0,20),servicios:R.items.slice(0,6),profId:R.pro||"",fecha:R.fecha,hora:R.hora,nota:((canal?"[origen:"+canal+"] ":"")+(mail?"[correo:"+mail+"] ":"")+(R.waOk?"[wa:si] ":"")+R.nota.trim()).slice(0,300),estado:"nueva",creado:firebase.firestore.FieldValue.serverTimestamp()};
-      await db.collection("solicitudes").add(doc);
+      const ref=await db.collection("solicitudes").add(doc);
+      try{fetch("https://surcaja-nuaspa.netlify.app/api/reserva-web",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:ref.id}),keepalive:true}).catch(()=>{})}catch(e){}
       R.hecho={mail,nombre:nom,tel,fecha:R.fecha,hora:R.hora,servicios:sel().map(s=>s.nombre).join(", ")};
     }catch(err){R.error="No pudimos enviar tu solicitud. Revisa tu conexión e intenta de nuevo, o escríbenos por WhatsApp."}
     R.enviando=false;render();window.scrollTo({top:0,behavior:"smooth"});return}
