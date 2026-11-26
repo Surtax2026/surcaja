@@ -111,11 +111,14 @@ function cats(){const o=[];(R.cat.servicios||[]).forEach(s=>{if(!o.includes(s.ca
 function sel(){return R.items.map(id=>(R.cat.servicios||[]).find(s=>s.id===id)).filter(Boolean)}
 function dur(){return sel().reduce((a,s)=>a+(Number(s.duracion)||60),0)}
 function total(){return sel().reduce((a,s)=>a+(Number(s.precio)||0),0)}
-function abierto(f){const[y,m,d]=f.split("-").map(Number);const dow=new Date(y,m-1,d).getDay();return!(R.cat.cerrados||[]).includes(dow)}
+const FER_IRR=["01-01","05-01","09-18","09-19","12-25"];
+function esp(f){const e=(R.cat.diasEsp||{})[f];if(e)return e;if(R.cat.feriadosIrr!==false&&FER_IRR.includes(f.slice(5)))return{cerrado:true};return null}
+function abierto(f){const[y,m,d]=f.split("-").map(Number);const dow=new Date(y,m-1,d).getDay();if((R.cat.cerrados||[]).includes(dow))return false;const e=esp(f);return!(e&&e.cerrado)}
+function conEsp(h,f){if(!h)return null;const e=esp(f);if(!e)return h;if(e.cerrado)return null;const a=Math.max(h.a,toMin(e.a||"00:00")),b=Math.min(h.b,toMin(e.b||"23:59"));return b>a?{a,b}:null}
 function dias(){const o=[];const t=new Date();for(let i=0;o.length<DIAS&&i<DIAS+10;i++){const d=new Date(t.getFullYear(),t.getMonth(),t.getDate()+i);const f=ymd(d);if(abierto(f))o.push(f)}return o}
 function horDe(p,f){const[yy,mm,dd]=f.split("-").map(Number);const dw=new Date(yy,mm-1,dd).getDay();
-  if(p&&p.horario){const h=p.horario[String(dw)];return h&&h.a&&h.b?{a:toMin(h.a),b:toMin(h.b)}:null}
-  return{a:toMin(R.cat.abre||"10:00"),b:toMin((dw===6&&R.cat.cierraSab)||R.cat.cierra||"20:00")}}
+  if(p&&p.horario){const h=p.horario[String(dw)];return conEsp(h&&h.a&&h.b?{a:toMin(h.a),b:toMin(h.b)}:null,f)}
+  return conEsp({a:toMin(R.cat.abre||"10:00"),b:toMin((dw===6&&R.cat.cierraSab)||R.cat.cierra||"20:00")},f)}
 function libres(f){
   const D=dur();const P=(R.cat.profesionales||[]).filter(p=>!R.pro||p.id===R.pro);
   const ocup=R.ocup[f]||[];const now=new Date();const min=f===ymd(now)?now.getHours()*60+now.getMinutes()+ANTICIPO_MIN:0;

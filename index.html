@@ -650,6 +650,19 @@ async function liqProXlsx(id){const L=S.liq;const p=L.rows&&L.rows.porPro[id];if
 }
 
 function vAjustes(){return vAjustesBase()+vUsuarios()}
+function vDiasEsp(){const E=S.cfg.diasEsp||{};const hoyF=hoy();const lista=Object.keys(E).filter(f=>f>=hoyF).sort();
+  const y=Number(hoyF.slice(0,4));const fer=[y,y+1].flatMap(a=>Object.keys(FERIADOS_IRR).map(md=>a+"-"+md)).filter(f=>f>=hoyF).sort().slice(0,5);
+  const fmt=f=>{const[a,m,d]=f.split("-").map(Number);return DIAS_SEM[new Date(a,m-1,d).getDay()]+" "+String(d).padStart(2,"0")+"-"+String(m).padStart(2,"0")+"-"+a};
+  return`<fieldset style="border:0;padding:0;margin:0;display:grid;gap:8px"><legend style="font-size:14px;font-weight:600;padding:0">Días especiales (un solo día: horario distinto o cerrado)</legend>
+    <label class="chip" style="min-height:40px;display:inline-flex;gap:6px;align-items:center;justify-self:start"><input type="checkbox" id="cf-fer" ${S.cfg.feriadosIrr!==false?"checked":""} data-act="cf-fer"> Cerrar automáticamente los feriados irrenunciables</label>
+    <span class="muted" style="font-size:13px">Próximos: ${fer.map(f=>fmt(f)+" ("+feriadoIrr(f)+")").join(" · ")}. Los demás feriados (por ejemplo, el 8 de diciembre) quedan abiertos, salvo que los agregues abajo.</span>
+    ${lista.length?`<div class="tbl"><table style="min-width:420px"><thead><tr><th>Día</th><th>Horario</th><th></th></tr></thead><tbody>${lista.map(f=>`<tr><td>${esc(fmt(f))}</td><td>${E[f].cerrado?"Cerrado":esc(E[f].a)+" a "+esc(E[f].b)}</td><td><button class="mini" data-act="esp-del" data-id="${esc(f)}">Quitar</button></td></tr>`).join("")}</tbody></table></div>`:`<p class="muted" style="margin:0">Aún no hay días especiales.</p>`}
+    <div class="fields"><label for="esp-f">Día<input id="esp-f" type="date" min="${hoyF}"></label>
+      <label for="esp-t">Ese día<select id="esp-t"><option value="h">Abre con otro horario</option><option value="c">Cerrado todo el día</option></select></label>
+      <label for="esp-a">Abre a las<input id="esp-a" type="time" step="900" value="${esc(S.cfg.abre||"10:00")}"></label>
+      <label for="esp-b">Cierra a las<input id="esp-b" type="time" step="900" value="17:00"></label>
+      <div style="display:grid;align-items:end"><button class="btn" data-act="esp-add">Agregar día</button></div></div>
+    <span class="muted" style="font-size:13px">Vale para todas: la reserva web solo ofrece horas dentro de ese horario. Las citas ya agendadas no se mueven; revisa la Agenda de ese día.</span></fieldset>`}
 function vHorarioEdit(){const p=S.pros.find(x=>x.id===S.horEdit);if(!p)return"";const H=p.horario||null;const loc={a:S.cfg.abre||"10:00",b:S.cfg.cierra||"20:00"};
   return`<div class="panel" id="hor-panel"><h2>Horario de ${esc(p.nombre)}</h2><p class="muted">Marca los días que atiende y su horario. Fuera de esto, su columna en la Agenda queda rayada y la reserva web no ofrece esas horas. ${H?"":"Hoy usa el horario del local."}</p>
   ${DIAS_SEM.map((d,i)=>{const h=H?H[String(i)]:((S.cfg.cerrados||[]).includes(i)?null:{a:loc.a,b:i===6&&S.cfg.cierraSab?S.cfg.cierraSab:loc.b});return`<div class="hor-row"><label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="hd-${i}" ${h?"checked":""}> ${d}</label><label for="ha-${i}" class="sr">Desde<input id="ha-${i}" type="time" step="900" value="${esc(h?h.a:loc.a)}" aria-label="${d} desde"></label><label for="hb-${i}" class="sr">Hasta<input id="hb-${i}" type="time" step="900" value="${esc(h?h.b:loc.b)}" aria-label="${d} hasta"></label></div>`}).join("")}
@@ -684,6 +697,7 @@ function vAjustesBase(){
     </div>
     <fieldset style="border:0;padding:0;margin:0;display:grid;gap:6px"><legend style="font-size:14px;font-weight:600;padding:0">Días cerrados (no aparecen en la reserva web)</legend>
       <div class="chips">${["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"].map((d,i)=>`<label class="chip" style="min-height:40px;display:inline-flex;gap:6px;align-items:center"><input type="checkbox" id="cf-cd-${i}" ${(S.cfg.cerrados||[]).includes(i)?"checked":""}> ${d}</label>`).join("")}</div></fieldset>
+    ${vDiasEsp()}
     <div class="note info"><b>Link de reserva para tus clientas</b><span><a href="${RESERVA_URL}" target="_blank" rel="noopener">${RESERVA_URL}</a> <button class="mini" data-act="copiar-reserva">Copiar</button></span><span>Muestra los servicios activos con su precio y duración, y las horas libres según esta agenda. Las solicitudes aparecen arriba de la Agenda para que las confirmes.</span></div>
     <div class="fields" hidden></div><div><button class="btn" data-act="cfg-agenda">Guardar</button></div></div>
   <div class="panel"><h2>Profesionales</h2>
@@ -727,8 +741,13 @@ function fechaCorta(s){const [y,m,d]=s.split("-").map(Number);return new Date(y,
 
 const DIAS_SEM=["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
 const dowDe=f=>{const [y,m,d]=f.split("-").map(Number);return new Date(y,m-1,d).getDay()};
-function horLocal(f){const dw=dowDe(f);if((S.cfg.cerrados||[]).includes(dw))return null;const a=toMin(S.cfg.abre||"10:00");let b=toMin((dw===6&&S.cfg.cierraSab)||S.cfg.cierra||"20:00");if(b<=a)b=a+600;return{a,b}}
-function horPro(p,f){if(!p)return null;if(p.horario&&typeof p.horario==="object"){const h=p.horario[String(dowDe(f))];if(!h||!h.a||!h.b)return null;return{a:toMin(h.a),b:toMin(h.b)}}return horLocal(f)}
+/* Feriados irrenunciables (Ley 19.973): 1 ene, 1 may, 18 y 19 sep, 25 dic. Se cierran solos salvo que se desactive en Ajustes. */
+const FERIADOS_IRR={"01-01":"Año Nuevo","05-01":"Día del Trabajo","09-18":"Fiestas Patrias","09-19":"Día de las Glorias del Ejército","12-25":"Navidad"};
+function feriadoIrr(f){return FERIADOS_IRR[String(f).slice(5)]||""}
+function diaEsp(f){const e=(S.cfg.diasEsp||{})[f];if(e)return e;if(S.cfg.feriadosIrr!==false&&feriadoIrr(f))return{cerrado:true,motivo:feriadoIrr(f)+" (feriado irrenunciable)",auto:true};return null}
+function conEsp(h,f){if(!h)return null;const e=diaEsp(f);if(!e)return h;if(e.cerrado)return null;const a=Math.max(h.a,toMin(e.a||"00:00")),b=Math.min(h.b,toMin(e.b||"23:59"));return b>a?{a,b}:null}
+function horLocal(f){const dw=dowDe(f);if((S.cfg.cerrados||[]).includes(dw))return null;const a=toMin(S.cfg.abre||"10:00");let b=toMin((dw===6&&S.cfg.cierraSab)||S.cfg.cierra||"20:00");if(b<=a)b=a+600;return conEsp({a,b},f)}
+function horPro(p,f){if(!p)return null;if(p.horario&&typeof p.horario==="object"){const h=p.horario[String(dowDe(f))];if(!h||!h.a||!h.b)return null;return conEsp({a:toMin(h.a),b:toMin(h.b)},f)}return horLocal(f)}
 function bloqueadoTodoDia(pid,f){const h=horPro(S.pros.find(p=>p.id===pid),f);if(!h)return false;return citasDe(f).some(c=>c.tipo==="bloqueo"&&c.profId===pid&&activa(c)&&toMin(c.hora)<=h.a&&toMin(c.hora)+(Number(c.dur)||0)>=h.b)}
 const PCOL=["#2F7D6D","#3A66B0","#B24D78","#B9741F","#6A57A8","#4D7F2C","#A3452F","#2C7A99"];
 function colorPro(id){const p=S.pros.find(x=>x.id===id);if(p&&p.color)return p.color;const ids=S.pros.map(x=>x.id).sort();const i=ids.indexOf(id);return PCOL[(i<0?0:i)%PCOL.length]}
@@ -869,7 +888,7 @@ function stable(o){if(Array.isArray(o))return"["+o.map(stable).join(",")+"]";if(
 let _pubT=null,_pubH=null;
 function pubCatDeb(){clearTimeout(_pubT);_pubT=setTimeout(pubCat,1500)}
 async function pubCat(){if(!S.admin||!S.db||!S.servs.length||!S.pros.length)return;
-  const cat={local:S.cfg.local||"NÚASPA",direccion:S.cfg.direccion||"",whatsapp:S.cfg.whatsapp||"",instagram:S.cfg.instagram||"",abre:S.cfg.abre||"10:00",cierra:S.cfg.cierra||"20:00",cierraSab:S.cfg.cierraSab||"",cerrados:S.cfg.cerrados||[],
+  const cat={local:S.cfg.local||"NÚASPA",direccion:S.cfg.direccion||"",whatsapp:S.cfg.whatsapp||"",instagram:S.cfg.instagram||"",abre:S.cfg.abre||"10:00",cierra:S.cfg.cierra||"20:00",cierraSab:S.cfg.cierraSab||"",cerrados:S.cfg.cerrados||[],diasEsp:S.cfg.diasEsp||{},feriadosIrr:S.cfg.feriadosIrr!==false,
     profesionales:S.pros.filter(p=>p.activo!==false&&p.web!==false).map(p=>Object.assign({id:p.id,nombre:p.nombre},p.horario?{horario:p.horario}:{})),
     servicios:S.servs.filter(s=>s.activo!==false&&s.web!==false).map(s=>({id:s.id,nombre:s.nombre,categoria:s.categoria||"Servicios",precio:Number(s.precio)||0,duracion:durDe(s)}))};
   const h=stable(cat);if(h===_pubH)return;
@@ -1081,6 +1100,15 @@ document.addEventListener("click",async ev=>{
     await save("Respaldo SurCaja "+hoy()+".json",new TextEncoder().encode(JSON.stringify(out)));
     try{await S.db.doc("config/general").set(Object.assign({},S.cfg,{ultimoRespaldo:out.creado}))}catch(e){}
     b.disabled=false;toast("Respaldo listo: "+n+" registros en total");return}
+  if(a==="esp-add"){const f=$("#esp-f").value,t=$("#esp-t").value,x=$("#esp-a").value,y=$("#esp-b").value;
+    if(!f){toast("Falta elegir el día");return}if(f<hoy()){toast("Elige un día desde hoy en adelante");return}
+    if(t==="h"&&(!x||!y||toMin(y)<=toMin(x))){toast("Revisa el horario: la hora de cierre debe ser después de la de apertura");return}
+    const E=Object.assign({},S.cfg.diasEsp||{});E[f]=t==="c"?{cerrado:true}:{a:x,b:y};
+    await S.db.doc("config/general").set(Object.assign({},S.cfg,{diasEsp:E}));
+    const n=citasDe(f).filter(c=>c.tipo!=="bloqueo"&&activa(c)&&(t==="c"||toMin(c.hora)<toMin(x)||toMin(c.hora)+(Number(c.dur)||0)>toMin(y))).length;
+    toast(n?"Día guardado. Ojo: hay "+n+" cita(s) fuera de ese horario; revísalas en la Agenda":"Día especial guardado");return}
+  if(a==="esp-del"){const E=Object.assign({},S.cfg.diasEsp||{});delete E[id];await S.db.doc("config/general").set(Object.assign({},S.cfg,{diasEsp:E}));toast("Día especial quitado");return}
+  if(a==="cf-fer"){await S.db.doc("config/general").set(Object.assign({},S.cfg,{feriadosIrr:!!(b&&b.checked)}));toast(b&&b.checked?"Los feriados irrenunciables quedan cerrados":"Los feriados irrenunciables quedan abiertos");return}
   if(a==="copiar-reserva"){try{await navigator.clipboard.writeText(RESERVA_URL);toast("Link copiado")}catch(e){toast(RESERVA_URL)}return}
   if(a==="cfg-agenda"){const v=k=>$(k).value.trim();
     await S.db.doc("config/general").set(Object.assign({},S.cfg,{local:v("#cf-local")||"NÚASPA",direccion:v("#cf-dir"),whatsapp:v("#cf-wsp"),abre:v("#cf-abre")||"10:00",cierra:v("#cf-cierra")||"20:00",instagram:v("#cf-ig").replace(/^@/,""),cierraSab:v("#cf-cierra-sab"),cerrados:[0,1,2,3,4,5,6].filter(i=>{const c=$("#cf-cd-"+i);return c&&c.checked})}));toast("Datos de la agenda guardados");return}
