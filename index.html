@@ -843,6 +843,7 @@ function vForm(){const {F,pro,items,dur,precio,cli}=formCita();const pros=S.pros
   </div>
   <div class="step" style="gap:8px"><h2>Servicios</h2>
     ${items.length?`<div class="sel-list">${items.map((s,i)=>`<div class="sel-item"><span>${esc(s.nombre)} <span class="muted">· ${durDe(s,F.pro)} min</span></span><span class="row-btns"><span class="num">${clp(s.precio)}</span><button class="mini" data-act="f-svc-del" data-i="${i}" aria-label="Quitar">−</button></span></div>`).join("")}</div>`:""}
+    ${(()=>{const n={};items.forEach(s=>{n[s.id]=(n[s.id]||0)+1});const rep=items.filter((s,i)=>n[s.id]>1&&items.findIndex(x=>x.id===s.id)===i);return rep.length?`<div class="note warn" role="status"><b>Servicio repetido</b><span>${rep.map(s=>"«"+esc(s.nombre)+"» está "+n[s.id]+" veces").join("; ")}, así que la cita queda de ${dur} min. Si es una sola atención, quita el repetido con −.</span></div>`:""})()}
     <label for="f-svc-add">Agregar servicio<select id="f-svc-add"><option value="">Elegir…</option>${Object.entries(cats).map(([c,arr])=>`<optgroup label="${esc(c)}">${arr.map(s=>`<option value="${esc(s.id)}">${esc(s.nombre)} · ${clp(s.precio)}</option>`).join("")}</optgroup>`).join("")}</select></label>
   </div>`:`<label for="f-motivo">Motivo<input id="f-motivo" value="${esc(F.motivo)}" placeholder="Ej. colación, trámite, día libre"></label>`}
   <div class="fields">
@@ -852,7 +853,7 @@ function vForm(){const {F,pro,items,dur,precio,cli}=formCita();const pros=S.pros
     ${F.tipo==="cita"?`<label for="f-origen">Cómo reservó<select id="f-origen">${ORIGENES.map(([k,l])=>`<option value="${k}" ${F.origen===k?"selected":""}>${l}</option>`).join("")}</select></label>`:""}
   </div>
   ${F.tipo==="cita"?`<label for="f-nota">Nota<input id="f-nota" value="${esc(F.nota)}" placeholder="Ej. viene con su hija, prefiere tonos nude"></label>`:""}
-  ${ch.length?`<div class="note risk"><b>Tope de horario con ${esc(pro?pro.nombre:"la profesional")}</b><span>${ch.map(c=>`${esc(c.hora)} ${esc(c.tipo==="bloqueo"?(c.motivo||"Bloqueo"):c.clientaNombre)}`).join(", ")}.</span>${F.forzar?"":`<span><button class="mini" data-act="f-forzar">Agendar igual</button></span>`}</div>`:""}
+  ${ch.length?`<div class="note risk"><b>Tope de horario con ${esc(pro?pro.nombre:"la profesional")}</b><span>Esta cita va de ${esc(F.hora)} a ${esc(fromMin(toMin(F.hora)+dur))} (${dur} min) y choca con: ${ch.map(c=>`${esc(c.hora)} ${esc(c.tipo==="bloqueo"?(c.motivo||"Bloqueo"):c.clientaNombre)}`).join(", ")}.</span>${F.forzar?"":`<span><button class="mini" data-act="f-forzar">Agendar igual</button></span>`}</div>`:""}
   ${F.tipo==="cita"&&pro&&F.hora&&(()=>{const hp=horPro(pro,F.fecha);return !hp||toMin(F.hora)<hp.a||toMin(F.hora)+dur>hp.b})()?`<div class="note warn">${esc(pro.nombre)} no atiende a esa hora según su horario. Puedes agendar igual si lo conversaron.</div>`:""}
   ${fuera?`<div class="note warn">Termina después del cierre (${esc(S.cfg.cierra||"20:00")}).</div>`:""}
   ${F.tipo==="cita"&&precio?`<div class="line"><span class="muted">Valor de lista · ${dur} min</span><b>${clp(precio)}</b></div>`:""}
