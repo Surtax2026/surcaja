@@ -350,6 +350,13 @@ function sinCatalogo(){
   return `<div class="empty"><strong>Falta cargar ${faltan.join(" y ")}</strong><span>${S.admin?`Entra a <b>Ajustes</b> y agrega ${faltan.join(" y ")}. Después cada profesional podrá registrar su servicio desde aquí.`:`Francisca debe cargarlos en Ajustes antes de empezar a registrar.`}</span>${S.admin?`<button class="btn" data-act="goto" data-tab="ajustes">Ir a Ajustes</button>`:""}</div>`;
 }
 
+function svcNorm(t){return String(t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
+function svcHit(txt,q){const ws=svcNorm(txt).split(/[^a-z0-9ñ]+/).filter(Boolean);return svcNorm(q).trim().split(/\s+/).filter(Boolean).every(w=>ws.some(x=>x.startsWith(w)))}
+function svcVisible(q,s,arr){if(!String(q||"").trim())return true;const ok=x=>svcHit(x.nombre+" "+(x.categoria||""),q);return arr?arr.some(ok):ok(s)}
+function svcFiltro(q,servs){return!String(q||"").trim()||servs.some(s=>svcVisible(q,s))}
+function svcAplicar(){const q=S.svcQ||"";let n=0;document.querySelectorAll('button.svc[data-txt]').forEach(b=>{const v=!String(q).trim()||svcHit(b.dataset.txt,q)||b.dataset.on==="true";b.hidden=!v;if(v)n++});
+  document.querySelectorAll('.svc-grid[data-cat]').forEach(g=>{const v=[...g.querySelectorAll('button.svc')].some(b=>!b.hidden);g.hidden=!v;const h=document.querySelector('.cat[data-cat="'+CSS.escape(g.dataset.cat)+'"]');if(h)h.hidden=!v});
+  const nd=document.getElementById("svc-nada");if(nd)nd.hidden=!!n}
 function proX(id){return S.pros.find(p=>p.id===id)||(S.prosOtras||[]).find(p=>p.id===id)}
 function vRegistrar(){
   if(S.myPro&&!S.sel.pro)S.sel.pro=S.myPro;
@@ -374,7 +381,9 @@ function vRegistrar(){
         ${pro&&pro.modelo==="arriendo"?`<div class="note warn"><b>${esc(pro.nombre)} trabaja con arriendo de sillón.</b><span>En ese modelo ella cobra con su propio medio de pago y emite boleta de honorarios. Si el cobro entra a la máquina del salón, el salón paga IVA sobre todo el servicio.</span></div>`:""}
       </div>
       <div class="step"><h2>2. ¿Qué servicio hizo?</h2>
-        ${Object.entries(cats).map(([c,arr])=>`<div class="cat">${esc(c)}</div><div class="svc-grid">${arr.map(s=>{const q=sel.items[s.id]||0;return`<button class="svc" data-act="svc" data-id="${esc(s.id)}" data-on="${q>0}"><b>${esc(s.nombre)}</b><span class="p">${clp(s.precio)}</span>${q>0?`<span class="qty">${q}</span>`:""}</button>`}).join("")}</div>`).join("")}
+        <label for="svc-q" class="svc-buscar" style="display:flex;align-items:center;gap:8px;position:sticky;top:calc(var(--barh,0px) + 4px);z-index:5;background:var(--bg,#fff);padding:4px 0"><span aria-hidden="true" style="font-size:18px">🔍</span><input id="svc-q" type="search" placeholder="Buscar servicio (ej. nive, kapping, pedi…)" autocomplete="off" value="${esc(S.svcQ||"")}" style="flex:1;min-height:44px;font-size:16px"></label>
+        <p id="svc-nada" class="muted" ${svcFiltro(S.svcQ,servs)?"hidden":""}>No hay servicios con ese nombre.</p>
+        ${Object.entries(cats).map(([c,arr])=>`<div class="cat" data-cat="${esc(c)}" ${svcVisible(S.svcQ,null,arr)?"":"hidden"}>${esc(c)}</div><div class="svc-grid" data-cat="${esc(c)}" ${svcVisible(S.svcQ,null,arr)?"":"hidden"}>${arr.map(s=>{const q=sel.items[s.id]||0;return`<button class="svc" data-act="svc" data-id="${esc(s.id)}" data-on="${q>0}" data-txt="${esc(svcNorm(s.nombre+" "+(s.categoria||"")))}" ${svcVisible(S.svcQ,s)||q>0?"":"hidden"}><b>${esc(s.nombre)}</b><span class="p">${clp(s.precio)}</span>${q>0?`<span class="qty">${q}</span>`:""}</button>`}).join("")}</div>`).join("")}
       </div>
     </div>
     ${items.length?`<button class="ir-cobro" data-act="ir-cobro">Ir al cobro · ${clp(cobrado)}</button>`:""}
@@ -1117,7 +1126,7 @@ document.addEventListener("click",async ev=>{
   if(a==="ir-cobro"){const pc=$("#panel-cobro");if(pc)pc.scrollIntoView({behavior:"smooth",block:"start"});return}
   if(a==="sel-limpiar"){S.sel={pro:null,items:{},cobrado:null,manual:false,propina:"",medio:"tarjeta",op:"",nota:""};render();return}
   if(a==="pro"){sel.pro=sel.pro===id?null:id;render();return}
-  if(a==="svc"){sel.items[id]=(sel.items[id]||0)+1;render();return}
+  if(a==="svc"){sel.items[id]=(sel.items[id]||0)+1;S.svcQ="";render();return}
   if(a==="menos"){sel.items[id]=Math.max(0,(sel.items[id]||0)-1);if(!sel.items[id])delete sel.items[id];render();return}
   if(a==="medio"){sel.medio=b.dataset.k;render();return}
   if(a==="reset-cobrado"){sel.manual=false;sel.cobrado=null;render();return}
@@ -1176,6 +1185,7 @@ function fail(e){console.warn(e);const c=e&&e.code;toast(c==="invalid_argument"?
 
 document.addEventListener("input",ev=>{
   const t=ev.target, sel=S.sel;
+  if(t.id==="svc-q"){S.svcQ=t.value;svcAplicar();return}
   if(S.form){const F=S.form;
     if(t.id==="f-cli-q"){F.cliQ=t.value;const el=$("#f-cli-pick");if(el)el.innerHTML=pickClientas(F.cliQ);return}
     if(t.id==="f-cli-nom"){F.cliNom=t.value;return}
