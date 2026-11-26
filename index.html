@@ -1126,7 +1126,7 @@ document.addEventListener("click",async ev=>{
   if(a==="ir-cobro"){const pc=$("#panel-cobro");if(pc)pc.scrollIntoView({behavior:"smooth",block:"start"});return}
   if(a==="sel-limpiar"){S.sel={pro:null,items:{},cobrado:null,manual:false,propina:"",medio:"tarjeta",op:"",nota:""};render();return}
   if(a==="pro"){sel.pro=sel.pro===id?null:id;render();return}
-  if(a==="svc"){sel.items[id]=(sel.items[id]||0)+1;S.svcQ="";render();return}
+  if(a==="svc"){sel.items[id]=(sel.items[id]||0)+1;const hadQ=!!S.svcQ;S.svcQ="";render();if(hadQ){const q=$("#svc-q");if(q){q.value="";q.blur()}svcAplicar()}return}
   if(a==="menos"){sel.items[id]=Math.max(0,(sel.items[id]||0)-1);if(!sel.items[id])delete sel.items[id];render();return}
   if(a==="medio"){sel.medio=b.dataset.k;render();return}
   if(a==="reset-cobrado"){sel.manual=false;sel.cobrado=null;render();return}
