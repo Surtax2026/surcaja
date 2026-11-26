@@ -254,6 +254,7 @@ async function init(){
   S.rol=user&&user.rol?user.rol():(S.admin?"admin":"caja");S.myPro=user&&user.profId?user.profId():null;
   if(S.myPro){S.tab="registrar";S.sel.pro=S.myPro}
   if(S.admin)db.collection("usuarios").onSnapshot(q=>{S.usuarios=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.email).localeCompare(String(b.email)));syncCorreosPro();render()},err);
+  if(S.myPro)db.doc("publico/catalogo").get().then(s=>{const c=s.exists?s.data():{};S.prosOtras=(c.profesionales||[]).filter(p=>p.id!==S.myPro).map(p=>({id:p.id,nombre:p.nombre,otra:true}));render()}).catch(()=>{});
   if(S.myPro)db.doc("profesionales/"+S.myPro).onSnapshot(s=>{S.pros=s.exists?[{id:s.id,...s.data()}]:[];S.ready=true;render()},err);else
   db.collection("profesionales").onSnapshot(q=>{S.pros=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre),"es"));syncCorreosPro();S.ready=true;render()},err);
   db.collection("servicios").onSnapshot(q=>{S.servs=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>catOrd(a.categoria)-catOrd(b.categoria)||String(a.categoria||"").localeCompare(String(b.categoria||""),"es")||String(a.nombre).localeCompare(String(b.nombre),"es"));render()},err);
@@ -349,10 +350,11 @@ function sinCatalogo(){
   return `<div class="empty"><strong>Falta cargar ${faltan.join(" y ")}</strong><span>${S.admin?`Entra a <b>Ajustes</b> y agrega ${faltan.join(" y ")}. Después cada profesional podrá registrar su servicio desde aquí.`:`Francisca debe cargarlos en Ajustes antes de empezar a registrar.`}</span>${S.admin?`<button class="btn" data-act="goto" data-tab="ajustes">Ir a Ajustes</button>`:""}</div>`;
 }
 
+function proX(id){return S.pros.find(p=>p.id===id)||(S.prosOtras||[]).find(p=>p.id===id)}
 function vRegistrar(){
   if(S.myPro&&!S.sel.pro)S.sel.pro=S.myPro;
   const vacio=sinCatalogo();
-  const pros=S.pros.filter(p=>p.activo!==false&&(!S.myPro||p.id===S.myPro)), servs=S.servs.filter(s=>s.activo!==false);
+  const pros=S.myPro?S.pros.filter(p=>p.id===S.myPro).concat((S.combo||[]).length?(S.prosOtras||[]):[]):S.pros.filter(p=>p.activo!==false), servs=S.servs.filter(s=>s.activo!==false);
   const sel=S.sel, pro=pros.find(p=>p.id===sel.pro);
   const items=Object.entries(sel.items).map(([id,q])=>({s:S.servs.find(x=>x.id===id),q})).filter(x=>x.s&&x.q>0);
   const lista=items.reduce((a,x)=>a+(Number(x.s.precio)||0)*x.q,0);
@@ -400,12 +402,12 @@ function preview(cobrado,pro,r){
   const prop=int(S.sel.propina);
   return `<div class="line"><span class="muted">Compra (sin IVA)</span><b>${clp(r.neto)}</b></div>
   <div class="line"><span class="muted">IVA 19%</span><b>${clp(r.iva)}</b></div>
-  ${S.rol==="caja"?"":`<div class="line"><span>Comisión ${pro?esc(pro.nombre)+" ("+(pro.comision||0)+"%)":"profesional"}</span><b>${clp(r.com)}</b></div>`}
+  ${S.rol==="caja"||(pro&&pro.otra)?"":`<div class="line"><span>Comisión ${pro?esc(pro.nombre)+" ("+(pro.comision||0)+"%)":"profesional"}</span><b>${clp(r.com)}</b></div>`}
   <div class="line"><span>Propina (100% de la profesional)</span><b>${clp(prop)}</b></div>
   <div class="line big"><span>Total del ticket</span><b>${clp(cobrado+prop)}</b></div>`;
 }
 function refreshPreview(){
-  const sel=S.sel, pro=S.pros.find(p=>p.id===sel.pro);
+  const sel=S.sel, pro=proX(sel.pro);
   const lista=Object.entries(sel.items).reduce((a,[id,q])=>{const s=S.servs.find(x=>x.id===id);return a+(s?(Number(s.precio)||0)*q:0)},0);
   const cobrado=sel.manual?int(sel.cobrado):lista;
   const p=$("#preview");if(p)p.innerHTML=preview(cobrado,pro,calc(cobrado,pro?pro.comision:0,S.cfg.base));
@@ -1119,7 +1121,7 @@ document.addEventListener("click",async ev=>{
   if(a==="menos"){sel.items[id]=Math.max(0,(sel.items[id]||0)-1);if(!sel.items[id])delete sel.items[id];render();return}
   if(a==="medio"){sel.medio=b.dataset.k;render();return}
   if(a==="reset-cobrado"){sel.manual=false;sel.cobrado=null;render();return}
-  if(a==="combo-add"){const sel=S.sel,pro=S.pros.find(p=>p.id===sel.pro);const v=ventaSel();if(!pro||!Object.keys(sel.items).length||!(v>0)){toast("Elige profesional y servicio antes de sumarla");return}
+  if(a==="combo-add"){const sel=S.sel,pro=proX(sel.pro);const v=ventaSel();if(!pro||!Object.keys(sel.items).length||!(v>0)){toast("Elige profesional y servicio antes de sumarla");return}
     (S.combo=S.combo||[]).push(JSON.parse(JSON.stringify({pro:sel.pro,items:sel.items,cobrado:sel.cobrado,manual:sel.manual,nota:sel.nota||"",citaId:sel.citaId||"",clientaId:sel.clientaId||"",clientaNombre:sel.clientaNombre||"",fecha:sel.fecha||"",hora:sel.hora||""})));
     S.sel={pro:null,items:{},cobrado:null,manual:false,propina:"",medio:"tarjeta",op:"",nota:"",fecha:sel.fecha};toast(pro.nombre+" quedó en el cobro conjunto. Ahora elige la otra profesional y su servicio");render();return}
   if(a==="combo-del"){(S.combo||[]).splice(+b.dataset.i,1);render();return}
@@ -1252,25 +1254,25 @@ function vPoint(total,puede){const P=S.point;
     return `<div class="note ${lento?"risk":"info"}"><b>${tomada?"El cobro ya está en la máquina: "+clp(P.total):"Cobro enviado ("+clp(P.total)+"). Esperando que la máquina lo tome…"}</b><span>${tomada?"Pide a la clienta que pague en la máquina. No cierres esta pantalla.":lento?"La máquina aún no lo recibe. Toca <b>Actualizar</b> en la máquina; si sigue igual, reiníciala.":"No cierres esta pantalla."}${P.errN?` <span class="muted">(sin respuesta de Mercado Pago ${P.errN} ${P.errN===1?"vez":"veces"}: ${esc(P.errMsg||"")})</span>`:""} <button class="mini" data-act="pt-cancelar">Cancelar cobro</button></span></div>`}
   if(P.estado==="pagado")return `<div class="note ok"><b>Pago aprobado: ${clp(P.total)}</b><span>Guardando el servicio…</span></div>`;
   return `<div class="note risk"><b>${esc(P.titulo||"No se completó el cobro")}</b><span>${esc(P.msg||"")} <button class="mini" data-act="pt-limpiar">Entendido</button></span></div>`}
-function regFalta(){const sel=S.sel;const f=[];if(!S.pros.find(p=>p.id===sel.pro))f.push("la profesional");if(!Object.keys(sel.items).length)f.push("al menos un servicio");
+function regFalta(){const sel=S.sel;const f=[];if(!proX(sel.pro))f.push("la profesional");if(!Object.keys(sel.items).length)f.push("al menos un servicio");
   if(f.length)return"⚠ Para guardar falta elegir "+f.join(" y ")+".";if(!(ventaSel()>0))return"⚠ Falta el monto cobrado.";
   if(sel.medio==="giftcard"&&!String(sel.gc||"").trim())return"⚠ Falta el código de la gift card.";
   if(sel.medio==="tarjeta"&&!String(sel.op||"").trim()&&!pointOn())return"⚠ Falta el N° de operación o de boleta del voucher (puedes guardar igual, pero cuesta cuadrar la caja).";return""}
-function ptFalta(){const sel=S.sel;const f=[];if(!S.pros.find(p=>p.id===sel.pro))f.push("la profesional");if(!Object.keys(sel.items).length)f.push("el servicio");const t=ventaSel();if(!f.length&&t<100)return"El monto mínimo para cobrar en la máquina es $100.";return f.length?"Para cobrar falta elegir "+f.join(" y ")+".":""}
+function ptFalta(){const sel=S.sel;const f=[];if(!proX(sel.pro))f.push("la profesional");if(!Object.keys(sel.items).length)f.push("el servicio");const t=ventaSel();if(!f.length&&t<100)return"El monto mínimo para cobrar en la máquina es $100.";return f.length?"Para cobrar falta elegir "+f.join(" y ")+".":""}
 function lineaVenta(l){const lista=Object.entries(l.items||{}).reduce((a,[id,q])=>{const s=S.servs.find(x=>x.id===id);return a+(s?(Number(s.precio)||0)*q:0)},0);return l.manual?int(l.cobrado):lista}
 function comboTotal(){return (S.combo||[]).reduce((a,l)=>a+lineaVenta(l),0)}
 function vCombo(cobrado,puede){const L=S.combo||[];if(S.point)return"";
-  const filas=L.map((l,i)=>{const p=S.pros.find(x=>x.id===l.pro)||{};const n=Object.keys(l.items).map(id=>(S.servs.find(x=>x.id===id)||{}).nombre).filter(Boolean).join(", ");
+  const filas=L.map((l,i)=>{const p=proX(l.pro)||{};const n=Object.keys(l.items).map(id=>(S.servs.find(x=>x.id===id)||{}).nombre).filter(Boolean).join(", ");
     return `<div class="sel-item"><span><b>${esc(p.nombre||"")}</b> · ${esc(n)}${l.clientaNombre?` <span class="muted">(${esc(l.clientaNombre)})</span>`:""}</span><span class="row-btns"><span class="num">${clp(lineaVenta(l))}</span><button class="mini" data-act="combo-del" data-i="${i}" aria-label="Quitar">−</button></span></div>`}).join("");
   return `<div class="step" style="gap:6px;border:1.5px dashed var(--line);padding:10px 12px">
     ${L.length?`<b style="font-size:14px">Cobro conjunto: una sola pasada de tarjeta</b>${filas}<p class="muted" style="font-size:12px">Ahora elige la otra profesional y su servicio; el botón de abajo cobra todo junto. Cada profesional queda con su servicio y su comisión, y la propina se reparte en proporción a cada servicio.</p>`:`<span class="muted" style="font-size:13px">¿Una clienta paga también el servicio de otra persona, atendida por otra profesional?</span>`}
     <button class="mini" data-act="combo-add" ${puede?"":"disabled"}>+ Sumar otra profesional a este mismo cobro</button></div>`}
 function ventaSel(){const sel=S.sel;const lista=Object.entries(sel.items).reduce((a,[id,q])=>{const s=S.servs.find(x=>x.id===id);return a+(s?(Number(s.precio)||0)*q:0)},0);return sel.manual?int(sel.cobrado):lista}
-async function cobrarPoint(){const sel=S.sel,pro=S.pros.find(p=>p.id===sel.pro);if(S.point)return;
+async function cobrarPoint(){const sel=S.sel,pro=proX(sel.pro);if(S.point)return;
   const actual=pro&&Object.keys(sel.items).length&&ventaSel()>0?[JSON.parse(JSON.stringify({pro:sel.pro,items:sel.items,cobrado:sel.cobrado,manual:sel.manual,nota:sel.nota||"",citaId:sel.citaId||"",clientaId:sel.clientaId||"",clientaNombre:sel.clientaNombre||"",fecha:sel.fecha||"",hora:sel.hora||""}))]:[];
   const lineas=(S.combo||[]).concat(actual);if(!lineas.length){toast("Elige profesional y servicio");return}
   const venta=lineas.reduce((a,l)=>a+lineaVenta(l),0),total=venta;if(!venta){toast("Elige profesional y servicio");return}
-  const nombres=lineas.map(l=>((S.pros.find(p=>p.id===l.pro)||{}).nombre||"")+": "+Object.keys(l.items).map(id=>(S.servs.find(x=>x.id===id)||{}).nombre).filter(Boolean).join(", ")).join(" / ");
+  const nombres=lineas.map(l=>((proX(l.pro)||{}).nombre||"")+": "+Object.keys(l.items).map(id=>(S.servs.find(x=>x.id===id)||{}).nombre).filter(Boolean).join(", ")).join(" / ");
   const ref="sc"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   S.point={estado:"enviando",total,ref,lineas};render();
   try{const o=await mpApi("/orders",{method:"POST",body:JSON.stringify({amount:total,ref,terminal_id:S.cfg.pointTerminal,description:nombres.slice(0,150),taxes:[{payer_condition:"payment_taxable_iva"}]})});
@@ -1311,7 +1313,7 @@ async function ptLink(){try{const d=await mpApi("/oauth/link",{method:"POST"});w
 async function ptModo(m){if(!S.cfg.pointTerminal)return;try{await mpApi("/terminal-mode",{method:"POST",body:JSON.stringify({terminal_id:S.cfg.pointTerminal,mode:m})});
   S.ptLive=m;if(S.admin){try{await S.db.doc("config/general").set(Object.assign({},S.cfg,{pointIntegrado:m==="PDV"}))}catch(e){}}render();toast(m==="PDV"?"Modo integrado activado: reinicia la máquina":"Modo normal activado: reinicia la máquina");ptEstado()}catch(e){toast("No se pudo cambiar el modo: "+e.message)}}
 async function guardar(){
-  const sel=S.sel, pro=S.pros.find(p=>p.id===sel.pro);
+  const sel=S.sel, pro=proX(sel.pro);
   const items=Object.entries(sel.items).map(([id,q])=>{const s=S.servs.find(x=>x.id===id);return s?{id,nombre:s.nombre,categoria:s.categoria||"",precioLista:Number(s.precio)||0,cantidad:q}:null}).filter(Boolean);
   const lista=items.reduce((a,x)=>a+x.precioLista*x.cantidad,0);
   const venta=sel.manual?int(sel.cobrado):lista;
@@ -1346,6 +1348,11 @@ async function guardar(){
     else if(pLista<venta){docProd=Object.assign({},doc,{profId:"salon",profNombre:"Salón (venta de producto)",modelo:"producto",comisionPct:0,servicios:pItems,precioLista:pLista,venta:pLista,propina:0,citaId:"",nota:("Producto vendido junto al servicio de "+pro.nombre+". "+doc.nota).trim()});
       doc.servicios=items.filter(x=>!esProd(x));doc.precioLista=lista-pLista;doc.venta=venta-pLista}
   }
+  if(pro.otra){S.saving=true;refreshPreview();
+    try{const r=await mpApi("/registro-conjunto",{method:"POST",body:JSON.stringify({doc})});toast("Guardado: "+(r.profNombre||pro.nombre)+" (cobro conjunto)");
+      const fk=S.sel.fecha;S.sel={pro:null,items:{},cobrado:null,manual:false,propina:"",medio:"tarjeta",op:"",nota:"",fecha:fk}}
+    catch(e){toast("No se pudo guardar el servicio de "+pro.nombre+": "+(e.message||e)+". Avísale a la administradora para que lo registre.")}
+    S.saving=false;render();return}
   S.saving=true;refreshPreview();
   try{let ref;
     if(docProd){await S.db.collection("registros").add(docProd)}
