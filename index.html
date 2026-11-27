@@ -305,7 +305,16 @@ function subAgenda(){try{startAvisos()}catch(e){}
   const a=lunesDe(S.agDia),b=masDias(a,6);
   S.unsubSem=S.db.collection("citas").where("fecha",">=",a).where("fecha","<=",b).onSnapshot(q=>{S.citasSem=q.docs.map(d=>({id:d.id,...d.data()}));syncOcup(a,b);render()},err);
   S.unsubMan=S.db.collection("citas").where("fecha","==",masDias(hoy(),1)).onSnapshot(q=>{S.citasMan=q.docs.map(d=>({id:d.id,...d.data()}));render()},err);
+  if(!S.unsubWeb)S.unsubWeb=S.db.collection("citas").where("origen","==","web").onSnapshot(q=>{const ant=S.webCitas;S.webCitas=q.docs.map(d=>({id:d.id,...d.data()}));
+    if(ant){const ya=new Set(ant.map(c=>c.id));const nv=webPorAvisar().filter(c=>!ya.has(c.id));if(nv.length)toast(`Nueva reserva web: ${nv[0].clientaNombre}, ${fechaCorta(nv[0].fecha)} ${nv[0].hora}. Confírmale por WhatsApp.`)}
+    render()},e=>console.warn("web citas",e));
 }
+function webPorAvisar(){const h=hoy(),d=new Date(),ahora=String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");return(S.webCitas||[]).filter(c=>(c.fecha>h||(c.fecha===h&&String(c.hora)>=ahora))&&(c.tipo||"cita")!=="bloqueo"&&c.estado==="reservada"&&!c.avisado).sort((a,b)=>String(a.fecha+a.hora).localeCompare(String(b.fecha+b.hora)))}
+function conCorreo(c){if(/\[correo:/.test(String(c.nota||"")))return true;const cli=S.clientas.find(x=>x.id===c.clientaId);return!!(cli&&/@/.test(String(cli.correo||"")))}
+function vWebAvisar(){const L=webPorAvisar();if(!L.length)return"";
+  return`<div class="panel" style="border-color:var(--amber)"><h2>Reservas web por confirmar (${L.length})</h2><p class="muted">Llegaron por la página y ya están en la agenda. Escríbele a cada clienta para confirmar: las que no dejaron correo no han recibido ningún aviso.</p>
+  <div class="sel-list">${L.map(c=>`<div class="sel-item" style="flex-wrap:wrap;gap:8px"><span style="display:grid;gap:2px"><b>${esc(c.clientaNombre)} · ${esc(fechaCorta(c.fecha))} ${esc(c.hora)}</b><span class="muted" style="font-size:13px">${esc((c.servicios||[]).map(x=>x.nombre).join(", "))} · ${esc(c.profNombre||"")} · ${esc(c.telefono||"")} · ${conCorreo(c)?"recibió correo":"sin aviso"}</span></span>
+  <span class="row-btns"><button class="mini wsp" data-act="c-wsp" data-k="confirmacion" data-id="${esc(c.id)}">Confirmar por WhatsApp</button></span></div>`).join("")}</div></div>`}
 function err(e){console.warn(e);if(e&&e.code==="revoked"){S.offline=true;render()}}
 function subDia(){
   if(!S.db)return;
@@ -807,7 +816,7 @@ function vAgenda(){
     <div class="kpi"><span>Atendidas</span><b>${act.filter(c=>c.estado==="atendida").length}</b></div>
     <div class="kpi"><span>Valor agendado (lista)</span><b>${clp(valor)}</b></div>
   </div>
-  ${vSols()}
+  ${vWebAvisar()}${vSols()}
   ${!S.myPro&&(ocultas>0||S.agTodas)?`<div class="row-btns" style="justify-content:space-between;align-items:center"><span class="muted" style="font-size:13px">${S.agTodas?"Mostrando a todas las profesionales.":`Se muestran solo las que atienden este día (${ocultas} oculta${ocultas>1?"s":""}).`}</span><button class="mini" data-act="ag-todas">${S.agTodas?"Solo las que atienden":"Ver todas"}</button></div>`:""}
   <div class="grid-wrap"><div class="ag" style="grid-template-columns:${cols};grid-template-rows:auto repeat(${filas*K},${ROWU}px)">${g}</div></div>
   <div class="legend"><span class="pill n">Color claro = reservada</span><span class="pill n">Color fuerte ✓ = confirmada</span><span class="pill n">Borde amarillo = llegó</span><span class="pill n">Rayado = bloqueo o fuera de horario</span><span class="pill r">Borde rojo = tope de horario</span><span class="muted" style="font-size:12px">Cada profesional tiene su color.</span></div>
@@ -986,10 +995,11 @@ async function autoAgendar(lista){if(_autoBusy||S.myPro||!S.db)return;if(!S.pros
       catch(e){console.warn("reserva auto",e);await devolver("No se pudo agendar sola")}}}
   finally{_autoBusy=false}}
 function solServs(s){return(s.servicios||[]).map(id=>{const x=S.servs.find(v=>v.id===id);return x?x.nombre:"(servicio)"}).join(", ")}
+function solDup(s){const t=telNorm(s.telefono);if(!t)return null;return[].concat(S.citasSem||[],S.citasMan||[],S.webCitas||[]).find(c=>c.fecha===s.fecha&&c.hora===s.hora&&c.estado!=="cancelada"&&(c.tipo||"cita")!=="bloqueo"&&telNorm(c.telefono)===t)||null}
 function vSols(){const L=S.sols||[];if(!L.length)return"";
   return`<div class="panel" style="border-color:var(--amber)"><h2>Solicitudes de la reserva web (${L.length})</h2><p class="muted">Estas reservas web no se pudieron agendar solas (la hora se ocupó o falta un dato). Revísalas y agéndalas a mano.</p>
-  <div class="sel-list">${L.map(s=>{const pro=S.pros.find(p=>p.id===s.profId);const om=String(s.nota||"").match(/^\[origen:([a-z]+)\]\s*/);const oc=om&&ORIGENES.find(x=>x[0]===om[1]);const nt=String(s.nota||"").replace(/^\[origen:[a-z]+\]\s*/,"");return`<div class="sel-item" style="flex-wrap:wrap;gap:8px"><span style="display:grid;gap:2px"><b>${esc(s.nombre)} · ${esc(fechaCorta(s.fecha))} ${esc(s.hora)}${oc?` <span class="muted" style="font-weight:400;font-size:12px">· llegó desde ${esc(oc[1])}</span>`:""}</b><span class="muted" style="font-size:13px">${esc(solServs(s))} · ${esc(pro?pro.nombre:"Cualquier profesional")} · ${esc(s.telefono)}${nt?" · “"+esc(nt)+"”":""}</span></span>
-  <span class="row-btns"><button class="mini" data-act="sol-agendar" data-id="${esc(s.id)}">Agendar</button><button class="mini wsp" data-act="sol-wsp" data-id="${esc(s.id)}">WhatsApp</button><button class="mini" data-act="sol-desc" data-id="${esc(s.id)}">Descartar</button></span></div>`}).join("")}</div></div>`}
+  <div class="sel-list">${L.map(s=>{const pro=S.pros.find(p=>p.id===s.profId);const dup=solDup(s);const om=String(s.nota||"").match(/^\[origen:([a-z]+)\]\s*/);const oc=om&&ORIGENES.find(x=>x[0]===om[1]);const nt=String(s.nota||"").replace(/^\[origen:[a-z]+\]\s*/,"");return`<div class="sel-item" style="flex-wrap:wrap;gap:8px"><span style="display:grid;gap:2px"><b>${esc(s.nombre)} · ${esc(fechaCorta(s.fecha))} ${esc(s.hora)}${oc?` <span class="muted" style="font-weight:400;font-size:12px">· llegó desde ${esc(oc[1])}</span>`:""}</b><span class="muted" style="font-size:13px">${esc(solServs(s))} · ${esc(pro?pro.nombre:"Cualquier profesional")} · ${esc(s.telefono)}${nt?" · “"+esc(nt)+"”":""}</span></span>
+  ${dup?`<span class="pill a" style="flex-basis:100%">Ya tiene esta hora agendada (${esc(dup.profNombre||"")}): es la misma reserva repetida. Descártala para no duplicar.</span>`:""}<span class="row-btns">${dup?"":`<button class="mini" data-act="sol-agendar" data-id="${esc(s.id)}">Agendar</button>`}<button class="mini wsp" data-act="sol-wsp" data-id="${esc(s.id)}">WhatsApp</button><button class="mini" data-act="sol-desc" data-id="${esc(s.id)}">Descartar</button></span></div>`}).join("")}</div></div>`}
 function wspModo(){try{return localStorage.getItem("wspModo")||"app"}catch(e){return"app"}}
 function abrirWsp(t,m){const u=wspModo()==="web"?"https://web.whatsapp.com/send?phone="+t+"&text="+encodeURIComponent(m):"https://wa.me/"+t+"?text="+encodeURIComponent(m);
   if(wspModo()==="web"){window.open(u,"wspweb")}else window.open(u,"_blank","noopener")}
@@ -1002,7 +1012,7 @@ async function enviarWsp(c,k){const t=telNorm(c.telefono);if(!t){toast("Esta cli
   else abrirWsp(t,msjWsp(c,k));
   const up={modificado:new Date().toISOString()};if(k==="recordatorio")up.recordado=up.modificado;if(k==="confirmacion")up.avisado=up.modificado;
   try{for(const x of grupo)await S.db.doc("citas/"+x.id).update(up);if(grupo.length>1)toast("Un solo mensaje para sus "+grupo.length+" horas del día")}catch(e){fail(e)}}
-function citaPorId(id){return S.citasSem.find(c=>c.id===id)||S.citasMan.find(c=>c.id===id)||(S.cli.hist||[]).find(c=>c.id===id)}
+function citaPorId(id){return S.citasSem.find(c=>c.id===id)||S.citasMan.find(c=>c.id===id)||(S.webCitas||[]).find(c=>c.id===id)||(S.cli.hist||[]).find(c=>c.id===id)}
 function vDet(){const c=citaPorId(S.det);if(!c){S.det=null;return""}
   const e=estTxt(c.estado);const cli=S.clientas.find(x=>x.id===c.clientaId);
   if(c.tipo==="bloqueo")return`<div class="sheet-top"><h3>Horario bloqueado</h3><button class="x" data-act="sheet-close" aria-label="Cerrar">×</button></div>

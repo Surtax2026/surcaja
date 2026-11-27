@@ -158,18 +158,18 @@ function vDatos(){const pro=(R.cat.profesionales||[]).find(p=>p.id===R.pro);
   <p class="msg info"><b>${esc(fLarga(R.fecha))}, ${esc(R.hora)}</b>${pro?` con ${esc(pro.nombre)}`:""}<br>${esc(sel().map(s=>s.nombre).join(", "))} · ${clp(total())}</p>
   <label for="r-nom">Nombre y apellido<input id="r-nom" autocomplete="name" value="${esc(R.nombre)}" maxlength="80"></label>
   <label for="r-tel">WhatsApp<input id="r-tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="9 1234 5678" value="${esc(R.tel)}" maxlength="20"></label>
-  <label for="r-mail">Correo (opcional, para recibir la confirmación)<input id="r-mail" type="email" inputmode="email" autocomplete="email" placeholder="tucorreo@ejemplo.cl" value="${esc(R.mail)}" maxlength="80"></label>
+  <label for="r-mail">Correo (recomendado: te llega la confirmación al instante)<input id="r-mail" type="email" inputmode="email" autocomplete="email" placeholder="tucorreo@ejemplo.cl" value="${esc(R.mail)}" maxlength="80"></label>
   <label style="display:flex;gap:10px;align-items:flex-start;font-weight:400;font-size:14px"><input id="r-wa" type="checkbox" style="width:20px;height:20px;margin-top:2px;flex:0 0 auto" ${R.waOk?"checked":""}><span>Acepto recibir por WhatsApp la confirmación y el recordatorio de mi hora.</span></label>
   <label for="r-nota">Comentario (opcional)<textarea id="r-nota" rows="2" maxlength="300" placeholder="Ej. es para dos personas, tengo uñas acrílicas de otro salón">${esc(R.nota)}</textarea></label>
   ${R.error?`<p class="msg err">${esc(R.error)}</p>`:""}
   <button class="cta" data-a="enviar" ${R.enviando?"disabled":""}>${R.enviando?"Enviando…":"Solicitar hora"}</button>
-  <p class="muted" style="font-size:12.5px">Te enviamos la confirmación al correo que dejes y, si lo aceptas, por WhatsApp. Si no puedes asistir, avísanos con al menos 3 horas de anticipación. Usamos tu nombre, teléfono y correo solo para gestionar tu reserva en NÚASPA (LUZIA SpA); puedes pedir que los eliminemos escribiéndonos.</p>
+  <p class="muted" style="font-size:12.5px">Te enviamos la confirmación al correo que dejes y, si lo aceptas, te escribimos por WhatsApp para confirmar. Si no puedes asistir, avísanos con al menos 3 horas de anticipación. Usamos tu nombre, teléfono y correo solo para gestionar tu reserva en NÚASPA (LUZIA SpA); puedes pedir que los eliminemos escribiéndonos.</p>
   <button class="link" data-a="paso" data-v="2">← Cambiar día u hora</button></div>`}
 function vHecho(){const h=R.hecho,w=telNorm(R.cat.whatsapp);
   const txt=`Hola! Acabo de reservar hora por la web: ${fLarga(h.fecha)} a las ${h.hora}, ${h.servicios}. Mi nombre es ${h.nombre}.`;
   return`<div class="card done"><div class="ico" aria-hidden="true">✓</div><h2>¡Tu hora quedó reservada!</h2>
   <p style="margin:0">Te esperamos el <b>${esc(fLarga(h.fecha))} a las ${esc(h.hora)}</b>: ${esc(h.servicios)}.</p>
-  <p class="muted">${h.mail?`Te enviamos la confirmación a <b>${esc(h.mail)}</b>. `:""}Si necesitas cambiarla o cancelarla, escríbenos por WhatsApp.</p>
+  <p class="muted">${h.mail?`Te enviamos la confirmación a <b>${esc(h.mail)}</b>. `:"Esta pantalla es tu confirmación: no necesitas reservar de nuevo. "}Si necesitas cambiarla o cancelarla, escríbenos por WhatsApp.</p>
   ${w?`<a class="wsp" href="https://wa.me/${w}?text=${encodeURIComponent(txt)}" target="_blank" rel="noopener">Escribirnos por WhatsApp</a>`:""}
   <button class="link" data-a="otra">Pedir otra hora</button></div>`}
 function vPrecios(){const C=cats();
